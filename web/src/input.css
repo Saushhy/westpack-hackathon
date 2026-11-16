@@ -729,7 +729,6 @@
     position: relative; height: 200px; border-radius: var(--rounded-2xl);
     background: var(--surface-hero-faint); overflow: hidden;
   }
-  .gel-evo-dragon { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 190px; height: 190px; }
   .gel-scene[data-scene="lava"] { background: linear-gradient(#2a0a08 0%, #5a150d 55%, #a63a18 100%); }
   .gel-scene[data-scene="stars"] { background: linear-gradient(#0e0c2b 0%, #1f1c4f 100%); }
   .gel-scene-sky { position: absolute; inset: 0; pointer-events: none; }
@@ -762,18 +761,33 @@
     to { transform: translateY(-10px); opacity: 0; }
   }
 
-  .gel-dragon {
-    position: absolute; bottom: 0; left: 50%;
-    width: 218px; height: 218px;
-    transform: translateX(-50%);
-    animation: dragon-breathe 4s ease-in-out infinite;
+  .gel-dragon-wrap {
+    position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
+    width: 180px; height: 180px;
+    display: flex; align-items: flex-end; justify-content: center;
   }
-  .gel-scene--mini .gel-dragon { width: 160px; height: 160px; }
-  .gel-dragon-body { transform-origin: 50% 100%; }
-  .gel-dragon.is-happy .gel-dragon-body { animation: dragon-hop 0.55s var(--spring); }
+  .gel-dragon-wrap.is-happy { animation: dragon-hop 0.55s var(--spring); }
+  .gel-dragon-wrap .dragon-img { animation: dragon-breathe 4s ease-in-out infinite; }
+
+  .dragon-wear {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    line-height: 1; pointer-events: none; z-index: 2;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.18));
+  }
+  .dragon-wear--hat { font-size: 40px; }
+  .dragon-wear--face { font-size: 32px; }
+  .dragon-wear--neck { font-size: 32px; }
+
+  .gel-scene--mini .gel-dragon-wrap { width: 130px; height: 130px; }
+  .gel-scene--mini .dragon-img { width: 120px; height: 120px; }
+  .gel-scene--mini .dragon-img.emoji-fallback { font-size: 108px; line-height: 120px; }
+  .gel-scene--mini .dragon-wear--hat { font-size: 28px; }
+  .gel-scene--mini .dragon-wear--face,
+  .gel-scene--mini .dragon-wear--neck { font-size: 22px; }
+
   @keyframes dragon-breathe {
-    0%, 100% { transform: translateX(-50%) translateY(0); }
-    50% { transform: translateX(-50%) translateY(-4px); }
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
   }
   @keyframes dragon-hop {
     0% { transform: translateY(0) scale(1, 1); }
@@ -824,7 +838,6 @@
   .gel-shop-item { text-align: center; margin: 0; display: flex; flex-direction: column; align-items: center; }
   .gel-shop-item.is-worn { border-color: var(--surface-success); }
   .gel-shop-art { position: relative; height: 54px; display: flex; align-items: center; justify-content: center; }
-  .shop-art-svg { width: 48px; height: 48px; display: block; }
   .gel-shop-worn {
     position: absolute; top: 0; right: 0; width: 18px; height: 18px; border-radius: 50%;
     background: var(--surface-success); color: #fff;

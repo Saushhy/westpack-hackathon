@@ -385,9 +385,7 @@ function showEvolution(from, to) {
     '<div class="gel-dialog-body">' +
     '<div class="gel-evo-scene">' +
     sparkles(8) +
-    '<svg class="gel-evo-dragon" viewBox="0 0 240 240" aria-hidden="true">' +
-    dragonSvg(to) +
-    "</svg>" +
+    dragonMarkup(to) +
     "</div>" +
     '<p style="text-align:center;margin:12px 0 0">' +
     from.name + " is now a <strong>" + to.name + "</strong></p>" +
@@ -1003,169 +1001,41 @@ function renderGoals() {
 /* ==========================================================================
    DRAGON
    --------------------------------------------------------------------------
-   The dragon is drawn as layered inline SVG rather than a fixed image, so
-   anything bought in the shop actually appears on the dragon. Accessories are
-   positioned from each stage's head geometry, which is why a baby dragon gets
-   a baby-sized hat and an adult gets the same hat to scale.
+   The dragon keeps the original emoji / PNG-art look (the version you liked),
+   but is now interactive: shop items are worn as layered emoji on top of it, a
+   "home" changes the scene behind it, food makes it hop, and tapping it gives a
+   credit-health tip. Naomi's PNGs drop in at assets/dragon/*.png and
+   assets/shop/*.png; until then the emoji stand in.
    ========================================================================== */
-const DRAGON_GEOM = {
-  egg: { headY: 150, headR: 62, acc: 0.92 },
-  baby: { headY: 122, headR: 40, bodyY: 184, bodyRx: 37, bodyRy: 31, wing: 0.6, horns: 0, tail: 0.7, acc: 0.95 },
-  teen: { headY: 100, headR: 34, bodyY: 168, bodyRx: 36, bodyRy: 44, wing: 0.9, horns: 1, tail: 1.0, acc: 1.0 },
-  adult: { headY: 88, headR: 32, bodyY: 160, bodyRx: 43, bodyRy: 55, wing: 1.18, horns: 2, tail: 1.25, acc: 1.06 }
+
+/* Where each worn item sits on the dragon emoji, per stage (top % of the box). */
+const WEAR_ANCHOR = {
+  egg: { hat: 2, face: 34, neck: 60 },
+  baby: { hat: 4, face: 37, neck: 62 },
+  teen: { hat: 3, face: 37, neck: 62 },
+  adult: { hat: 2, face: 36, neck: 60 }
 };
 
-const C_NAVY = "var(--surface-hero)";
-const C_BELLY = "var(--wbc-hero-200)";
-const C_RED = "var(--surface-primary)";
-const C_GOLD = "var(--game-coin)";
-
-function hatSvg(item, x, y, s) {
-  if (!item) return "";
-  if (item.id === "item_tophat") {
-    return `<g transform="translate(${x} ${y}) scale(${s})">
-      <rect x="-21" y="-46" width="42" height="44" rx="4" fill="${C_NAVY}"/>
-      <rect x="-21" y="-16" width="42" height="11" fill="${C_RED}"/>
-      <rect x="-32" y="-4" width="64" height="9" rx="4.5" fill="${C_NAVY}"/>
-    </g>`;
-  }
-  if (item.id === "item_cap") {
-    return `<g transform="translate(${x} ${y}) scale(${s})">
-      <path d="M-27,0 a27,25 0 0 1 54,0 z" fill="${C_RED}"/>
-      <path d="M-8,-1 h42 a7,7 0 0 1 0,9 h-42 z" fill="${C_NAVY}"/>
-      <circle cx="0" cy="-24" r="3.2" fill="${C_NAVY}"/>
-    </g>`;
-  }
-  if (item.id === "item_crown") {
-    return `<g transform="translate(${x} ${y}) scale(${s})">
-      <path d="M-25,0 l-5,-26 l13,11 l12,-20 l12,20 l13,-11 l-5,26 z"
-            fill="${C_GOLD}" stroke="#c8811a" stroke-width="1.5" stroke-linejoin="round"/>
-      <circle cx="0" cy="-6" r="3.4" fill="${C_RED}"/>
-      <circle cx="-14" cy="-7" r="2.4" fill="${C_RED}" opacity=".8"/>
-      <circle cx="14" cy="-7" r="2.4" fill="${C_RED}" opacity=".8"/>
-    </g>`;
-  }
-  return "";
+function wearGlyph(emoji, slot, top) {
+  return `<span class="dragon-wear dragon-wear--${slot}" style="top:${top}%">${emoji}</span>`;
 }
 
-function faceSvg(item, x, y, s) {
-  if (!item) return "";
-  return `<g transform="translate(${x} ${y}) scale(${s})">
-    <path d="M-30,-5 l-10,3" stroke="#161619" stroke-width="3.4" stroke-linecap="round"/>
-    <path d="M30,-5 l10,3" stroke="#161619" stroke-width="3.4" stroke-linecap="round"/>
-    <rect x="-30" y="-10" width="26" height="19" rx="7" fill="#161619"/>
-    <rect x="4" y="-10" width="26" height="19" rx="7" fill="#161619"/>
-    <rect x="-5" y="-4" width="10" height="4" fill="#161619"/>
-    <rect x="-25" y="-6" width="9" height="4" rx="2" fill="#fff" opacity=".55"/>
-    <rect x="9" y="-6" width="9" height="4" rx="2" fill="#fff" opacity=".55"/>
-  </g>`;
-}
-
-function neckSvg(item, x, y, s) {
-  if (!item) return "";
-  return `<g transform="translate(${x} ${y}) scale(${s})">
-    <path d="M14,2 l13,29 l-15,-9 z" fill="${C_RED}"/>
-    <rect x="-32" y="-9" width="64" height="18" rx="9" fill="${C_RED}"/>
-    <rect x="-32" y="-9" width="64" height="6" rx="3" fill="${C_NAVY}" opacity=".35"/>
-  </g>`;
-}
-
-function hornsSvg(x, y, r, n) {
-  if (n === 2) {
-    return `<path d="M${x - r * 0.7} ${y} l-7 -19 l17 8 z" fill="${C_RED}"/>
-            <path d="M${x + r * 0.7} ${y} l7 -19 l-17 8 z" fill="${C_RED}"/>`;
-  }
-  if (n === 1) return `<path d="M${x} ${y - r * 0.88} l-6 -17 l14 7 z" fill="${C_RED}"/>`;
-  return "";
-}
-
-function eyesSvg(x, y, r, covered) {
-  if (covered) return "";
-  return `
-    <ellipse cx="${x - r * 0.34}" cy="${y}" rx="${r * 0.17}" ry="${r * 0.2}" fill="#fff"/>
-    <ellipse cx="${x + r * 0.34}" cy="${y}" rx="${r * 0.17}" ry="${r * 0.2}" fill="#fff"/>
-    <circle cx="${x - r * 0.31}" cy="${y + r * 0.02}" r="${r * 0.095}" fill="#161619"/>
-    <circle cx="${x + r * 0.37}" cy="${y + r * 0.02}" r="${r * 0.095}" fill="#161619"/>
-    <circle cx="${x - r * 0.27}" cy="${y - r * 0.05}" r="${r * 0.03}" fill="#fff"/>
-    <circle cx="${x + r * 0.41}" cy="${y - r * 0.05}" r="${r * 0.03}" fill="#fff"/>`;
-}
-
-function dragonSvg(stage, equipped) {
+/* The dragon itself (emoji / PNG) with whatever it's wearing layered on top. */
+function dragonMarkup(stage, equipped) {
   const eq = equipped || state.shop.equipped;
   const hat = itemById(eq.hat);
   const face = itemById(eq.face);
   const neck = itemById(eq.neck);
-  const g = DRAGON_GEOM[stage.id] || DRAGON_GEOM.baby;
-  const s = g.acc;
-  const x = 120;
-  const hatY = g.headY - g.headR + 6;
-  const eyeY = g.headY - g.headR * 0.06;
-  const neckY = g.headY + g.headR * 0.74;
-
-  if (stage.id === "egg") {
-    return `<g class="gel-dragon-body">
-      <ellipse cx="120" cy="216" rx="54" ry="9" fill="rgba(0,0,0,.1)"/>
-      <ellipse cx="120" cy="150" rx="50" ry="62" fill="${C_NAVY}"/>
-      <ellipse cx="104" cy="126" rx="13" ry="19" fill="#fff" opacity=".13"/>
-      <circle cx="101" cy="168" r="7" fill="${C_BELLY}" opacity=".7"/>
-      <circle cx="141" cy="180" r="5.5" fill="${C_BELLY}" opacity=".7"/>
-      <circle cx="136" cy="146" r="4.5" fill="${C_BELLY}" opacity=".7"/>
-      <path d="M93,112 l14,10 l6,-12 l12,14 l10,-10" stroke="${C_RED}" stroke-width="3.4"
-            fill="none" stroke-linejoin="round" stroke-linecap="round"/>
-      ${neckSvg(neck, x, neckY, s)}
-      ${faceSvg(face, x, eyeY, s * 0.92)}
-      ${hatSvg(hat, x, hatY, s)}
-    </g>`;
-  }
-
-  const bx = x;
-  const by = g.bodyY;
-  const rx = g.bodyRx;
-  const ry = g.bodyRy;
-  const wing = `M0,0 q26,-30 41,2 q-4,26 -29,22 q-10,-3 -12,-24 z`;
-
-  return `<g class="gel-dragon-body">
-    <ellipse cx="120" cy="216" rx="${rx * 1.25}" ry="9" fill="rgba(0,0,0,.1)"/>
-
-    <g transform="translate(${bx - rx * 0.86} ${by + ry * 0.16}) rotate(-20)">
-      <ellipse cx="${-26 * g.tail}" cy="0" rx="${28 * g.tail}" ry="${9 * g.tail}" fill="${C_NAVY}"/>
-      <path d="M${-54 * g.tail},0 l${-16 * g.tail},${-10 * g.tail} l0,${20 * g.tail} z" fill="${C_RED}"/>
-    </g>
-
-    <g transform="translate(${bx + rx * 0.5} ${by - ry * 0.5}) scale(${g.wing})">
-      <path d="${wing}" fill="${C_RED}" opacity=".92"/>
-      <path d="M2,-2 q20,-16 32,6" stroke="#fff" stroke-width="2" fill="none" opacity=".35"/>
-    </g>
-    <g transform="translate(${bx - rx * 0.5} ${by - ry * 0.5}) scale(${-g.wing} ${g.wing})">
-      <path d="${wing}" fill="${C_RED}" opacity=".92"/>
-      <path d="M2,-2 q20,-16 32,6" stroke="#fff" stroke-width="2" fill="none" opacity=".35"/>
-    </g>
-
-    <ellipse cx="${bx}" cy="${by}" rx="${rx}" ry="${ry}" fill="${C_NAVY}"/>
-    <ellipse cx="${bx}" cy="${by + ry * 0.24}" rx="${rx * 0.62}" ry="${ry * 0.62}" fill="${C_BELLY}" opacity=".45"/>
-    <ellipse cx="${bx - rx * 0.9}" cy="${by + ry * 0.22}" rx="${rx * 0.2}" ry="${ry * 0.28}" fill="${C_NAVY}"/>
-    <ellipse cx="${bx + rx * 0.9}" cy="${by + ry * 0.22}" rx="${rx * 0.2}" ry="${ry * 0.28}" fill="${C_NAVY}"/>
-
-    ${hornsSvg(x, g.headY - g.headR * 0.62, g.headR, g.horns)}
-
-    <circle cx="${x}" cy="${g.headY}" r="${g.headR}" fill="${C_NAVY}"/>
-    <ellipse cx="${x}" cy="${g.headY + g.headR * 0.4}" rx="${g.headR * 0.6}" ry="${g.headR * 0.34}" fill="${C_BELLY}" opacity=".5"/>
-    <circle cx="${x - g.headR * 0.16}" cy="${g.headY + g.headR * 0.38}" r="${g.headR * 0.055}" fill="${C_NAVY}"/>
-    <circle cx="${x + g.headR * 0.16}" cy="${g.headY + g.headR * 0.38}" r="${g.headR * 0.055}" fill="${C_NAVY}"/>
-    <path d="M${x - g.headR * 0.2} ${g.headY + g.headR * 0.55} q${g.headR * 0.2} ${g.headR * 0.16} ${g.headR * 0.4} 0"
-          stroke="${C_NAVY}" stroke-width="2.4" fill="none" stroke-linecap="round"/>
-
-    ${eyesSvg(x, eyeY, g.headR, !!face)}
-    <ellipse cx="${x - g.headR * 0.62}" cy="${g.headY + g.headR * 0.3}" rx="${g.headR * 0.13}" ry="${g.headR * 0.08}" fill="${C_RED}" opacity=".22"/>
-    <ellipse cx="${x + g.headR * 0.62}" cy="${g.headY + g.headR * 0.3}" rx="${g.headR * 0.13}" ry="${g.headR * 0.08}" fill="${C_RED}" opacity=".22"/>
-
-    ${faceSvg(face, x, eyeY, s)}
-    ${neckSvg(neck, x, neckY, s)}
-    ${hatSvg(hat, x, hatY, s)}
-  </g>`;
+  const anchor = WEAR_ANCHOR[stage.id] || WEAR_ANCHOR.baby;
+  return `
+    <div class="gel-dragon-wrap" id="dragon-art">
+      ${imgOrEmoji(stage.image, stage.emoji, stage.name, "dragon-img")}
+      ${neck ? wearGlyph(neck.emoji, "neck", anchor.neck) : ""}
+      ${face ? wearGlyph(face.emoji, "face", anchor.face) : ""}
+      ${hat ? wearGlyph(hat.emoji, "hat", anchor.hat) : ""}
+    </div>`;
 }
 
-/* Scene behind the dragon — a "home" item from the shop changes this. */
 function sceneId() {
   const home = itemById(state.shop.equipped.home);
   return (home && home.scene) || "plain";
@@ -1176,9 +1046,7 @@ function sceneHtml(extraClass) {
   return `<div class="gel-scene ${extraClass || ""}" data-scene="${sceneId()}" onclick="pokeDragon()"
                role="button" tabindex="0" aria-label="Your ${stage.name}. Tap to interact.">
     <div class="gel-scene-sky"></div>
-    <svg class="gel-dragon" id="dragon-art" viewBox="0 0 240 240" aria-hidden="true">
-      ${dragonSvg(stage)}
-    </svg>
+    ${dragonMarkup(stage)}
     <div class="gel-bubble" id="dragon-bubble"></div>
     <div class="gel-hearts" id="dragon-hearts"></div>
   </div>`;
@@ -1187,7 +1055,7 @@ function sceneHtml(extraClass) {
 const DRAGON_LINES = [
   "Rawr. Every repayment on time makes me a little bigger.",
   "I only grow from good money habits — never from shopping.",
-  "Tap a bill and review it. I get the XP, you get the savings.",
+  "Review a bill and approve it. I get the XP, you get the savings.",
   "Bills first, snacks later. That's the rule.",
   "A dishonour fee is the only thing that makes me grumpy."
 ];
@@ -1343,97 +1211,21 @@ function shopCta(item) {
             onclick="buyItem('${item.id}')">${affordable ? "Buy " + fmtWhole(item.cost) : "Not enough coins"}</button>`;
 }
 
-/* Shop item art is also vector, so every item matches the dragon's style and
-   there are no missing-image requests when Naomi's PNGs aren't committed yet. */
-function shopArt(item) {
-  const navy = "var(--surface-hero)";
-  const red = "var(--surface-primary)";
-  const gold = "var(--game-coin)";
-  const w = (s) => `<svg viewBox="0 0 48 48" class="shop-art-svg" aria-hidden="true">${s}</svg>`;
-  switch (item.id) {
-    case "item_tophat":
-      return w(
-        `<rect x="6" y="28" width="36" height="7" rx="3.5" fill="${navy}"/>` +
-          `<rect x="13" y="3" width="22" height="26" rx="3" fill="${navy}"/>` +
-          `<rect x="13" y="19" width="22" height="7" fill="${red}"/>`
-      );
-    case "item_cap":
-      return w(
-        `<path d="M6,30 a18,17 0 0 1 36,0 z" fill="${red}"/>` +
-          `<path d="M24,31 h22 a5,5 0 0 1 0,9 h-22 z" fill="${navy}"/>` +
-          `<circle cx="24" cy="12" r="2.5" fill="${navy}"/>`
-      );
-    case "item_crown":
-      return w(
-        `<path d="M9,33 l-4,-19 l10,8 l9,-16 l9,16 l10,-8 l-4,19 z" fill="${gold}" stroke="#c8811a" stroke-width="1.4" stroke-linejoin="round"/>` +
-          `<circle cx="24" cy="28" r="2.6" fill="${red}"/>` +
-          `<circle cx="14" cy="27" r="1.8" fill="${red}"/>` +
-          `<circle cx="34" cy="27" r="1.8" fill="${red}"/>`
-      );
-    case "item_sunnies":
-      return w(
-        `<rect x="3" y="20" width="19" height="13" rx="5" fill="#161619"/>` +
-          `<rect x="26" y="20" width="19" height="13" rx="5" fill="#161619"/>` +
-          `<rect x="20" y="24" width="8" height="3" fill="#161619"/>` +
-          `<rect x="6" y="22" width="7" height="3" rx="1.5" fill="#fff" opacity=".55"/>` +
-          `<rect x="29" y="22" width="7" height="3" rx="1.5" fill="#fff" opacity=".55"/>`
-      );
-    case "item_scarf":
-      return w(
-        `<path d="M38,26 l10,14 l-12,-7 z" fill="${red}"/>` +
-          `<rect x="6" y="20" width="34" height="12" rx="6" fill="${red}"/>` +
-          `<rect x="6" y="20" width="34" height="4" rx="2" fill="${navy}" opacity=".35"/>`
-      );
-    case "item_feast":
-      return w(
-        `<ellipse cx="17" cy="20" rx="13" ry="11" fill="#8a5a00"/>` +
-          `<ellipse cx="13" cy="18" rx="9" ry="7" fill="#b9741a"/>` +
-          `<path d="M29,20 l15,0 a3,3 0 0 1 0,6 l-11,0 z" fill="#e8e3d5"/>` +
-          `<circle cx="30" cy="23" r="3" fill="#e8e3d5"/>` +
-          `<circle cx="38" cy="23" r="3" fill="#e8e3d5"/>`
-      );
-    case "item_cave":
-      return w(
-        `<circle cx="24" cy="24" r="19" fill="#0e0c2b"/>` +
-          `<path d="M10,34 a14,10 0 0 1 28,0 z" fill="#1f1c4f"/>` +
-          `<circle cx="16" cy="15" r="1.6" fill="#fff"/>` +
-          `<circle cx="30" cy="12" r="1.3" fill="#fff"/>` +
-          `<circle cx="34" cy="24" r="1.5" fill="#fff"/>` +
-          `<circle cx="14" cy="26" r="1.2" fill="#fff"/>`
-      );
-    case "item_lair":
-      return w(
-        `<path d="M6,36 l12,-22 l12,22 z" fill="#3a2b2b"/>` +
-          `<path d="M13,36 l5,-14 l5,14 z" fill="#e03c1a"/>` +
-          `<path d="M17,36 l2,-6 l2,6 z" fill="#ff8a3c"/>` +
-          `<path d="M30,36 a8,10 0 0 1 14,0 z" fill="#2a2a2a"/>`
-      );
-    case "item_perk":
-      return w(
-        `<path d="M24,4 l10,10 l-10,30 l-10,-30 z" fill="${gold}" stroke="#c8811a" stroke-width="1.4" stroke-linejoin="round"/>` +
-          `<path d="M14,14 l20,0 M24,4 l-6,10 l12,0 z" stroke="#fff" stroke-width="1.4" fill="none" opacity=".5"/>`
-      );
-    default:
-      return w(`<circle cx="24" cy="24" r="16" fill="${red}"/>`);
-  }
-}
-
 function renderShop() {
   const stage = stageForXp(state.xp_total);
   const worn = wornItems();
   const items = rewards.shop
     .map((item) => {
-      const owned = state.shop.owned.includes(item.id);
       const wearingNow = isWearing(item.id);
       return `
         <article class="gel-cell gel-shop-item ${wearingNow ? "is-worn" : ""}" data-item="${item.id}">
           <div class="gel-shop-art">
-            ${shopArt(item)}
-            ${wearingNow ? `<span class="gel-shop-worn">${ico("check")}</span>` : ""}          </div>
+            ${imgOrEmoji(item.image, item.emoji, item.name, "shop-img")}
+            ${wearingNow ? `<span class="gel-shop-worn">${ico("check")}</span>` : ""}
+          </div>
           <div class="gel-shop-name">${item.name}</div>
           <div class="gel-shop-price">
             <span class="gel-money gel-money--sm">${fmtWhole(item.cost)}</span>
-            <span class="gel-money-unit">${item.slot === "food" ? "each" : item.locked ? "" : ""}</span>
             ${coin()}
           </div>
           <p class="gel-shop-desc">${item.description}</p>

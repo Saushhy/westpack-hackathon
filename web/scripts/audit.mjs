@@ -20,7 +20,12 @@ const errors = [];
 const browser = await chromium.launch({ executablePath: EDGE, headless: true });
 const page = await browser.newPage({ viewport: { width: 480, height: 980 } });
 page.on("console", (m) => {
-  if (m.type() === "error") errors.push("[console] " + m.text());
+  if (m.type() !== "error") return;
+  // Intentional: Naomi's dragon/shop PNGs aren't committed yet — the emoji fallback
+  // in imgOrEmoji is by design, and the corresponding requestfailed events are
+  // already filtered by URL below.
+  if (/Failed to load resource/.test(m.text())) return;
+  errors.push("[console] " + m.text());
 });
 page.on("pageerror", (e) => errors.push("[pageerror] " + e.message));
 page.on("requestfailed", (r) => {
@@ -290,11 +295,14 @@ await page.waitForTimeout(900);
   await page.waitForTimeout(250);
 
   const dragon = await page.evaluate(() => {
-    const svg = document.querySelector("#dragon-art");
+    const wrap = document.querySelector("#dragon-art");
     const scene = document.querySelector(".gel-scene");
-    return { hasSvg: !!svg, scene: scene?.dataset.scene, hat: svg?.innerHTML.includes("translate(") || false };
+    return {
+      hasDragon: !!wrap && !!wrap.querySelector(".dragon-img"),
+      scene: scene?.dataset.scene,
+    };
   });
-  check("Dragon renders as inline SVG", "true", String(dragon.hasSvg), dragon.hasSvg);
+  check("Dragon renders (emoji / PNG art)", "true", String(dragon.hasDragon), dragon.hasDragon);
   check("Default scene = plain", "plain", dragon.scene, dragon.scene === "plain");
 
   // buy a hat and confirm it lands on the dragon
@@ -306,8 +314,7 @@ await page.waitForTimeout(900);
     await page.waitForTimeout(300);
   }
   const wornAfter = await page.evaluate(() => {
-    const svg = document.querySelector("#dragon-art") || document.querySelector(".gel-scene svg");
-    return { hasHat: !!svg && /translate\(/.test(svg.innerHTML) };
+    return { hasHat: !!document.querySelector("#dragon-art .dragon-wear--hat") };
   });
   check("Buying a hat puts it on the dragon", "true", String(wornAfter.hasHat), wornAfter.hasHat);
 
