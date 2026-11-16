@@ -70,28 +70,28 @@
       "why_rewards_you": "Fewer credit enquiries and debts protects your credit profile."
     },
     {
-      "id": "bill_switch",
-      "label": "Switched a bill",
-      "xp": 120,
-      "coins": 80,
+      "id": "reminder_set",
+      "label": "Set a repayment reminder",
+      "xp": 100,
+      "coins": 60,
       "cap": { "type": "per_bill" },
-      "why_rewards_you": "Frees up cash so you can make every repayment on time."
+      "why_rewards_you": "On-time repayments are the #1 thing that builds a credit score. A reminder is the step that makes them happen."
     },
     {
-      "id": "bill_cancel",
-      "label": "Cancelled a subscription",
-      "xp": 80,
-      "coins": 50,
-      "cap": { "type": "per_bill" },
-      "why_rewards_you": "Cuts recurring spending so you can pay down debt faster."
-    },
-    {
-      "id": "bill_reschedule",
-      "label": "Rescheduled a payment",
+      "id": "protected_balance",
+      "label": "Protected a debit at risk",
       "xp": 60,
       "coins": 40,
       "cap": { "type": "per_bill" },
-      "why_rewards_you": "Avoiding a dishonour fee keeps your account in good standing."
+      "why_rewards_you": "Stopping a dishonour before it lands keeps your account in good standing."
+    },
+    {
+      "id": "insight_tracked",
+      "label": "Tracked a money pattern",
+      "xp": 40,
+      "coins": 20,
+      "cap": { "type": "per_bill" },
+      "why_rewards_you": "Acknowledging a pattern lets us watch it and confirm any saving. Low value so it can't be farmed."
     },
     {
       "id": "saving_verified",
@@ -140,10 +140,20 @@
     {
       "id": "goal_repay_on_time",
       "title": "Pay your credit card on time",
-      "description": "Set up autopay or a reminder so the due date never slips.",
+      "description": "Set a reminder so the due date never slips. Repayment history is the #1 factor.",
       "xp": 100,
       "coins": 60,
-      "progress_source": "manual"
+      "progress_source": "reminder_set",
+      "progress_hint": "Set the card reminder first"
+    },
+    {
+      "id": "goal_protect_debit",
+      "title": "Protect a debit at risk",
+      "description": "Stop the gym debit bouncing the day before payday.",
+      "xp": 100,
+      "coins": 60,
+      "progress_source": "protected_balance",
+      "progress_hint": "Set a protected balance first"
     },
     {
       "id": "goal_no_bnpl",
@@ -151,16 +161,8 @@
       "description": "Pause Afterpay and Zip for 30 days to protect your credit profile.",
       "xp": 100,
       "coins": 60,
-      "progress_source": "manual"
-    },
-    {
-      "id": "goal_cut_bills",
-      "title": "Cut $90+ a month from your bills",
-      "description": "Approve cheaper plans in the Bill Negotiator to free up cash.",
-      "xp": 100,
-      "coins": 60,
-      "progress_source": "bill_savings",
-      "target": 90
+      "progress_source": "manual",
+      "progress_hint": "Tap to mark done"
     }
   ],
   "shop": [

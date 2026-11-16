@@ -1,13 +1,15 @@
 # Credit Dragon — web prototype (Santiago)
 
-Standalone **HTML + Tailwind** (no framework) prototype of the **credit trajectory** (score
-forecast + BNPL visibility + three honest buckets) and the **gamification** (XP, coins, levels,
-dragon stages, shop) plus the bill negotiator as the "cash / fees" layer.
+Standalone **HTML + Tailwind** (no framework) prototype of a **credit-score coach** — it
+reads Westpac's own transaction data, finds the habits and patterns that move an Australian
+credit score (borrowed money, on-time payments, debit risk), and rewards acting on them
+with XP/coins that grow and dress a dragon. There is **no bill-switching** and **no brand
+the customer doesn't already pay** is recommended.
 
 It is styled with the **real Westpac GEL design system** — GEL's own stylesheet, tokens and
 component geometry, compiled locally. See `../docs/design-tokens.md` for the full mapping.
 
-> The pivot from "negotiator" to "credit trajectory" is documented in **`../CHANGES.md`**.
+> The full product pivot is documented in **`../CHANGES.md`**.
 
 ## Run it
 
@@ -37,8 +39,8 @@ npm run build          # data + icons + css
 ## Testing
 
 ```bash
-npm run audit   # 66 headless assertions: GEL tokens, real font loaded, component geometry,
-                # icons, overflow, contrast, review sheet scroll, score tab, and the full demo journey
+npm run audit   # 65 headless assertions: GEL tokens, real font loaded, component geometry,
+                # icons, overflow, contrast, score + insights tabs, and the full demo journey
 npm run shots   # screenshots each screen into %TEMP%\opencode\cd-shots
 ```
 
@@ -69,13 +71,10 @@ download is needed. Edit the `EDGE` path in `scripts/*.mjs` if Edge lives elsewh
 > this competition entry. Delete the folder and the `brand-fonts.css` import to fall back to
 > GEL's system font stack.
 
-## Demo click-path (lands at 1080 XP → Teen dragon)
+## Demo click-path (lands at 940 XP → Teen dragon)
 
-1. **Score** → see the 612 score, the forecast band, the BNPL "credit you don't see", the four
-   factors, the predicted-vs-actual loop, and set a protected balance.
-2. **Bills** → review + approve the phone switch, internet switch and gym reschedule
-   (each opens a review sheet with a provider link).
-3. **Streaming panel** → pick the service to keep, then **Review 2 cancellations** and approve both.
-4. **Goals** → complete "Cut $90+ bills", "Pay card on time", "No new BNPL".
-5. **Dragon** → watch it evolve to Teen at 800 XP, then hit Level 6.
-6. **Shop** → spend the ~600 coins — buy a hat / lair and see the dragon wear it and its scene change.
+1. **Score** → 612 / 1200 (Equifax), forecast 635–650, the four factors, BNPL "credit you
+   don't see", Westpac's own Low Rate Card, predicted-vs-actual, protected balance.
+2. **Insights** → act on 6 findings: set a reminder (card), protect balance (gym), track ×4.
+3. **Goals** → complete all three; the dragon **evolves to Teen** crossing 800 XP.
+4. **Dragon / Shop** → spend ~480 coins (a hat + a cave) and watch the dragon wear them.

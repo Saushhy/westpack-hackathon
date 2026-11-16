@@ -5,7 +5,7 @@ window.DATA = {
     "persona": "Mia",
     "currency": "AUD",
     "as_of": "2026-11-16",
-    "data_notice": "Sample data for a hackathon demo. Provider names and plan links are real so they can be checked; prices and plans are illustrative and must be confirmed with the provider before switching.",
+    "data_notice": "Sample data for a hackathon demo. The dragon is a credit-score coach: it reads Westpac's own transaction data to find habits and patterns, explains what moves an Australian credit score, and rewards acting on it. It does not recommend switching providers, and it never promotes a brand the customer doesn't already pay.",
     "score": {
       "value": 612,
       "scale": "equifax_au",
@@ -20,7 +20,7 @@ window.DATA = {
           650
         ],
         "horizon_months": 3,
-        "assumption": "You keep repayments on time, make no new BNPL applications, and switch two bills.",
+        "assumption": "You keep repayments on time, make no new BNPL applications, and act on two findings below.",
         "previous": {
           "value": 588,
           "refreshed_at": "2026-08-05",
@@ -63,40 +63,181 @@ window.DATA = {
         "action": "Set a protected balance so the debit clears even before payday."
       }
     },
+    "westpac_products": [
+      {
+        "id": "wp_low_rate_card",
+        "name": "Low Rate Card",
+        "category": "credit_card",
+        "brand": "Westpac",
+        "purchase_rate_pct": "13.74%",
+        "comparison": "Your current card · 19.99% p.a.",
+        "fee_note": "Lower monthly fee than a standard rewards card",
+        "source": "Westpac CDR Product Reference Data",
+        "source_url": "https://digital-api.westpac.com.au/cds-au/v1/banking/products/CCLowRate",
+        "overview_uri": "https://www.westpac.com.au/credit-cards/low-rate-cards/low-rate",
+        "checked_at": "2026-11-16",
+        "note": "Your own bank's product, published in the public CDR product data. Compare, don't be sold."
+      }
+    ],
     "payday": {
       "frequency": "fortnightly",
       "next": "2026-11-20"
     },
     "totals": {
       "recurring_monthly": 216.97,
-      "potential_monthly_after_switching": 123.98,
-      "savings_monthly": 92.99,
-      "savings_annual": 1115.88
+      "potential_cash_freed_monthly": 63,
+      "potential_cash_freed_annual": 756
     },
-    "recommendations": [
-      {
-        "id": "rec_streaming",
-        "kind": "keep_one",
-        "label": "Streaming services",
-        "title": "You're paying for 3 streaming services",
-        "bill_ids": [
-          "bill_netflix",
-          "bill_stan",
-          "bill_disney"
-        ],
-        "default_keep": "bill_netflix",
-        "what_we_know": "Netflix ($22.99), Stan ($16.00) and Disney+ ($13.99) have each been charged to this account every month for the last 3 months. That's $52.98 a month, or $635.76 a year.",
-        "what_we_dont_know": "Bank transactions show what you pay for, not what you watch. We can't see your viewing history, so we won't pretend to know which one you'd miss.",
-        "recommendation": "Most people only watch one service at a time. Keep the one you'd miss and pause the other two, then resubscribe whenever you like.",
-        "constraint": "This is a recommendation, not a decision. Only the services you review and approve are cancelled."
-      }
-    ],
+    "recommendations": [],
     "bills": [
+      {
+        "id": "bill_card",
+        "category": "credit",
+        "factor": "credit",
+        "evidence_tier": "westpac_transactions",
+        "savings_status": "potential",
+        "icon": "💳",
+        "label": "Credit card repayment",
+        "provider": "Westpac",
+        "plan": "Credit card · due monthly",
+        "billing_period": "monthly",
+        "current_amount": 40,
+        "current_monthly": 40,
+        "provider_url": "https://www.westpac.com.au/credit-cards/",
+        "detected_from": [],
+        "confidence": "high",
+        "action_type": "remind",
+        "advice": "Set a reminder or autopay so the due date never slips. This is the single highest-value thing you can do for your score.",
+        "verification": {
+          "checked_at": "2026-11-16",
+          "source": "Westpac transaction history"
+        },
+        "savings_monthly": 0,
+        "savings_annual": 0,
+        "why": "Repayment history is the #1 factor in an Australian credit score. Your card was paid 3 days late on 12 Oct — one late payment can dent it, and on-time payments build it.",
+        "risk_notes": "Your own bank's product data shows a lower-rate card (13.74% p.a.) if you want to check it — but that's information, not a recommendation.",
+        "requires_approval": true,
+        "xp": 100,
+        "coins": 60,
+        "finding": "Paid 3 days late on 12 Oct.",
+        "evidence": [
+          {
+            "k": "Due",
+            "v": "12 Oct"
+          },
+          {
+            "k": "Paid",
+            "v": "15 Oct · 3 days late"
+          },
+          {
+            "k": "Rate",
+            "v": "19.99% p.a."
+          }
+        ]
+      },
+      {
+        "id": "bill_bnpl",
+        "category": "credit",
+        "factor": "credit",
+        "evidence_tier": "westpac_transactions",
+        "savings_status": "potential",
+        "icon": "🛍️",
+        "label": "Buy-now-pay-later",
+        "provider": "Afterpay & Zip",
+        "plan": "3 active facilities",
+        "billing_period": "monthly",
+        "current_amount": 116.5,
+        "current_monthly": 116.5,
+        "provider_url": null,
+        "detected_from": [],
+        "confidence": "high",
+        "action_type": "track",
+        "advice": "Keep every instalment on time and hold off opening a new one. We'll watch your debits and confirm the streak.",
+        "verification": {
+          "checked_at": "2026-11-16",
+          "source": "Westpac transaction history"
+        },
+        "savings_monthly": 0,
+        "savings_annual": 0,
+        "why": "BNPL is credit — it's reported to bureaus and appears on the file lenders see. Each new facility is an enquiry, and missed instalments hurt repayment history.",
+        "risk_notes": null,
+        "requires_approval": true,
+        "xp": 40,
+        "coins": 20,
+        "finding": "3 facilities · $116.50 due this month.",
+        "evidence": [
+          {
+            "k": "Afterpay",
+            "v": "2 facilities · 3 instalments due"
+          },
+          {
+            "k": "Zip",
+            "v": "1 facility · 1 instalment due"
+          },
+          {
+            "k": "Enquiries",
+            "v": "2 in the last 6 months"
+          }
+        ]
+      },
+      {
+        "id": "bill_gym",
+        "category": "fitness",
+        "factor": "fees",
+        "evidence_tier": "westpac_transactions",
+        "savings_status": "potential",
+        "icon": "🏋️",
+        "label": "Gym direct debit",
+        "provider": "Goodlife Health Clubs",
+        "plan": "Fortnightly direct debit",
+        "billing_period": "fortnightly",
+        "current_amount": 34,
+        "current_monthly": 73.67,
+        "provider_url": "https://www.goodlife.com.au/memberships/",
+        "detected_from": [
+          "tx_013",
+          "tx_028",
+          "tx_044",
+          "tx_063",
+          "tx_068",
+          "tx_079",
+          "tx_094"
+        ],
+        "confidence": "high",
+        "action_type": "protect",
+        "advice": "Set a protected balance so the money is there before payday. A dishonour can become a black mark — this stops it before it happens.",
+        "verification": {
+          "checked_at": "2026-11-16",
+          "source": "Westpac transaction history"
+        },
+        "savings_monthly": 0,
+        "savings_annual": 0,
+        "why": "Your $34 debit dishonoured on Thursday 15 Oct — one day before payday — costing $19 in fees. Dishonours can escalate to a missed payment on your file.",
+        "risk_notes": "We don't move the gym's debit date — that's their call. We make sure the money is there.",
+        "requires_approval": true,
+        "xp": 60,
+        "coins": 40,
+        "finding": "Bounced once — it lands the day before payday.",
+        "evidence": [
+          {
+            "k": "Charged",
+            "v": "7 debits · $34.00"
+          },
+          {
+            "k": "Dishonoured",
+            "v": "15 Oct · $19.00 fee"
+          },
+          {
+            "k": "Payday",
+            "v": "Fri 20 Nov"
+          }
+        ]
+      },
       {
         "id": "bill_phone",
         "category": "mobile",
         "factor": "cash",
-        "evidence_tier": "provider_price",
+        "evidence_tier": "gov_benchmark",
         "savings_status": "potential",
         "icon": "📱",
         "label": "Mobile phone plan",
@@ -112,37 +253,28 @@ window.DATA = {
           "tx_085"
         ],
         "confidence": "high",
-        "action_type": "switch",
-        "offer": {
-          "provider": "Belong",
-          "plan": "40GB Mobile",
-          "amount": 35,
-          "billing_period": "monthly",
-          "monthly": 35,
-          "features": [
-            "40GB data",
-            "Unlimited calls & text",
-            "Telstra network coverage"
-          ],
-          "contract": "Month-to-month",
-          "commitment": "No lock-in contract, $0 exit fee",
-          "includes": "40GB data, unlimited calls & text, Telstra network",
-          "starts": "Number ports across in about 2 business days",
-          "setup_days": 2,
-          "url": "https://www.belong.com.au/mobile/plans"
+        "action_type": "track",
+        "advice": "This doesn't move your score — but $54 a month of freed cash makes every repayment easier. Check the market yourself when you're ready.",
+        "benchmark": {
+          "low": 35,
+          "high": 45,
+          "source": "ACCC telecommunications price monitoring",
+          "source_url": "https://www.accc.gov.au/consumers",
+          "checked_at": "2026-11-16",
+          "note": "Typical 40–50GB SIM-only plans sit around $35–$45 a month on the major networks."
         },
         "verification": {
           "checked_at": "2026-11-16",
-          "source": "Provider price page"
+          "source": "ACCC price monitoring"
         },
         "savings_monthly": 54,
         "savings_annual": 648,
-        "why": "You've paid $89 a month to Vodafone on 5 Sep, 5 Oct and 5 Nov. Belong runs on the Telstra network and offers 40GB for $35 a month.",
-        "risk_notes": "Your number ports across automatically in about 2 days. You'd move from the Vodafone network to Telstra's.",
+        "why": "You've paid $89 a month on 5 Sep, 5 Oct and 5 Nov. That's above the market band for a 40–50GB plan ($35–$45). It's cash, not credit — but cash is what makes repayments happen.",
+        "risk_notes": "We don't pick a provider for you. Use the neutral comparison link to check plans yourself.",
         "requires_approval": true,
-        "xp": 120,
-        "coins": 80,
-        "finding": "Same plan for 3 months — a $35 plan is available.",
+        "xp": 40,
+        "coins": 20,
+        "finding": "Above the market band for a 40–50GB plan.",
         "evidence": [
           {
             "k": "Charged",
@@ -153,8 +285,8 @@ window.DATA = {
             "v": "$89.00 a month"
           },
           {
-            "k": "Available",
-            "v": "Belong 40GB · $35.00"
+            "k": "Market band",
+            "v": "$35.00 – $45.00"
           }
         ]
       },
@@ -162,7 +294,7 @@ window.DATA = {
         "id": "bill_internet",
         "category": "internet",
         "factor": "cash",
-        "evidence_tier": "provider_price",
+        "evidence_tier": "westpac_transactions",
         "savings_status": "potential",
         "icon": "📶",
         "label": "Home internet",
@@ -178,37 +310,20 @@ window.DATA = {
           "tx_095"
         ],
         "confidence": "high",
-        "action_type": "switch",
-        "offer": {
-          "provider": "Aussie Broadband",
-          "plan": "NBN 50",
-          "amount": 59,
-          "billing_period": "monthly",
-          "monthly": 59,
-          "features": [
-            "Same provider",
-            "50/20 speed",
-            "No lock-in contract"
-          ],
-          "contract": "No lock-in",
-          "commitment": "No lock-in contract, change plan any time",
-          "includes": "NBN 50/20 speed, unlimited data",
-          "starts": "Takes effect on your next billing cycle (13 Dec)",
-          "setup_days": 3,
-          "url": "https://www.aussiebroadband.com.au/internet/nbn-plans/"
-        },
+        "action_type": "track",
+        "advice": "Your own provider has a cheaper speed tier. Cash flow, not credit — but every dollar freed is a repayment that can't bounce.",
         "verification": {
           "checked_at": "2026-11-16",
-          "source": "Provider price page"
+          "source": "Westpac transaction history"
         },
         "savings_monthly": 9,
         "savings_annual": 108,
-        "why": "You've paid $68 a month to Aussie Broadband on 13 Sep, 13 Oct and 13 Nov. The same provider sells an NBN 50 plan for $59.",
-        "risk_notes": "Confirm with your housemates before downgrading the speed tier.",
+        "why": "You've paid $68 a month on 13 Sep, 13 Oct and 13 Nov. Your own provider sells a cheaper tier — decide with your housemates.",
+        "risk_notes": "Confirm with your housemates before changing the speed tier.",
         "requires_approval": true,
-        "xp": 120,
-        "coins": 80,
-        "finding": "Same provider has a cheaper speed tier.",
+        "xp": 40,
+        "coins": 20,
+        "finding": "Your own provider has a cheaper tier.",
         "evidence": [
           {
             "k": "Charged",
@@ -217,178 +332,61 @@ window.DATA = {
           {
             "k": "Average",
             "v": "$68.00 a month"
-          },
-          {
-            "k": "Available",
-            "v": "NBN 50 · $59.00"
           }
         ]
       },
       {
-        "id": "bill_netflix",
+        "id": "bill_streaming",
         "category": "streaming",
         "factor": "cash",
         "evidence_tier": "westpac_transactions",
         "savings_status": "potential",
         "icon": "🎬",
-        "label": "Streaming — Netflix",
-        "provider": "Netflix",
-        "plan": "Standard",
+        "label": "Streaming subscriptions",
+        "provider": "Netflix · Stan · Disney+",
+        "plan": "3 services",
         "billing_period": "monthly",
-        "current_amount": 22.99,
-        "current_monthly": 22.99,
-        "provider_url": "https://www.netflix.com/au/",
+        "current_amount": 52.98,
+        "current_monthly": 52.98,
+        "provider_url": null,
         "detected_from": [
           "tx_021",
           "tx_055",
-          "tx_091"
-        ],
-        "confidence": "high",
-        "streaming": true,
-        "action_type": "cancel",
-        "offer": null,
-        "cancellation": {
-          "commitment": "Monthly plan, cancel any time",
-          "ends": "Access continues until the end of the current period (21 Dec)",
-          "url": "https://www.netflix.com/au/",
-          "url_label": "View Netflix plans"
-        },
-        "verification": {
-          "checked_at": "2026-11-16",
-          "source": "Provider price page"
-        },
-        "savings_monthly": 22.99,
-        "savings_annual": 275.88,
-        "why": "You've paid Netflix $22.99 on 21 Sep, 21 Oct and 21 Nov. It's one of three streaming services being charged to this account.",
-        "risk_notes": "If you keep Netflix, we leave it alone.",
-        "requires_approval": true,
-        "xp": 80,
-        "coins": 50,
-        "finding": "One of three streaming services on this account.",
-        "evidence": [
-          {
-            "k": "Charged",
-            "v": "21 Sep · 21 Oct · 21 Nov"
-          },
-          {
-            "k": "Average",
-            "v": "$22.99 a month"
-          },
-          {
-            "k": "Also paying",
-            "v": "Stan · Disney+"
-          }
-        ]
-      },
-      {
-        "id": "bill_stan",
-        "category": "streaming",
-        "factor": "cash",
-        "evidence_tier": "westpac_transactions",
-        "savings_status": "potential",
-        "icon": "🎬",
-        "label": "Streaming — Stan",
-        "provider": "Stan",
-        "plan": "Standard",
-        "billing_period": "monthly",
-        "current_amount": 16,
-        "current_monthly": 16,
-        "provider_url": "https://www.stan.com.au/",
-        "detected_from": [
+          "tx_091",
           "tx_023",
           "tx_059",
-          "tx_093"
-        ],
-        "confidence": "high",
-        "streaming": true,
-        "action_type": "cancel",
-        "offer": null,
-        "cancellation": {
-          "commitment": "No lock-in contract, $0 exit fee",
-          "ends": "Access continues until the end of the current period (3 Dec)",
-          "url": "https://www.stan.com.au/",
-          "url_label": "View Stan plans"
-        },
-        "verification": {
-          "checked_at": "2026-11-16",
-          "source": "Provider price page"
-        },
-        "savings_monthly": 16,
-        "savings_annual": 192,
-        "why": "You've paid Stan $16.00 on 23 Sep, 23 Oct and 23 Nov. It renews monthly whether or not it's opened — and transactions can't tell us which one you watch.",
-        "risk_notes": "Nothing to pay out: your watchlist is kept for 90 days if you resubscribe.",
-        "requires_approval": true,
-        "xp": 80,
-        "coins": 50,
-        "finding": "One of three streaming services on this account.",
-        "evidence": [
-          {
-            "k": "Charged",
-            "v": "23 Sep · 23 Oct · 23 Nov"
-          },
-          {
-            "k": "Average",
-            "v": "$16.00 a month"
-          },
-          {
-            "k": "Also paying",
-            "v": "Netflix · Disney+"
-          }
-        ]
-      },
-      {
-        "id": "bill_disney",
-        "category": "streaming",
-        "factor": "cash",
-        "evidence_tier": "westpac_transactions",
-        "savings_status": "potential",
-        "icon": "🎬",
-        "label": "Streaming — Disney+",
-        "provider": "Disney+",
-        "plan": "Standard",
-        "billing_period": "monthly",
-        "current_amount": 13.99,
-        "current_monthly": 13.99,
-        "provider_url": "https://www.disneyplus.com/en-au",
-        "detected_from": [
+          "tx_093",
           "tx_025",
           "tx_061",
           "tx_098"
         ],
         "confidence": "high",
-        "streaming": true,
-        "action_type": "cancel",
-        "offer": null,
-        "cancellation": {
-          "commitment": "Monthly plan, cancel any time",
-          "ends": "Access continues until the end of the current period (8 Dec)",
-          "url": "https://www.disneyplus.com/en-au",
-          "url_label": "View Disney+ plans"
-        },
+        "action_type": "track",
+        "advice": "We can't see what you watch, so we won't pretend to know which one you'd miss. This is cash you decide how to spend — not a credit factor.",
         "verification": {
           "checked_at": "2026-11-16",
-          "source": "Provider price page"
+          "source": "Westpac transaction history"
         },
-        "savings_monthly": 13.99,
-        "savings_annual": 167.88,
-        "why": "You've paid Disney+ $13.99 on 25 Sep, 25 Oct and 25 Nov. Three streaming services is $52.98 a month — whether you use them is something only you know.",
-        "risk_notes": "You keep access until the end of the period you've already paid for (8 Dec).",
+        "savings_monthly": 0,
+        "savings_annual": 0,
+        "why": "You pay for three streaming services — $52.98 a month. It doesn't move your credit score at all, but it's cash that could go to repayments.",
+        "risk_notes": null,
         "requires_approval": true,
-        "xp": 80,
-        "coins": 50,
-        "finding": "One of three streaming services on this account.",
+        "xp": 40,
+        "coins": 20,
+        "finding": "3 services · $52.98 a month.",
         "evidence": [
           {
-            "k": "Charged",
-            "v": "25 Sep · 25 Oct · 25 Nov"
+            "k": "Netflix",
+            "v": "$22.99 a month"
           },
           {
-            "k": "Average",
+            "k": "Stan",
+            "v": "$16.00 a month"
+          },
+          {
+            "k": "Disney+",
             "v": "$13.99 a month"
-          },
-          {
-            "k": "Also paying",
-            "v": "Netflix · Stan"
           }
         ]
       },
@@ -413,14 +411,14 @@ window.DATA = {
         ],
         "confidence": "high",
         "action_type": "keep",
-        "offer": null,
+        "advice": null,
         "verification": {
           "checked_at": "2026-11-16",
-          "source": "Provider price page"
+          "source": "Westpac transaction history"
         },
         "savings_monthly": 0,
         "savings_annual": 0,
-        "why": "You're already on the $6.99 student plan — the cheapest available. No change recommended.",
+        "why": "You're already on the $6.99 student plan — the cheapest available. Nothing to change.",
         "risk_notes": null,
         "requires_approval": false,
         "xp": 0,
@@ -434,72 +432,6 @@ window.DATA = {
           {
             "k": "Charged",
             "v": "3 Sep · 3 Oct · 3 Nov"
-          }
-        ]
-      },
-      {
-        "id": "bill_gym",
-        "category": "fitness",
-        "factor": "fees",
-        "evidence_tier": "westpac_transactions",
-        "savings_status": "potential",
-        "icon": "🏋️",
-        "label": "Gym membership",
-        "provider": "Goodlife Health Clubs",
-        "plan": "Fortnightly direct debit",
-        "billing_period": "fortnightly",
-        "current_amount": 34,
-        "current_monthly": 73.67,
-        "provider_url": "https://www.goodlife.com.au/memberships/",
-        "detected_from": [
-          "tx_013",
-          "tx_028",
-          "tx_044",
-          "tx_063",
-          "tx_068",
-          "tx_079",
-          "tx_094"
-        ],
-        "confidence": "high",
-        "action_type": "reschedule",
-        "offer": {
-          "provider": "Goodlife Health Clubs",
-          "plan": "Debit moved to Fridays",
-          "amount": 34,
-          "billing_period": "fortnightly",
-          "monthly": 73.67,
-          "features": [
-            "Same membership",
-            "Debit moved from Thursday to Friday"
-          ],
-          "contract": "Existing membership",
-          "commitment": "Same membership, same price — only the debit day changes",
-          "includes": "Membership unchanged",
-          "starts": "Next debit, Fri 27 Nov",
-          "fee_avoided": 19,
-          "setup_days": 0,
-          "url": "https://www.goodlife.com.au/memberships/"
-        },
-        "verification": {
-          "checked_at": "2026-11-16",
-          "source": "Provider price page"
-        },
-        "savings_monthly": 0,
-        "savings_annual": 0,
-        "why": "Your $34 debit dishonoured on Thursday 15 Oct — one day before payday — costing $19 in bank and gym fees. Moving it to Friday, after you're paid, stops that happening again.",
-        "risk_notes": "Your fortnightly fee stays the same; only the day of the debit changes.",
-        "requires_approval": true,
-        "xp": 60,
-        "coins": 40,
-        "finding": "Bounced once — it lands a day before payday.",
-        "evidence": [
-          {
-            "k": "Charged",
-            "v": "7 debits · $34.00"
-          },
-          {
-            "k": "Dishonoured",
-            "v": "15 Oct · $19.00 fee"
           }
         ]
       },
@@ -528,20 +460,24 @@ window.DATA = {
         ],
         "confidence": "high",
         "action_type": "no_offer",
-        "offer": null,
+        "advice": null,
         "verification": null,
         "savings_monthly": 0,
         "savings_annual": 0,
-        "why": "Rent is a fixed essential. We found no cheaper alternative and would never suggest you move without a good reason.",
+        "why": "Rent is a fixed essential. No cheaper alternative — and it's paid on time, which is good for your file.",
         "risk_notes": null,
         "requires_approval": false,
         "xp": 0,
         "coins": 0,
-        "finding": "Fixed essential — no cheaper option.",
+        "finding": "Fixed essential — paid on time.",
         "evidence": [
           {
             "k": "Charged",
             "v": "7 transfers · $440.00"
+          },
+          {
+            "k": "Status",
+            "v": "On time, every fortnight"
           }
         ]
       }
@@ -630,34 +566,34 @@ window.DATA = {
         "why_rewards_you": "Fewer credit enquiries and debts protects your credit profile."
       },
       {
-        "id": "bill_switch",
-        "label": "Switched a bill",
-        "xp": 120,
-        "coins": 80,
+        "id": "reminder_set",
+        "label": "Set a repayment reminder",
+        "xp": 100,
+        "coins": 60,
         "cap": {
           "type": "per_bill"
         },
-        "why_rewards_you": "Frees up cash so you can make every repayment on time."
+        "why_rewards_you": "On-time repayments are the #1 thing that builds a credit score. A reminder is the step that makes them happen."
       },
       {
-        "id": "bill_cancel",
-        "label": "Cancelled a subscription",
-        "xp": 80,
-        "coins": 50,
-        "cap": {
-          "type": "per_bill"
-        },
-        "why_rewards_you": "Cuts recurring spending so you can pay down debt faster."
-      },
-      {
-        "id": "bill_reschedule",
-        "label": "Rescheduled a payment",
+        "id": "protected_balance",
+        "label": "Protected a debit at risk",
         "xp": 60,
         "coins": 40,
         "cap": {
           "type": "per_bill"
         },
-        "why_rewards_you": "Avoiding a dishonour fee keeps your account in good standing."
+        "why_rewards_you": "Stopping a dishonour before it lands keeps your account in good standing."
+      },
+      {
+        "id": "insight_tracked",
+        "label": "Tracked a money pattern",
+        "xp": 40,
+        "coins": 20,
+        "cap": {
+          "type": "per_bill"
+        },
+        "why_rewards_you": "Acknowledging a pattern lets us watch it and confirm any saving. Low value so it can't be farmed."
       },
       {
         "id": "saving_verified",
@@ -767,10 +703,20 @@ window.DATA = {
       {
         "id": "goal_repay_on_time",
         "title": "Pay your credit card on time",
-        "description": "Set up autopay or a reminder so the due date never slips.",
+        "description": "Set a reminder so the due date never slips. Repayment history is the #1 factor.",
         "xp": 100,
         "coins": 60,
-        "progress_source": "manual"
+        "progress_source": "reminder_set",
+        "progress_hint": "Set the card reminder first"
+      },
+      {
+        "id": "goal_protect_debit",
+        "title": "Protect a debit at risk",
+        "description": "Stop the gym debit bouncing the day before payday.",
+        "xp": 100,
+        "coins": 60,
+        "progress_source": "protected_balance",
+        "progress_hint": "Set a protected balance first"
       },
       {
         "id": "goal_no_bnpl",
@@ -778,16 +724,8 @@ window.DATA = {
         "description": "Pause Afterpay and Zip for 30 days to protect your credit profile.",
         "xp": 100,
         "coins": 60,
-        "progress_source": "manual"
-      },
-      {
-        "id": "goal_cut_bills",
-        "title": "Cut $90+ a month from your bills",
-        "description": "Approve cheaper plans in the Bill Negotiator to free up cash.",
-        "xp": 100,
-        "coins": 60,
-        "progress_source": "bill_savings",
-        "target": 90
+        "progress_source": "manual",
+        "progress_hint": "Tap to mark done"
       }
     ],
     "shop": [

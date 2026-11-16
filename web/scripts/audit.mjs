@@ -3,7 +3,7 @@
  *
  * Drives the real app in system Edge (via playwright-core) and asserts computed
  * styles against values from WestpacGEL/GEL-next, then runs the full Mia journey
- * (review sheet → approve), the streaming keep-one choice, and the wardrobe.
+ * (score → insights → goals → dragon) and the wardrobe.
  *
  *   npm run audit
  */
@@ -115,9 +115,9 @@ await page.waitForTimeout(900);
   check("Row is flat (no shadow)", "none", cell.shadow, cell.shadow === "none");
 
   const n = await page.evaluate(() => document.querySelectorAll(".gel-ico svg").length);
-  check("GEL icons render as inline SVG (>=12)", ">=12", String(n), n >= 12);
+  check("GEL icons render as inline SVG (>=8)", ">=8", String(n), n >= 8);
   const fill = await page.evaluate(() => {
-    const p = document.querySelector(".gel-adorn .gel-ico svg path");
+    const p = document.querySelector(".gel-ico svg path");
     return p ? p.getAttribute("fill") : null;
   });
   check("Icons inherit colour (currentColor)", "currentColor", fill, fill === "currentColor");
@@ -146,9 +146,6 @@ await page.waitForTimeout(900);
   check("Money uses brand font", "Westpac", money?.font, /^Westpac/.test(money?.font || ""));
   check("Money uses tabular figures", "tabular-nums", money?.variant, /tabular/.test(money?.variant || ""));
   check("Money size 18px", "18px", money?.size, money?.size === "18px");
-
-  const compare = await page.evaluate(() => document.querySelectorAll(".gel-compare").length);
-  check("Actionable bills show Now→Recommended compare", ">=3", String(compare), compare >= 3);
 }
 
 // ============================ contrast ============================
@@ -179,82 +176,77 @@ await page.waitForTimeout(900);
   check("Button contrast WCAG AA", ">=4.5", ratios.button.toFixed(1) + ":1", ratios.button >= 4.5);
 }
 
-// ============================ streaming keep-one panel ============================
+// ============================ score tab ============================
 {
-  const picks = await page.evaluate(() => document.querySelectorAll(".gel-pick").length);
-  check("Streaming panel shows 3 services", "3", String(picks), picks === 3);
-  const chosen = await page.evaluate(() => document.querySelector(".gel-pick.is-selected .gel-pick-title")?.textContent);
-  check("Default keeper = Netflix", "Netflix", chosen, chosen === "Netflix");
-
-  // pick a different keeper (Stan) and confirm the recommendation updates
-  await page.locator('.gel-pick:has-text("Stan")').click();
-  await page.waitForTimeout(150);
-  const chosen2 = await page.evaluate(() => document.querySelector(".gel-pick.is-selected .gel-pick-title")?.textContent);
-  check("Keeper changes to Stan", "Stan", chosen2, chosen2 === "Stan");
-
-  // verify honesty note is present (no false viewing claims)
-  const honest = await page.evaluate(() => document.body.innerText.includes("not what you watch"));
-  check("Honesty note: we can't see viewing history", "true", String(honest), honest);
+  const score = await page.evaluate(() => ({
+    num: document.querySelector(".gel-score-num")?.textContent.trim() || "",
+    hero: document.querySelector(".gel-badge--hero")?.textContent.trim() || "",
+    buckets: document.querySelectorAll(".gel-bucket").length,
+    factors: document.querySelectorAll(".gel-factor-row").length,
+    text: document.body.innerText,
+  }));
+  check("Score shows 612", "612", score.num, score.num.startsWith("612"));
+  check("Score source = Equifax", "Equifax", score.hero, /Equifax/.test(score.hero));
+  check("Three buckets (score/cash/fees)", "3", String(score.buckets), score.buckets === 3);
+  check("Four bureau factors", "4", String(score.factors), score.factors === 4);
+  check("BNPL shows Afterpay + Zip", "both", score.text.includes("Afterpay") && score.text.includes("Zip") ? "both" : "missing", score.text.includes("Afterpay") && score.text.includes("Zip"));
+  check("Forecast is a range", "635–650", score.text.includes("635") && score.text.includes("650") ? "635–650" : "missing", score.text.includes("635") && score.text.includes("650"));
+  check("Predicted-vs-actual loop present", "present", score.text.includes("We predicted") ? "present" : "missing", score.text.includes("We predicted"));
+  check("Westpac's own product shown", "13.74%", score.text.includes("13.74%") ? "13.74%" : "missing", score.text.includes("13.74%"));
+  check("No competitor brand promoted", "no Belong", score.text.includes("Belong") ? "Belong" : "clean", !score.text.includes("Belong"));
 }
 
-// ============================ review sheet + scroll fix ============================
+// ============================ insights tab ============================
 {
-  // open the streaming group review (2 services)
-  await page.locator("button", { hasText: "Review 2 cancellations" }).click();
-  await page.waitForTimeout(350);
+  await page.locator('.gel-tab[data-tab="insights"]').click();
+  await page.waitForTimeout(250);
 
-  const sheet = await page.evaluate(() => {
-    const body = document.querySelector(".gel-sheet-body");
-    const s = getComputedStyle(body);
-    return {
-      overflowY: s.overflowY,
-      minHeight: s.minHeight,
-      items: document.querySelectorAll(".gel-review-item").length,
-      link: document.querySelector(".gel-sheet a.gel-link")?.getAttribute("href") || "",
-      linkTarget: document.querySelector(".gel-sheet a.gel-link")?.getAttribute("target") || "",
-    };
-  });
-  check("Sheet body scrolls (overflow-y auto)", "auto", sheet.overflowY, sheet.overflowY === "auto");
-  check("Sheet body min-height 0 (fix)", "0px", sheet.minHeight, sheet.minHeight === "0px");
-  check("Group review lists 2 items", "2", String(sheet.items), sheet.items === 2);
-  check("Provider link present in sheet", "starts https", sheet.link, /^https:\/\//.test(sheet.link));
-  check("Provider link opens new tab", "_blank", sheet.linkTarget, sheet.linkTarget === "_blank");
-
-  // cancel out, then approve via the real path
-  await page.locator(".gel-sheet-close").click();
-  await page.waitForTimeout(150);
+  const ins = await page.evaluate(() => ({
+    cards: document.querySelectorAll(".gel-bill").length,
+    factors: document.querySelectorAll(".gel-factor").length,
+    text: document.body.innerText,
+    reminder: !!Array.from(document.querySelectorAll("button")).find((b) => b.textContent.includes("Set a reminder")),
+    protect: !!Array.from(document.querySelectorAll("button")).find((b) => b.textContent.includes("Protect balance")),
+    track: document.querySelectorAll('button:not([disabled])').length,
+  }));
+  check("Insights shows >=6 findings", ">=6", String(ins.cards), ins.cards >= 6);
+  check("Factor chips on findings", ">=5", String(ins.factors), ins.factors >= 5);
+  check("Repayment history is named", "present", ins.text.includes("repayment history") ? "present" : "missing", ins.text.includes("repayment history"));
+  check("Advice present (why it matters)", "present", ins.text.includes("affect your score") || ins.text.includes("moves your score") ? "present" : "missing", ins.text.includes("affect your score") || ins.text.includes("moves your score"));
+  check("'Set a reminder' action present", "present", ins.reminder ? "present" : "missing", ins.reminder);
+  check("'Protect balance' action present", "present", ins.protect ? "present" : "missing", ins.protect);
+  check("No 'switch provider' language", "clean", ins.text.includes("Switch to") || ins.text.includes("switch to") ? "switch" : "clean", !ins.text.toLowerCase().includes("switch to"));
+  check("No competitor brand promoted", "no Belong", ins.text.includes("Belong") ? "Belong" : "clean", !ins.text.includes("Belong"));
 }
 
 // ============================ full journey ============================
 {
-  // approve the three single-bill changes (phone, internet, gym) via Review → sheet
-  for (let i = 0; i < 3; i++) {
-    const review = page.locator('button.gel-btn-primary', { hasText: "Review change" }).first();
-    if ((await review.count()) === 0) break;
-    await review.click();
-    await page.waitForTimeout(250);
-    await page.locator(".gel-sheet .gel-btn-primary").first().click();
-    await page.waitForTimeout(250);
+  // act on every insight
+  await page.locator('button', { hasText: "Set a reminder" }).first().click();
+  await page.waitForTimeout(200);
+  await page.locator('button', { hasText: "Protect balance" }).first().click();
+  await page.waitForTimeout(200);
+  for (let i = 0; i < 4; i++) {
+    const b = page.locator('button', { hasText: "Track this" }).first();
+    if ((await b.count()) === 0) break;
+    await b.click();
+    await page.waitForTimeout(200);
   }
 
-  // approve the two streaming cancellations
-  const rec = page.locator("button", { hasText: "Review 2 cancellations" }).first();
-  if ((await rec.count()) > 0) {
-    await rec.click();
-    await page.waitForTimeout(250);
-    await page.locator(".gel-sheet .gel-btn-primary", { hasText: "Approve both" }).first().click();
-    await page.waitForTimeout(250);
-  }
+  const afterInsights = await page.evaluate(() => JSON.parse(localStorage.getItem("credit-dragon:state")));
+  check("After insights: XP = 640", "640", String(afterInsights.xp_total), afterInsights.xp_total === 640);
+  check("After insights: protected = true", "true", String(afterInsights.protected), afterInsights.protected === true);
 
   // goals
   await page.locator('.gel-tab[data-tab="goals"]').click();
   await page.waitForTimeout(250);
-  const goalBtn = page.locator('button.gel-btn-primary', { hasText: "Complete goal" }).first();
-  if ((await goalBtn.count()) > 0) {
-    await goalBtn.click();
-    await page.waitForTimeout(450);
-  }
-  // evolution modal should appear on crossing 800 XP
+
+  // goal 1 (ready after reminder)
+  await page.locator('button.gel-btn-primary', { hasText: "Complete goal" }).first().click();
+  await page.waitForTimeout(250);
+  // goal 2 (ready after protected) — crosses 800 → evolution modal
+  await page.locator('button.gel-btn-primary', { hasText: "Complete goal" }).first().click();
+  await page.waitForTimeout(400);
   const dlg = await page.evaluate(() => {
     const d = document.querySelector(".gel-dialog");
     if (!d) return null;
@@ -270,16 +262,13 @@ await page.waitForTimeout(900);
     await page.locator(".gel-btn-primary", { hasText: "Continue" }).click();
     await page.waitForTimeout(150);
   }
-  for (let i = 0; i < 3; i++) {
-    const b = page.locator('button.gel-btn-primary', { hasText: "Mark done" }).first();
-    if ((await b.count()) === 0) break;
-    await b.click();
-    await page.waitForTimeout(140);
-  }
+  // goal 3 (manual)
+  await page.locator('button.gel-btn-primary', { hasText: "Mark done" }).first().click();
+  await page.waitForTimeout(250);
 
   const st = await page.evaluate(() => JSON.parse(localStorage.getItem("credit-dragon:state")));
-  check("Final XP = 1080", "1080", String(st.xp_total), st.xp_total === 1080);
-  check("Final coins = 600", "600", String(st.coins), st.coins === 600);
+  check("Final XP = 940", "940", String(st.xp_total), st.xp_total === 940);
+  check("Final coins = 480", "480", String(st.coins), st.coins === 480);
   check("Dragon stage = teen", "teen", st.xp_total >= 800 ? "teen" : "not teen", st.xp_total >= 800);
   check(
     "No duplicate awards",
@@ -297,15 +286,11 @@ await page.waitForTimeout(900);
   const dragon = await page.evaluate(() => {
     const wrap = document.querySelector("#dragon-art");
     const scene = document.querySelector(".gel-scene");
-    return {
-      hasDragon: !!wrap && !!wrap.querySelector(".dragon-img"),
-      scene: scene?.dataset.scene,
-    };
+    return { hasDragon: !!wrap && !!wrap.querySelector(".dragon-img"), scene: scene?.dataset.scene };
   });
   check("Dragon renders (emoji / PNG art)", "true", String(dragon.hasDragon), dragon.hasDragon);
   check("Default scene = plain", "plain", dragon.scene, dragon.scene === "plain");
 
-  // buy a hat and confirm it lands on the dragon
   await page.locator('.gel-tab[data-tab="shop"]').click();
   await page.waitForTimeout(250);
   const cap = page.locator('.gel-shop-item[data-item="item_cap"] button', { hasText: "Buy" });
@@ -313,62 +298,16 @@ await page.waitForTimeout(900);
     await cap.click();
     await page.waitForTimeout(300);
   }
-  const wornAfter = await page.evaluate(() => {
-    return { hasHat: !!document.querySelector("#dragon-art .dragon-wear--hat") };
-  });
+  const wornAfter = await page.evaluate(() => ({ hasHat: !!document.querySelector("#dragon-art .dragon-wear--hat") }));
   check("Buying a hat puts it on the dragon", "true", String(wornAfter.hasHat), wornAfter.hasHat);
 
-  // buy the Lava Lair and confirm the scene changes
-  const lair = page.locator('.gel-shop-item[data-item="item_lair"] button', { hasText: "Buy" });
-  if ((await lair.count()) > 0) {
-    await lair.click();
+  const cave = page.locator('.gel-shop-item[data-item="item_cave"] button', { hasText: "Buy" });
+  if ((await cave.count()) > 0) {
+    await cave.click();
     await page.waitForTimeout(300);
   }
   const scene2 = await page.evaluate(() => document.querySelector(".gel-scene")?.dataset.scene);
-  check("Buying a home changes the scene", "lava", scene2, scene2 === "lava");
-}
-
-// ============================ score / credit trajectory ============================
-{
-  await page.locator('.gel-tab[data-tab="score"]').click();
-  await page.waitForTimeout(250);
-
-  const score = await page.evaluate(() => ({
-    num: document.querySelector(".gel-score-num")?.textContent.trim() || "",
-    hero: document.querySelector(".gel-badge--hero")?.textContent.trim() || "",
-    buckets: document.querySelectorAll(".gel-bucket").length,
-    factors: document.querySelectorAll(".gel-factor-row").length,
-    text: document.body.innerText,
-  }));
-  check("Score shows 612", "612", score.num, score.num.startsWith("612"));
-  check("Score source = Equifax", "Equifax", score.hero, /Equifax/.test(score.hero));
-  check("Three buckets (score/cash/fees)", "3", String(score.buckets), score.buckets === 3);
-  check("Four bureau factors", "4", String(score.factors), score.factors === 4);
-  check("BNPL shows Afterpay + Zip", "both", [score.text.includes("Afterpay"), score.text.includes("Zip")].every(Boolean) ? "both" : "missing", score.text.includes("Afterpay") && score.text.includes("Zip"));
-  check("Forecast is a range", "635–650", score.text.includes("635") && score.text.includes("650") ? "635–650" : "missing", score.text.includes("635") && score.text.includes("650"));
-  check("Predicted-vs-actual loop present", "present", score.text.includes("We predicted") ? "present" : "missing", score.text.includes("We predicted"));
-
-  const overflow = await page.evaluate(() => {
-    const phone = document.querySelector(".phone");
-    const pr = phone.getBoundingClientRect();
-    const out = [];
-    phone.querySelectorAll("*").forEach((el) => {
-      const r = el.getBoundingClientRect();
-      if (r.right > pr.right + 1 || r.left < pr.left - 1) out.push((el.className || el.tagName).toString().slice(0, 30));
-    });
-    return out.slice(0, 6);
-  });
-  check("Score tab: no horizontal overflow", "[]", JSON.stringify(overflow), overflow.length === 0);
-
-  // protected balance action
-  const pb = page.locator('button.gel-btn-primary', { hasText: "Set a protected balance" });
-  check("Protected balance CTA present", "present", (await pb.count()) > 0 ? "present" : "missing", (await pb.count()) > 0);
-  if ((await pb.count()) > 0) {
-    await pb.click();
-    await page.waitForTimeout(250);
-    const st = await page.evaluate(() => JSON.parse(localStorage.getItem("credit-dragon:state")));
-    check("Protected balance toggled in state", "true", String(st.protected), st.protected === true);
-  }
+  check("Buying a home changes the scene", "stars", scene2, scene2 === "stars");
 }
 
 // ============================ GEL reference page ============================

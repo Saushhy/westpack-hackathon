@@ -42,11 +42,11 @@ function ico(name) {
 }
 
 const BILL_ICON = {
+  bill_card: "card",
+  bill_bnpl: "shopping-bag",
   bill_phone: "phone",
   bill_internet: "desktop",
-  bill_netflix: "video",
-  bill_stan: "video",
-  bill_disney: "video",
+  bill_streaming: "video",
   bill_spotify: "headset",
   bill_gym: "barbell",
   bill_rent: "house"
@@ -223,55 +223,8 @@ function award(actionId, sourceId, reason) {
 }
 
 /* ---------- handlers (exposed for inline onclick) ---------- */
-const billActionForType = { switch: "bill_switch", cancel: "bill_cancel", reschedule: "bill_reschedule" };
-
-function markBillApproved(id) {
-  const bill = bills.bills.find((b) => b.id === id);
-  if (!bill || state.bills[id]?.status === "approved") return null;
-  state.bills[id] = { status: "approved", approved_at: new Date().toISOString() };
-  const actionId = billActionForType[bill.action_type];
-  return actionId ? award(actionId, id, bill.label + " approved") : null;
-}
-
-/* One celebration for one or many approvals, so a grouped change shows a single toast. */
-function celebrate(results) {
-  const list = results.filter(Boolean);
-  if (!list.length) return;
-  const xp = list.reduce((a, r) => a + r.xp, 0);
-  const c = list.reduce((a, r) => a + r.coins, 0);
-  const evolved = list.find((r) => r.evolved);
-  if (xp || c) toast("+" + xp + " XP · +" + c + " " + coin());
-  if (evolved) showEvolution(evolved.fromStage, evolved.toStage);
-}
-
-function approveBill(id) {
-  const res = markBillApproved(id);
-  if (!res) return;
-  save();
-  render();
-  celebrate([res]);
-}
-
-function approveBills(ids) {
-  const results = ids.map(markBillApproved);
-  if (!results.some(Boolean)) return;
-  save();
-  render();
-  celebrate(results);
-}
-
-/* The customer picks which streaming service to keep — the AI only recommends. */
-function chooseKeeper(recId, billId) {
-  state.choices[recId] = billId;
-  save();
-  render();
-}
-
-function declineBill(id) {
-  state.bills[id] = { status: "declined", declined_at: new Date().toISOString() };
-  save();
-  render();
-}
+/* Insight actions (actOnInsight / runInsight / dismissInsight / setProtected)
+   live in the INSIGHTS section below, next to their renderers. */
 
 function completeGoal(id) {
   const goal = rewards.goals.find((g) => g.id === id);
@@ -407,252 +360,20 @@ function showEvolution(from, to) {
     "</div></div>";
 }
 
-/* ---------- review sheet (GEL BottomSheet) ----------
-   Nothing is approved until the customer has seen the overview of the change and
-   can open the provider's own page to check the plan and price. */
-function reviewRows(bill) {
-  const rows = [];
-  const per = (p) => (p === "fortnightly" ? "fortnight" : "mo");
-  const cur = fmtAUD(bill.current_amount) + "/" + per(bill.billing_period);
+/* ==========================================================================
+   INSIGHTS — the credit-health findings
+   --------------------------------------------------------------------------
+   The dragon is a credit-score coach. Each card is a *finding* from Westpac's
+   own transaction data, mapped to what actually moves an Australian credit
+   score (repayment history, enquiries, limits, defaults), with advice and one
+   action. There is no "switch provider", and no brand the customer doesn't
+   already pay is ever recommended.
+   ========================================================================== */
 
-  if (bill.action_type === "switch") {
-    const o = bill.offer;
-    rows.push(["Current plan", bill.provider + " · " + cur]);
-    rows.push(["New plan", o.provider + " · " + fmtAUD(o.amount) + "/" + per(o.billing_period)]);
-    rows.push([
-      "You save",
-      fmtAUD(bill.savings_monthly) + "/mo (" + fmtAUD(bill.savings_annual) + " a year)",
-      "success"
-    ]);
-    if (o.includes) rows.push(["Includes", o.includes]);
-    if (o.commitment) rows.push(["Commitment", o.commitment]);
-    if (o.starts) rows.push(["Starts", o.starts]);
-  } else if (bill.action_type === "cancel") {
-    const c = bill.cancellation || {};
-    rows.push(["Current plan", bill.provider + " · " + cur]);
-    rows.push(["After cancelling", "Nothing · $0.00/mo"]);
-    rows.push([
-      "You save",
-      fmtAUD(bill.savings_monthly) + "/mo (" + fmtAUD(bill.savings_annual) + " a year)",
-      "success"
-    ]);
-    if (c.ends) rows.push(["Access ends", c.ends]);
-    if (c.commitment) rows.push(["Commitment", c.commitment]);
-  } else if (bill.action_type === "reschedule") {
-    const o = bill.offer || {};
-    rows.push(["Current debit", "Every 2nd Thursday · " + cur]);
-    rows.push(["New debit", "Every 2nd Friday · " + cur]);
-    if (o.fee_avoided) rows.push(["Avoids", fmtAUD(o.fee_avoided) + " dishonour fee", "success"]);
-    if (o.starts) rows.push(["Effective", o.starts]);
-    if (o.commitment) rows.push(["Membership", o.commitment]);
-  }
+const insightActionForType = { remind: "reminder_set", track: "insight_tracked", protect: "protected_balance" };
 
-  return rows
-    .map(
-      (r) =>
-        '<div class="gel-kv">' +
-        '<span class="gel-kv-k">' + r[0] + "</span>" +
-        '<span class="gel-kv-v"' + (r[2] === "success" ? ' style="color:var(--text-success)"' : "") +
-        ">" + r[1] + "</span></div>"
-    )
-    .join("");
-}
-
-function billHeadline(bill) {
-  const o = bill.offer || {};
-  const per = (p) => (p === "fortnightly" ? "fortnight" : "mo");
-  if (bill.action_type === "switch") {
-    return {
-      name: o.plan,
-      sub: o.provider + " · " + fmtAUD(o.amount) + "/" + per(o.billing_period),
-      badge: "Save " + fmtAUD(bill.savings_monthly) + "/mo"
-    };
-  }
-  if (bill.action_type === "cancel") {
-    return {
-      name: "Cancel " + bill.provider,
-      sub: bill.provider + " · " + fmtAUD(bill.current_amount) + "/mo",
-      badge: "Save " + fmtAUD(bill.savings_monthly) + "/mo"
-    };
-  }
-  return {
-    name: "Move the debit day",
-    sub: bill.provider + " · " + fmtAUD(bill.current_amount) + "/" + per(bill.billing_period) + ", unchanged",
-    badge: "Avoids " + fmtAUD(o.fee_avoided || 19)
-  };
-}
-
-function billUrl(bill) {
-  const o = bill.offer || {};
-  const c = bill.cancellation || {};
-  if (bill.action_type === "switch") return o.url || bill.provider_url;
-  if (bill.action_type === "cancel") return c.url || bill.provider_url;
-  return o.url || bill.provider_url;
-}
-
-function billUrlLabel(bill) {
-  const o = bill.offer || {};
-  const c = bill.cancellation || {};
-  if (bill.action_type === "cancel") return c.url_label || "View " + bill.provider + " plans";
-  return "View " + (bill.action_type === "switch" ? o.provider : bill.provider) + " plans";
-}
-
-/* showReview accepts one bill id or a list, so a grouped change (keep one
-   streaming service, pause the other two) is reviewed as one decision. */
-/* showReview accepts one bill id or a list, so a grouped change (keep one
-   streaming service, pause the other two) is reviewed as a single decision.
-   Nothing is approved until the customer has seen the overview of the change
-   and can open the provider's own page to check the plan and price. */
-function showReview(ids) {
-  const list = (Array.isArray(ids) ? ids : [ids])
-    .map((id) => bills.bills.find((b) => b.id === id))
-    .filter(Boolean);
-  if (!list.length) return;
-
-  const many = list.length > 1;
-  const first = list[0];
-  const h = billHeadline(first);
-  const savings = list.reduce((a, b) => a + b.savings_monthly, 0);
-  const verified = list.find((b) => b.verification);
-  const verifiedLine = verified
-    ? "Checked " + fmtDate(verified.verification.checked_at) + " · " + verified.verification.source
-    : "";
-
-  const linkFor = (b) => {
-    const url = billUrl(b);
-    return url
-      ? '<div style="margin-top:6px"><a class="gel-link gel-link-sm" href="' + url +
-        '" target="_blank" rel="noopener noreferrer">' + billUrlLabel(b) + ico("arrow-right") + "</a></div>"
-      : "";
-  };
-
-  const headHtml = many
-    ? '<div class="gel-review-head">' +
-      '<div class="gel-cell-body">' +
-      '<div class="gel-h2">' + list.length + " services to pause</div>" +
-      '<div class="gel-muted">' + list.map((b) => b.provider).join(" · ") + "</div>" +
-      "</div>" +
-      '<span class="gel-badge gel-badge--success">Save ' + fmtAUD(savings) + "/mo</span>" +
-      "</div>"
-    : '<div class="gel-cell-row">' +
-      adorn(first) +
-      '<div class="gel-cell-body">' +
-      '<div class="gel-h2">' + h.name + "</div>" +
-      '<div class="gel-muted">' + h.sub + "</div>" +
-      "</div>" +
-      '<div class="gel-cell-end"><span class="gel-badge gel-badge--success">' + h.badge + "</span></div>" +
-      "</div>";
-
-  const items = list
-    .map((b) => {
-      const bh = billHeadline(b);
-      return (
-        '<div class="gel-review-item">' +
-        '<div class="gel-review-head">' +
-        '<div class="gel-cell-body">' +
-        '<div class="gel-h2">' + bh.name + "</div>" +
-        '<div class="gel-muted">' + bh.sub + "</div>" +
-        "</div>" +
-        '<span class="gel-badge gel-badge--success">' + bh.badge + "</span>" +
-        "</div>" +
-        '<div style="margin-top:9px">' + reviewRows(b) + "</div>" +
-        linkFor(b) +
-        "</div>"
-      );
-    })
-    .join("");
-
-  const total = many
-    ? '<div class="gel-kv"><span class="gel-kv-k">Total you save</span>' +
-      '<span class="gel-kv-v" style="color:var(--text-success)">' + fmtAUD(savings) + "/mo (" +
-      fmtAUD(savings * 12) + " a year)</span></div>"
-    : "";
-
-  const approveLabel = many
-    ? "Approve both cancellations"
-    : first.action_type === "switch"
-    ? "Approve switch"
-    : first.action_type === "cancel"
-    ? "Approve cancellation"
-    : "Approve new date";
-
-  $("#modal-root").innerHTML =
-    '<div class="gel-sheet-overlay" onclick="if(event.target===this)closeModal()">' +
-    '<div class="gel-sheet" role="dialog" aria-modal="true" aria-labelledby="review-title">' +
-    '<button class="gel-sheet-close" type="button" aria-label="Close" onclick="closeModal()">' +
-    ico("close") +
-    "</button>" +
-    '<h2 class="gel-sheet-title" id="review-title">' +
-    (many ? "Review these changes" : "Review this change") +
-    "</h2>" +
-    '<div class="gel-sheet-body">' +
-    headHtml +
-    (many
-      ? '<div class="gel-review-list">' + items + total + "</div>"
-      : '<div style="margin-top:12px">' + reviewRows(first) + "</div>" + linkFor(first)) +
-    '<div style="margin-top:18px">' +
-    (verifiedLine ? '<div class="gel-verified">' + ico("check") + verifiedLine + "</div>" : "") +
-    '<p class="gel-muted" style="margin:9px 0 0">Sample pricing for this demo. Confirm the plan and ' +
-    "price on the provider's site before switching.</p>" +
-    "</div>" +
-    "</div>" +
-    '<div class="gel-sheet-actions">' +
-    '<button class="gel-btn-primary" type="button" onclick="approveFromReview(\'' +
-    list.map((b) => b.id).join(",") +
-    "')\">" +
-    approveLabel +
-    "</button>" +
-    '<button class="gel-btn-ghost" type="button" onclick="closeModal()">Cancel</button>' +
-    "</div>" +
-    "</div></div>";
-}
-
-function approveFromReview(csv) {
-  closeModal();
-  approveBills(csv.split(","));
-}
-
-/* ---------- computed ---------- */
-function recFor(bill) {
-  return (bills.recommendations || []).find((r) => r.bill_ids && r.bill_ids.includes(bill.id)) || null;
-}
-function isKeeper(bill) {
-  const rec = recFor(bill);
-  return !!rec && rec.kind === "keep_one" && state.choices[rec.id] === bill.id;
-}
-/* A bill is "recommended" for action unless the customer chose to keep it. */
-function billRecommended(bill) {
-  return ["switch", "cancel", "reschedule"].includes(bill.action_type) && !isKeeper(bill);
-}
-function recommendedSavings() {
-  return bills.bills.reduce((a, b) => (billRecommended(b) ? a + b.savings_monthly : a), 0);
-}
-
-function switchedSavings() {
-  let total = 0;
-  for (const b of bills.bills) {
-    if (
-      (b.action_type === "switch" || b.action_type === "cancel") &&
-      state.bills[b.id]?.status === "approved"
-    ) {
-      total += b.savings_monthly;
-    }
-  }
-  return total;
-}
-
-/* ---------- renderers ----------
-   Everything below is presentation only. The rules for how it *looks*:
-     · money is the hero — brand font, tabular figures, right-aligned
-     · facts are label/value rows with hairlines, not sentences
-     · every number the AI shows is traceable to a transaction row
-   GEL has no "card shadow"; hierarchy comes from type size and hairlines. */
 const periodWord = (p) => (p === "fortnightly" ? "fortnight" : "month");
 const moneyUnit = (p) => '<span class="gel-money-unit">/' + (p === "fortnightly" ? "fortnight" : "mo") + "</span>";
-
-function priceLabel(bill) {
-  return fmtAUD(bill.current_amount) + "/" + periodWord(bill.billing_period);
-}
 
 function billHead(bill, trailing) {
   return `
@@ -662,318 +383,230 @@ function billHead(bill, trailing) {
         <div class="gel-bill-title">${bill.label}</div>
         <div class="gel-muted">${bill.provider} · ${bill.plan}</div>
       </div>
-      <div class="gel-bill-amount">
-        ${trailing || ""}
-      </div>
+      <div class="gel-bill-amount">${trailing || ""}</div>
     </div>`;
-}
-
-/* Short provider link — the customer can check the plan and price themselves. */
-function providerLink(bill) {
-  const url = billUrl(bill);
-  if (!url) return "";
-  return `<div class="gel-linkrow">
-    <a class="gel-link gel-link-sm" href="${url}" target="_blank" rel="noopener noreferrer">
-      ${billUrlLabel(bill)}${ico("arrow-right")}
-    </a>
-  </div>`;
 }
 
 function evidenceRows(bill) {
   const rows = bill.evidence || [];
   if (!rows.length) return "";
-  return `<div class="gel-evidence">${rows
-    .map(
-      (r) => `<div class="gel-kv">
-        <span class="gel-kv-k">${r.k}</span>
-        <span class="gel-kv-v">${r.v}</span>
-      </div>`
-    )
-    .join("")}</div>`;
+  return (
+    '<div class="gel-kvs" style="margin-top:9px">' +
+    rows
+      .map(
+        (r) =>
+          `<div class="gel-kv"><span class="gel-kv-k">${r.k}</span><span class="gel-kv-v">${r.v}</span></div>`
+      )
+      .join("") +
+    "</div>"
+  );
 }
 
-/* Now → recommended, with the delta called out. Same shape for every bill. */
-function compareBlock(b) {
-  const o = b.offer || {};
-  const per = periodWord(b.billing_period);
-  let left, right, save, saveLabel;
-
-  if (b.action_type === "switch") {
-    left = { label: "Now", value: fmtAUD(b.current_amount), unit: "/" + per, note: b.provider };
-    right = {
-      label: "Recommended",
-      value: fmtAUD(o.amount),
-      unit: "/" + per,
-      note: o.provider,
-      good: true
-    };
-    save = b.savings_monthly;
-    saveLabel = "You save";
-  } else if (b.action_type === "cancel") {
-    left = { label: "Now", value: fmtAUD(b.current_amount), unit: "/" + per, note: b.provider };
-    right = { label: "If cancelled", value: "$0.00", unit: "/" + per, note: "No monthly charge", good: true };
-    save = b.savings_monthly;
-    saveLabel = "You save";
-  } else {
-    left = {
-      label: "Now",
-      value: "2nd Thursday",
-      note: fmtAUD(b.current_amount) + " · the day before payday"
-    };
-    right = {
-      label: "Recommended",
-      value: "2nd Friday",
-      note: fmtAUD(b.current_amount) + " · the day after payday",
-      good: true
-    };
-    save = (b.offer && b.offer.fee_avoided) || 19;
-    saveLabel = "Fees avoided";
+/* Neutral source link — the customer checks the market / source themselves. */
+function sourceLink(bill) {
+  let url = "";
+  let label = "";
+  if (bill.benchmark && bill.benchmark.source_url) {
+    url = bill.benchmark.source_url;
+    label = "Check the market · " + (bill.benchmark.source || "neutral source");
+  } else if (bill.source_url) {
+    url = bill.source_url;
+    label = bill.source_label || "Check the source";
+  } else if (bill.provider_url) {
+    url = bill.provider_url;
+    label = "View " + bill.provider + " details";
   }
-
-  return `
-    <div class="gel-compare">
-      <div class="gel-compare-col">
-        <span class="gel-label">${left.label}</span>
-        <span class="gel-money gel-money--muted">${left.value}${left.unit ? `<span class="gel-money-unit">${left.unit}</span>` : ""}</span>
-        <span class="gel-compare-note">${left.note}</span>
-      </div>
-      <span class="gel-compare-arrow">${ico("arrow-right")}</span>
-      <div class="gel-compare-col gel-compare-col--end">
-        <span class="gel-label">${right.label}</span>
-        <span class="gel-money ${right.good ? "gel-money--good" : ""}">${right.value}${right.unit ? `<span class="gel-money-unit">${right.unit}</span>` : ""}</span>
-        <span class="gel-compare-note">${right.note}</span>
-      </div>
-    </div>
-    <div class="gel-saving">
-      <span class="gel-label">${saveLabel}</span>
-      <span class="gel-money gel-money--good">${fmtAUD(save)}${b.action_type === "reschedule" ? "" : '<span class="gel-money-unit">/month</span>'}</span>
-    </div>`;
+  if (!url) return "";
+  return `<div class="gel-linkrow">
+    <a class="gel-link gel-link-sm" href="${url}" target="_blank" rel="noopener noreferrer">
+      ${label}${ico("arrow-right")}
+    </a>
+  </div>`;
 }
 
-function cardActions(b) {
-  return `
-    <div class="gel-card-actions">
-      <button class="gel-btn-primary" type="button" onclick="showReview('${b.id}')">Review change</button>
-      <button class="gel-btn-text" type="button" onclick="declineBill('${b.id}')">Not now</button>
-    </div>`;
+function isActionable(bill) {
+  return ["remind", "protect", "track"].includes(bill.action_type);
 }
 
-function billCard(b) {
-  const badge =
-    b.action_type === "reschedule"
-      ? "Avoids " + fmtAUD((b.offer && b.offer.fee_avoided) || 19)
-      : "Save " + fmtAUD(b.savings_monthly) + "/mo";
+function actOnInsight(id) {
+  const bill = bills.bills.find((b) => b.id === id);
+  if (!bill || state.bills[id]?.status === "done") return null;
+  state.bills[id] = { status: "done", acted_at: new Date().toISOString() };
+  if (bill.action_type === "protect") state.protected = true;
+  const actionId = insightActionForType[bill.action_type];
+  return actionId ? award(actionId, id, bill.label) : null;
+}
+
+function runInsight(id) {
+  const res = actOnInsight(id);
+  if (!res) return;
+  save();
+  render();
+  if (res.xp || res.coins) {
+    toast("+" + res.xp + " XP · +" + res.coins + " " + coin());
+    if (res.evolved) showEvolution(res.fromStage, res.toStage);
+  }
+}
+
+function dismissInsight(id) {
+  state.bills[id] = { status: "dismissed", dismissed_at: new Date().toISOString() };
+  save();
+  render();
+}
+
+function doneCopy(bill) {
+  if (bill.action_type === "remind") return "Reminder set. On-time repayments are the #1 thing that builds your score.";
+  if (bill.action_type === "protect") return "Protected balance set for Thu 19 Nov. No dishonour fee this time.";
+  if (bill.action_type === "track") return "We're watching this. We'll confirm any saving when the debit changes.";
+  return "Noted.";
+}
+
+function insightActionButton(bill) {
+  if (state.bills[bill.id]?.status === "done") return `<span class="gel-badge gel-badge--success">Done</span>`;
+  if (bill.action_type === "remind")
+    return `<button class="gel-btn-primary gel-btn-block" type="button" onclick="runInsight('${bill.id}')">${ico("notification")} Set a reminder</button>`;
+  if (bill.action_type === "protect")
+    return `<button class="gel-btn-primary gel-btn-block" type="button" onclick="runInsight('${bill.id}')">${ico("shield")} Protect balance</button>`;
+  if (bill.action_type === "track")
+    return `<button class="gel-btn-primary gel-btn-block" type="button" onclick="runInsight('${bill.id}')">${ico("check")} Track this</button>`;
+  return "";
+}
+
+function insightCard(bill) {
+  const st = state.bills[bill.id]?.status;
+  if (st === "dismissed")
+    return `<article class="gel-cell gel-bill is-muted" data-bill="${bill.id}">${billHead(bill, `<span class="gel-badge gel-badge--faint">Dismissed</span>`)}</article>`;
+  if (st === "done")
+    return `<article class="gel-cell gel-bill is-done" data-bill="${bill.id}">${billHead(bill, `<span class="gel-badge gel-badge--success">Done</span>`)}<div class="gel-hr"></div><p class="gel-note gel-note--good">${doneCopy(bill)}</p></article>`;
+
+  const amount = bill.current_amount
+    ? `<span class="gel-money">${fmtAUD(bill.current_amount)}</span>${moneyUnit(bill.billing_period)}`
+    : "";
+  const action = insightActionButton(bill);
 
   return `
-    <article class="gel-cell gel-bill" data-bill="${b.id}">
-      ${billHead(
-        b,
-        `<span class="gel-money">${fmtAUD(b.current_amount)}</span>${moneyUnit(b.billing_period)}`
-      )}
+    <article class="gel-cell gel-bill" data-bill="${bill.id}">
+      ${billHead(bill, amount)}
       <div class="gel-tagline">
-        <span class="gel-badge gel-badge--success">${badge}</span>
-        <span class="gel-muted">${b.finding || ""}</span>
-        ${factorChip(b.factor)}
+        ${factorChip(bill.factor)}
+        <span class="gel-muted">${bill.finding || ""}</span>
       </div>
-      <div class="gel-hr"></div>
-      ${compareBlock(b)}
       <details class="gel-why">
         <summary>How we know this</summary>
-        ${evidenceRows(b)}
-        <p class="gel-note">${b.why}</p>
-        ${b.risk_notes ? `<p class="gel-note gel-note--warn">${b.risk_notes}</p>` : ""}
-        ${providerLink(b)}
+        ${evidenceRows(bill)}
+        <p class="gel-note">${bill.why}</p>
+        ${bill.advice ? `<p class="gel-note gel-note--warn">${bill.advice}</p>` : ""}
+        ${sourceLink(bill)}
       </details>
-      ${cardActions(b)}
+      ${action ? `<div class="gel-card-actions">${action}<button class="gel-btn-text" type="button" onclick="dismissInsight('${bill.id}')">Dismiss</button></div>` : ""}
     </article>`;
 }
 
-function billDoneCard(b) {
-  const confirm =
-    b.action_type === "switch"
-      ? `Switched to ${b.offer.provider}. Saving ${fmtAUD(b.savings_monthly)} a month.`
-      : b.action_type === "cancel"
-      ? `Cancelled. Saving ${fmtAUD(b.savings_monthly)} a month.`
-      : "Debit moved to Friday. No more dishonour fees.";
+function billStatusCard(bill) {
+  const label = bill.action_type === "keep" ? "Keeping" : "No change";
   return `
-    <article class="gel-cell gel-bill is-done" data-bill="${b.id}">
-      ${billHead(
-        b,
-        `<span class="gel-badge gel-badge--success">Done</span>`
-      )}
+    <article class="gel-cell gel-bill is-muted" data-bill="${bill.id}">
+      ${billHead(bill, `<span class="gel-money gel-money--muted">${fmtAUD(bill.current_amount)}</span>${moneyUnit(bill.billing_period)}`)}
+      <p class="gel-note">${bill.why}</p>
+      <div class="gel-tagline"><span class="gel-badge gel-badge--faint">${label}</span>${sourceLink(bill)}</div>
+    </article>`;
+}
+
+/* Cash the customer could free up — potential only, never claimed as saved. */
+function recommendedSavings() {
+  return bills.bills.reduce(
+    (a, b) => (b.factor === "cash" && b.savings_status === "potential" ? a + b.savings_monthly : a),
+    0
+  );
+}
+
+function westpacProductsPanel() {
+  const prods = bills.westpac_products || [];
+  if (!prods.length) return "";
+  const rows = prods
+    .map(
+      (p) => `
+      <div class="gel-kv">
+        <span class="gel-kv-k">${p.name}</span>
+        <span class="gel-kv-v" style="color:var(--text-success)">${p.purchase_rate_pct} p.a.</span>
+      </div>
+      <p class="gel-note" style="margin:6px 0 0">${p.comparison} · ${p.note}</p>
+      <div class="gel-linkrow">
+        <a class="gel-link gel-link-sm" href="${p.overview_uri}" target="_blank" rel="noopener noreferrer">Check it yourself${ico("arrow-right")}</a>
+      </div>
+      <div class="gel-verified" style="margin-top:6px">${ico("check")} ${p.source} · checked ${fmtDate(p.checked_at)}</div>`
+    )
+    .join('<div class="gel-hr"></div>');
+  return `
+    <section class="gel-cell">
+      <div class="gel-row-between">
+        <span class="gel-label">Your own bank's products</span>
+        <span class="gel-badge gel-badge--hero">Westpac</span>
+      </div>
       <div class="gel-hr"></div>
-      <p class="gel-note gel-note--good">${confirm}</p>
-    </article>`;
-}
-
-function billStatusCard(b) {
-  const label = b.action_type === "keep" ? "Keeping" : "No change";
-  return `
-    <article class="gel-cell gel-bill is-muted" data-bill="${b.id}">
-      ${billHead(
-        b,
-        `<span class="gel-money gel-money--muted">${fmtAUD(b.current_amount)}</span>${moneyUnit(b.billing_period)}`
-      )}
-      <p class="gel-note">${b.why}</p>
-      <div class="gel-tagline">
-        <span class="gel-badge gel-badge--faint">${label}</span>
-        ${providerLink(b)}
-      </div>
-    </article>`;
-}
-
-/* The streaming recommendation: the AI proposes, the customer picks. */
-function keepOnePanel(rec) {
-  const items = rec.bill_ids.map((id) => bills.bills.find((b) => b.id === id)).filter(Boolean);
-  const keeperId = state.choices[rec.id];
-  const keep = items.find((b) => b.id === keeperId) || items[0];
-  const pause = items.filter((b) => b.id !== keep.id);
-  const total = items.reduce((a, b) => a + b.current_amount, 0);
-  const saving = pause.reduce((a, b) => a + b.current_amount, 0);
-  const approved = pause.filter((b) => state.bills[b.id]?.status === "approved");
-  const done = pause.length > 0 && approved.length === pause.length;
-
-  const rows = items
-    .map((b) => {
-      const picked = b.id === keep.id;
-      const paused = done && state.bills[b.id]?.status === "approved";
-      const stateLabel = paused ? "Paused" : picked ? "Keeping" : "Pause";
-      const stateClass = paused ? "gel-badge--faint" : picked ? "gel-badge--success" : "gel-badge--faint";
-      return `
-        <button class="gel-pick ${picked ? "is-selected" : ""}" type="button"
-                ${done ? "disabled" : ""} onclick="chooseKeeper('${rec.id}','${b.id}')">
-          <span class="gel-radio ${picked ? "is-on" : ""}"></span>
-          <span class="gel-pick-body">
-            <span class="gel-pick-title">${b.provider}</span>
-            <span class="gel-muted">Paid ${(b.evidence || [])[0]?.v || ""}</span>
-          </span>
-          <span class="gel-pick-amount">
-            <span class="gel-money">${fmtAUD(b.current_amount)}</span>${moneyUnit(b.billing_period)}
-          </span>
-          <span class="gel-badge ${stateClass}">${stateLabel}</span>
-        </button>`;
-    })
-    .join("");
-
-  const footer = done
-    ? `<div class="gel-alert gel-alert--success">Keeping ${keep.provider}. Paused ${approved
-        .map((b) => b.provider)
-        .join(" and ")} — saving ${fmtAUD(saving)} a month.</div>`
-    : `<button class="gel-btn-primary gel-btn-block" type="button"
-         onclick="showReview(${JSON.stringify(pause.map((b) => b.id)).replace(/"/g, "&quot;")})">
-         Review ${pause.length} cancellations
-       </button>`;
-
-  return `
-    <section class="gel-panel">
-      <div class="gel-panel-head">
-        <span class="gel-panel-title">${rec.label}</span>
-        <span class="gel-panel-title">${items.length} services · ${fmtAUD(total)} / month</span>
-      </div>
-      <div class="gel-panel-body">
-        <div class="gel-figure">${fmtAUD(saving)}<span class="gel-figure-unit">/month</span></div>
-        <p class="gel-muted gel-figure-note">if you pause the other ${pause.length}</p>
-
-        <div class="gel-hr"></div>
-        <div class="gel-label">Which one would you keep?</div>
-        <div class="gel-picklist">${rows}</div>
-
-        <div class="gel-fact">
-          <span class="gel-fact-ico">${ico("help")}</span>
-          <p>${rec.what_we_dont_know}</p>
-        </div>
-        <div class="gel-fact">
-          <span class="gel-fact-ico">${ico("check")}</span>
-          <p>${rec.constraint}</p>
-        </div>
-
-        <div class="gel-hr"></div>
-        ${footer}
-      </div>
+      ${rows}
     </section>`;
 }
 
-function savingsPanel() {
-  const available = recommendedSavings();
-  const switched = switchedSavings();
-  const pct = available > 0 ? (switched / available) * 100 : 0;
+function insightsSummary() {
+  const credit = bills.bills.filter((b) => b.factor === "credit" && isActionable(b)).length;
+  const cash = bills.bills.filter((b) => b.factor === "cash" && isActionable(b)).length;
+  const fees = bills.bills.filter((b) => b.factor === "fees" && isActionable(b)).length;
   return `
     <section class="gel-panel">
       <div class="gel-panel-head">
-        <span class="gel-panel-title">Potential savings</span>
-        <span class="gel-panel-title">${fmtAUD(available)} / month</span>
+        <span class="gel-panel-title">What we found in your transactions</span>
       </div>
       <div class="gel-panel-body">
-        <div class="gel-figure">${fmtAUD(available)}<span class="gel-figure-unit">/month</span></div>
-        <div class="gel-muted gel-figure-note">${fmtAUD(available * 12)} a year</div>
-        <div class="gel-bar gel-bar--skinny" style="margin-top:12px">
-          <div class="gel-bar-fill" style="width:${fmtPct(pct)}"></div>
-        </div>
-        <div class="gel-progress-note">
-          <span class="gel-muted"><span id="banner-switched">${fmtAUD(switched)}</span> switched</span>
-          <span class="gel-muted">${fmtAUD(available - switched)} to go</span>
+        <p class="gel-muted" style="margin:0">
+          Every finding is mapped to what actually moves an Australian credit score —
+          repayment history, enquiries, limits and defaults. Things that only free up cash
+          are labelled <strong>Cash</strong>, not credit.
+        </p>
+        <div class="gel-buckets" style="margin-top:12px">
+          <div class="gel-bucket gel-bucket--score"><span class="gel-bucket-label">Credit</span><span class="gel-bucket-val">${credit}</span><span class="gel-bucket-sub">affect your score</span></div>
+          <div class="gel-bucket gel-bucket--cash"><span class="gel-bucket-label">Cash</span><span class="gel-bucket-val">${cash}</span><span class="gel-bucket-sub">frees up repayments</span></div>
+          <div class="gel-bucket gel-bucket--fees"><span class="gel-bucket-label">Fees</span><span class="gel-bucket-val">${fees}</span><span class="gel-bucket-sub">avoid a black mark</span></div>
         </div>
       </div>
     </section>`;
 }
 
-function renderBills() {
-  const order = { switch: 0, cancel: 1, reschedule: 2, keep: 3, no_offer: 4 };
-  const recs = bills.recommendations || [];
-  const streamingIds = recs.flatMap((r) => r.bill_ids || []);
+function renderInsights() {
+  const order = { remind: 0, protect: 1, track: 2, keep: 3, no_offer: 4 };
+  const actionable = bills.bills.filter(
+    (b) => isActionable(b) && state.bills[b.id]?.status !== "done" && state.bills[b.id]?.status !== "dismissed"
+  ).length;
 
-  const main = bills.bills
-    .filter((b) => !streamingIds.includes(b.id))
-    .sort((a, b) => order[a.action_type] - order[b.action_type] || b.savings_monthly - a.savings_monthly);
-
-  const pending = bills.bills.filter((b) => {
-    if (isKeeper(b)) return false;
-    const st = state.bills[b.id]?.status || "pending";
-    return billRecommended(b) && st === "pending";
-  }).length;
-
-  const cards = main
-    .map((b) => {
-      const st = state.bills[b.id]?.status || "pending";
-      if (st === "approved") return billDoneCard(b);
-      if (st === "declined")
-        return `<article class="gel-cell gel-bill is-muted">${billHead(
-          b,
-          `<span class="gel-badge gel-badge--faint">Not now</span>`
-        )}</article>`;
-      if (b.action_type === "keep" || b.action_type === "no_offer") return billStatusCard(b);
-      return billCard(b);
-    })
+  const cards = bills.bills
+    .slice()
+    .sort((a, b) => order[a.action_type] - order[b.action_type])
+    .map((b) => (b.action_type === "keep" || b.action_type === "no_offer" ? billStatusCard(b) : insightCard(b)))
     .join("");
 
   return `
     <div class="gel-screen-head">
       <div>
-        <h1 class="gel-title">Bills</h1>
-        <p class="gel-muted">${pending} ${pending === 1 ? "change" : "changes"} to review</p>
+        <h1 class="gel-title">Insights</h1>
+        <p class="gel-muted">${actionable} ${actionable === 1 ? "pattern" : "patterns"} to act on</p>
       </div>
       <span class="gel-badge gel-badge--faint">Last 3 months</span>
     </div>
-    ${savingsPanel()}
-    ${recs.map((r) => (r.kind === "keep_one" ? keepOnePanel(r) : "")).join("")}
+    ${insightsSummary()}
     ${cards}`;
 }
 
 function renderGoals() {
-  const switched = switchedSavings();
   const cards = rewards.goals
     .map((g) => {
       const done = state.goals[g.id]?.status === "completed";
       let progress = 0;
       if (done) progress = 100;
-      else if (g.progress_source === "bill_savings") progress = Math.min(100, (switched / g.target) * 100);
+      else if (g.progress_source === "reminder_set") progress = state.bills["bill_card"]?.status === "done" ? 100 : 0;
+      else if (g.progress_source === "protected_balance") progress = state.protected ? 100 : 0;
 
-      const ready = !done && g.progress_source === "bill_savings" && switched >= g.target;
-      const sub = done
-        ? "Completed"
-        : g.progress_source === "bill_savings"
-        ? fmtAUD(Math.min(switched, g.target)) + " of " + fmtAUD(g.target) + " saved"
-        : "Tap to mark done";
+      const ready = !done && progress === 100;
+      const sub = done ? "Completed" : ready ? "Ready — mark done" : g.progress_hint || "Tap to mark done";
 
       return `
         <article class="gel-cell" data-goal="${g.id}">
@@ -1388,6 +1021,8 @@ function renderScore() {
       <div class="gel-factor-list">${factorRows}</div>
     </section>
 
+    ${westpacProductsPanel()}
+
     <section class="gel-cell">
       <div class="gel-row-between">
         <span class="gel-label">Last check</span>
@@ -1414,16 +1049,21 @@ function renderScore() {
 }
 
 function setProtected() {
+  if (state.protected) { render(); return; }
   state.protected = true;
+  const gym = bills.bills.find((b) => b.id === "bill_gym");
+  if (gym && state.bills[gym.id]?.status !== "done") {
+    state.bills[gym.id] = { status: "done", acted_at: new Date().toISOString() };
+    award("protected_balance", gym.id, gym.label);
+  }
   save();
   render();
   toast(ico("shield") + " Protected balance set for Thu 19 Nov");
 }
 
 /* ---------- shell ---------- */
-let activeTab = "bills";
+let activeTab = "score";
 let lastCoins = 0;
-let lastSwitched = 0;
 
 function render() {
   animateCount($("#header-coins"), lastCoins, state.coins, fmtWhole);
@@ -1431,14 +1071,10 @@ function render() {
 
   const screen = $("#screen");
   if (activeTab === "score") screen.innerHTML = renderScore();
-  else if (activeTab === "bills") screen.innerHTML = renderBills();
+  else if (activeTab === "insights") screen.innerHTML = renderInsights();
   else if (activeTab === "goals") screen.innerHTML = renderGoals();
   else if (activeTab === "dragon") screen.innerHTML = renderDragon();
   else screen.innerHTML = renderShop();
-
-  const bs = $("#banner-switched");
-  if (bs) animateCount(bs, lastSwitched, switchedSavings(), fmtAUD);
-  lastSwitched = switchedSavings();
 }
 
 function setTab(tab) {

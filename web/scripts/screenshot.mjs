@@ -31,46 +31,35 @@ await page.evaluate(() => localStorage.clear());
 await page.reload();
 await page.waitForTimeout(800);
 
-// score / credit trajectory (the new hero screen)
-await page.locator('.gel-tab[data-tab="score"]').click();
-await page.waitForTimeout(250);
+// score (default tab)
 await shot("00-score");
 
-// back to bills for the negotiator journey
-await page.locator('.gel-tab[data-tab="bills"]').click();
+// insights
+await page.locator('.gel-tab[data-tab="insights"]').click();
 await page.waitForTimeout(250);
-await shot("01-bills");
+await shot("01-insights");
 
-// a single-bill review sheet
-await page.locator('button.gel-btn-primary', { hasText: "Review change" }).first().click();
-await page.waitForTimeout(350);
-await shot("02-review-sheet");
-await page.locator(".gel-sheet-close").click();
-await page.waitForTimeout(150);
-
-// streaming group review
-await page.locator("button", { hasText: "Review 2 cancellations" }).first().click();
-await page.waitForTimeout(350);
-await shot("03-streaming-review");
-await page.locator(".gel-sheet-close").click();
-await page.waitForTimeout(150);
+// one insight opened ("how we know this")
+await page.locator(".gel-why summary").first().click();
+await page.waitForTimeout(200);
+await shot("02-insight-detail");
 
 // goals
 await page.locator('.gel-tab[data-tab="goals"]').click();
 await page.waitForTimeout(250);
-await shot("04-goals");
+await shot("03-goals");
 
-// dragon (plain scene, no gear)
+// dragon (plain scene)
 await page.locator('.gel-tab[data-tab="dragon"]').click();
 await page.waitForTimeout(250);
-await shot("05-dragon");
+await shot("04-dragon");
 
 // shop
 await page.locator('.gel-tab[data-tab="shop"]').click();
 await page.waitForTimeout(250);
-await shot("06-shop");
+await shot("05-shop");
 
-// buy cap + scarf + lair (grant coins first), then view dragon dressed
+// grant coins, buy a hat + cave, view dragon dressed
 await page.evaluate(() => {
   localStorage.setItem(
     "credit-dragon:state",
@@ -79,10 +68,11 @@ await page.evaluate(() => {
       xp_total: 320,
       coins: 1200,
       streak_weeks: 3,
+      protected: false,
       bills: {},
       goals: {},
       shop: { owned: [], equipped: { hat: null, face: null, neck: null, home: null }, feeds: 0, fed_at: null },
-      choices: { rec_streaming: "bill_netflix" },
+      choices: {},
       awarded: [],
       ledger: []
     })
@@ -94,35 +84,29 @@ await page.locator('.gel-tab[data-tab="shop"]').click();
 await page.waitForTimeout(250);
 await page.locator('.gel-shop-item[data-item="item_cap"] button', { hasText: "Buy" }).click();
 await page.waitForTimeout(200);
-await page.locator('.gel-shop-item[data-item="item_scarf"] button', { hasText: "Buy" }).click();
-await page.waitForTimeout(200);
-await page.locator('.gel-shop-item[data-item="item_lair"] button', { hasText: "Buy" }).click();
+await page.locator('.gel-shop-item[data-item="item_cave"] button', { hasText: "Buy" }).click();
 await page.waitForTimeout(250);
 await page.locator('.gel-tab[data-tab="dragon"]').click();
 await page.waitForTimeout(300);
-await shot("07-dragon-dressed");
+await shot("06-dragon-dressed");
 
-// evolution modal (drop XP just below the teen threshold, then complete one goal)
+// evolution (drop XP just below 800, complete a manual goal)
 await page.evaluate(() => {
   const s = JSON.parse(localStorage.getItem("credit-dragon:state"));
   s.xp_total = 720;
   localStorage.setItem("credit-dragon:state", JSON.stringify(s));
-});await page.reload();
+});
+await page.reload();
 await page.waitForTimeout(800);
 await page.locator('.gel-tab[data-tab="goals"]').click();
 await page.waitForTimeout(250);
-for (let i = 0; i < 6; i++) {
-  const b = page.locator('button.gel-btn-primary', { hasText: "Mark done" }).first();
-  if ((await b.count()) === 0) break;
-  await b.click();
-  await page.waitForTimeout(250);
-  const dlg = page.locator(".gel-dialog");
-  if ((await dlg.count()) > 0) {
-    await shot("08-evolution");
-    await page.locator(".gel-btn-primary", { hasText: "Continue" }).click();
-    await page.waitForTimeout(150);
-    break;
-  }
+await page.locator('button.gel-btn-primary', { hasText: "Mark done" }).first().click();
+await page.waitForTimeout(500);
+const dlg = await page.locator(".gel-dialog").count();
+if (dlg > 0) {
+  await shot("07-evolution");
+  await page.locator(".gel-btn-primary", { hasText: "Continue" }).click();
+  await page.waitForTimeout(150);
 }
 
 await browser.close();
