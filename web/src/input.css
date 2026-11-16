@@ -38,14 +38,14 @@
   --color-coin-tint: var(--primitives-color-wbc-dance-300);
   --color-coin-faint: var(--primitives-color-wbc-dance-50);
 
-  --radius-sm: var(--primitives-border-radius-3px);
-  --radius-md: var(--primitives-border-radius-4px);
-  --radius-lg: var(--primitives-border-radius-5px);
-  --radius-xl: var(--primitives-border-radius-6px);
-  --radius-2xl: var(--primitives-border-radius-8px);
-  --radius-3xl: var(--primitives-border-radius-12px);
-  --radius-4xl: var(--primitives-border-radius-16px);
-  --radius-5xl: var(--primitives-border-radius-24px);
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 5px;
+  --radius-xl: 6px;
+  --radius-2xl: 8px;
+  --radius-3xl: 12px;
+  --radius-4xl: 16px;
+  --radius-5xl: 24px;
 }
 
 /* ---------- design tokens for motion + elevation ---------- */
@@ -176,14 +176,9 @@
     vertical-align: -1px;
   }
 
-  /* colourable GEL icons — masked, inherit currentColor */
-  .gel-ico {
-    display: inline-block; flex: none;
-    width: 24px; height: 24px;
-    background-color: currentColor;
-    -webkit-mask: var(--ico) center / contain no-repeat;
-    mask: var(--ico) center / contain no-repeat;
-  }
+  /* colourable GEL icons — inlined SVG inherits currentColor */
+  .gel-ico { display: inline-block; flex: none; width: 24px; height: 24px; }
+  .gel-ico svg { display: block; width: 100%; height: 100%; }
   .gel-ico-wrap {
     width: 42px; height: 42px; border-radius: 10px; flex: none;
     background: var(--color-hero-faint);
@@ -275,22 +270,24 @@
   }
 
   /* ================= buttons ================= */
-  .gel-btn-primary {
-    background: var(--color-primary); color: #fff; font-weight: 700; font-size: 14px;
-    padding: 11px 16px; border-radius: var(--radius-md); border: 0; cursor: pointer;
-    font-family: inherit; letter-spacing: 0.01em;
-    box-shadow: 0 1px 2px rgba(153, 16, 11, 0.28), 0 6px 14px -6px rgba(218, 23, 16, 0.5);
-    transition: background 0.15s var(--ease), transform 0.12s var(--ease), box-shadow 0.15s var(--ease);
+  .gel-btn-primary,
+  .gel-btn-ghost {
+    height: 42px; padding: 0 15px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    font-size: 16px; border-radius: var(--radius-lg); cursor: pointer; font-family: inherit;
+    transition: background 0.15s var(--ease), transform 0.12s var(--ease);
   }
-  .gel-btn-primary:hover { background: var(--color-primary-hover); box-shadow: 0 2px 4px rgba(153, 16, 11, 0.32), 0 8px 18px -6px rgba(218, 23, 16, 0.55); }
-  .gel-btn-primary:active { background: var(--color-primary-active); transform: scale(0.97); box-shadow: none; }
-  .gel-btn-primary:disabled { background: var(--color-muted-mild); box-shadow: none; cursor: not-allowed; }
+  .gel-btn-primary {
+    background: var(--color-primary); color: #fff; font-weight: 700;
+    border: 1px solid var(--color-primary);
+  }
+  .gel-btn-primary:hover { background: var(--color-primary-hover); border-color: var(--color-primary-hover); }
+  .gel-btn-primary:active { background: var(--color-primary-active); border-color: var(--color-primary-active); transform: scale(0.97); }
+  .gel-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
   .gel-btn-ghost {
-    background: transparent; color: var(--color-ink); font-weight: 600; font-size: 14px;
-    padding: 11px 16px; border-radius: var(--radius-md);
-    border: 1px solid var(--color-line); cursor: pointer; font-family: inherit;
-    transition: background 0.15s var(--ease), transform 0.12s var(--ease);
+    background: transparent; color: var(--color-ink); font-weight: 600;
+    border: 1px solid var(--color-line);
   }
   .gel-btn-ghost:hover { background: var(--color-faint); }
   .gel-btn-ghost:active { transform: scale(0.97); }
@@ -312,14 +309,20 @@
   .gel-alert-warning { background: var(--color-warning-faint); border: 1px solid var(--color-warning-mild); color: var(--color-warning); }
 
   /* ================= progress bars ================= */
-  .gel-bar { height: 8px; background: var(--color-faint); border-radius: 999px; overflow: hidden; }
+  .gel-bar {
+    height: 10px; box-sizing: border-box;
+    background: var(--color-white);
+    border: 1px solid var(--color-line);
+    border-radius: 999px; padding: 1px; overflow: hidden;
+  }
+  .gel-bar.on-hero { border-color: transparent; padding: 0; }
   .gel-bar-fill {
     height: 100%; border-radius: 999px;
-    background-image: linear-gradient(90deg, var(--color-primary), var(--color-primary-hover));
-    transition: width 0.55s var(--ease);
+    background: var(--color-hero); /* GEL ProgressBar innerBar = surface-hero */
+    transition: width 0.6s var(--ease);
   }
-  .gel-bar-fill.hero-fill { background-image: linear-gradient(90deg, var(--primitives-color-wbc-hero-400), var(--color-hero)); }
-  .gel-bar-fill.success-fill { background-image: linear-gradient(90deg, var(--color-success-mild), var(--color-success)); }
+  .gel-bar-fill.primary-fill { background: var(--color-primary); }
+  .gel-bar-fill.success-fill { background: var(--color-success); }
 
   /* ================= toast ================= */
   .gel-toast {

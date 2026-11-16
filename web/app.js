@@ -53,9 +53,7 @@ const BILL_ICON = {
 };
 function iconWrap(bill) {
   const name = BILL_ICON[bill.id] || "receipt";
-  return (
-    '<span class="gel-ico-wrap"><span class="gel-ico" style="--ico:url(assets/gel/icons/' + name + '-outlined.svg)"></span></span>'
-  );
+  return '<span class="gel-ico-wrap"><span class="gel-ico">' + (window.GEL_ICONS[name] || "") + "</span></span>";
 }
 
 /* ---------- micro-animations ---------- */
@@ -295,8 +293,8 @@ function renderBills() {
     '<div style="font-size:30px;font-weight:800;line-height:1.05;letter-spacing:-0.02em">' + fmtAUD(t.savings_monthly) +
     '<span style="font-size:15px;font-weight:600;opacity:0.8">/mo</span></div>' +
     '<div style="font-size:12px;opacity:0.85;margin-top:2px">≈ ' + fmtAUD(t.savings_annual) + " a year</div>" +
-    '<div class="gel-bar" style="background:rgba(255,255,255,0.16);margin-top:14px">' +
-    '<div class="gel-bar-fill" style="width:' + Math.min(100, (switched / t.savings_monthly) * 100) + '%;background-image:linear-gradient(90deg,#fff,rgba(255,255,255,0.7))"></div>' +
+    '<div class="gel-bar on-hero" style="background:rgba(255,255,255,0.18);margin-top:14px">' +
+    '<div class="gel-bar-fill" style="width:' + Math.min(100, (switched / t.savings_monthly) * 100) + '%;background:#fff"></div>' +
     "</div>" +
     '<div style="font-size:11px;margin-top:7px;opacity:0.85">' +
     '<span id="banner-switched">' + fmtAUD(switched) + "</span> switched of " + fmtAUD(t.savings_monthly) + " available</div>" +
@@ -481,14 +479,14 @@ function renderDragon() {
     '<div class="gel-card">' +
     '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--color-muted);margin-bottom:6px">' +
     "<span>Level " + lvl.level + "</span><span>" + (nxt ? "Level " + nxt.level : "Max level") + "</span></div>" +
-    '<div class="gel-bar"><div class="gel-bar-fill" style="width:' + lvlPct + '%"></div></div>' +
+    '<div class="gel-bar"><div class="gel-bar-fill primary-fill" style="width:' + lvlPct + '%"></div></div>' +
     '<div class="gel-muted" style="margin-top:6px">' + (nxt ? fmtWhole(nxt.xp_required - state.xp_total) + " XP to level " + nxt.level : "You've reached the top!") + "</div>" +
     "</div>" +
     '<div class="gel-card">' +
     '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--color-muted);margin-bottom:8px">' +
     "<span>Evolution</span><span>" + (nxtStage ? nxtStage.name : "Adult") + "</span></div>" +
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' + trail + "</div>" +
-    '<div class="gel-bar"><div class="gel-bar-fill hero-fill" style="width:' + stagePct + '%"></div></div>' +
+    '<div class="gel-bar"><div class="gel-bar-fill" style="width:' + stagePct + '%"></div></div>' +
     '<div class="gel-muted" style="margin-top:6px">' + (nxtStage ? fmtWhole(nxtStage.xp_required - state.xp_total) + " XP to evolve" : "Fully grown!") + "</div>" +
     "</div>" +
     '<details class="gel-card" style="margin:0">' +
@@ -573,6 +571,12 @@ function setTab(tab) {
 
 document.querySelectorAll("#tabbar .gel-tab").forEach((b) => {
   b.addEventListener("click", () => setTab(b.dataset.tab));
+});
+
+// inject GEL icons into any [data-icon] placeholder
+document.querySelectorAll("[data-icon]").forEach((el) => {
+  const name = el.getAttribute("data-icon");
+  if (window.GEL_ICONS && window.GEL_ICONS[name]) el.innerHTML = window.GEL_ICONS[name];
 });
 
 // live status-bar clock (Apple-style 9:41 is fine too, but a live time feels more real)

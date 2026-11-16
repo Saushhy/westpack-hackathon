@@ -21,6 +21,17 @@ npm run build:css      # recompile Tailwind: src/input.css -> styles.css
 npm run build          # both
 ```
 
+## Testing
+
+```bash
+npm run audit   # headless UI audit: checks colours/radii/typography vs GEL tokens,
+                # icon rendering, overflow, contrast + runs the full demo journey
+npm run shots   # screenshots each screen into %TEMP%\opencode\cd-shots
+```
+
+These drive the system **Microsoft Edge** (headless) via `playwright-core`, so no browser
+download is needed. Edit the `EDGE` path in `scripts/*.mjs` if Edge lives elsewhere.
+
 ## Structure
 
 | File | Purpose |

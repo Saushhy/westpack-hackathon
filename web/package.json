@@ -7,11 +7,15 @@
   "scripts": {
     "build:css": "tailwindcss -i ./src/input.css -o ./styles.css --minify",
     "build:data": "node ./tools/build-data.js",
-    "build": "npm run build:data && npm run build:css",
-    "watch:css": "tailwindcss -i ./src/input.css -o ./styles.css --watch"
+    "build:icons": "node ./tools/build-icons.js",
+    "build": "npm run build:data && npm run build:icons && npm run build:css",
+    "watch:css": "tailwindcss -i ./src/input.css -o ./styles.css --watch",
+    "audit": "node ./scripts/audit.mjs",
+    "shots": "node ./scripts/screenshot.mjs"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.1.12",
+    "playwright-core": "^1.65.1",
     "tailwindcss": "^4.1.12"
   }
 }
