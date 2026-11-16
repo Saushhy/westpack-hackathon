@@ -1,0 +1,185 @@
+{
+  "version": 1,
+  "currency": "coins",
+  "starting_state": {
+    "xp_total": 320,
+    "coins": 120,
+    "streak_weeks": 3
+  },
+  "actions": [
+    {
+      "id": "question_answered",
+      "label": "Answered a question",
+      "xp": 25,
+      "coins": 10,
+      "cap": { "type": "per_month", "limit": 5 },
+      "why_rewards_you": "Engaging with your plan helps the AI personalise it. Kept low value so it can't be farmed by tapping randomly."
+    },
+    {
+      "id": "goal_completed",
+      "label": "Completed a plan goal",
+      "xp": 100,
+      "coins": 60,
+      "cap": { "type": "per_goal" },
+      "why_rewards_you": "Completing a goal is a real, verifiable step toward better credit health."
+    },
+    {
+      "id": "on_time_repayment",
+      "label": "On-time repayment",
+      "xp": 150,
+      "coins": 100,
+      "cap": { "type": "per_month", "limit": 1 },
+      "why_rewards_you": "Repayment history is the single biggest factor in your Australian credit score."
+    },
+    {
+      "id": "no_new_bnpl_month",
+      "label": "No new BNPL this month",
+      "xp": 250,
+      "coins": 150,
+      "cap": { "type": "per_month", "limit": 1 },
+      "why_rewards_you": "Fewer credit enquiries and debts protects your credit profile."
+    },
+    {
+      "id": "bill_switch",
+      "label": "Switched a bill",
+      "xp": 120,
+      "coins": 80,
+      "cap": { "type": "per_bill" },
+      "why_rewards_you": "Frees up cash so you can make every repayment on time."
+    },
+    {
+      "id": "bill_cancel",
+      "label": "Cancelled a subscription",
+      "xp": 80,
+      "coins": 50,
+      "cap": { "type": "per_bill" },
+      "why_rewards_you": "Cuts recurring spending so you can pay down debt faster."
+    },
+    {
+      "id": "bill_reschedule",
+      "label": "Rescheduled a payment",
+      "xp": 60,
+      "coins": 40,
+      "cap": { "type": "per_bill" },
+      "why_rewards_you": "Avoiding a dishonour fee keeps your account in good standing."
+    },
+    {
+      "id": "savings_streak_4wk",
+      "label": "4-week savings streak",
+      "xp": 200,
+      "coins": 120,
+      "cap": { "type": "per_month", "limit": 1 },
+      "why_rewards_you": "Consistency is what actually moves a credit score."
+    },
+    {
+      "id": "shop_purchase",
+      "label": "Shop purchase",
+      "xp": 0,
+      "coins": null,
+      "cap": { "type": "none" },
+      "why_rewards_you": "Spending coins on your dragon never earns XP — rewards only ever come from good money habits."
+    }
+  ],
+  "levels": [
+    { "level": 1, "xp_required": 0 },
+    { "level": 2, "xp_required": 100 },
+    { "level": 3, "xp_required": 250 },
+    { "level": 4, "xp_required": 450 },
+    { "level": 5, "xp_required": 700 },
+    { "level": 6, "xp_required": 1000 },
+    { "level": 7, "xp_required": 1350 },
+    { "level": 8, "xp_required": 1750 },
+    { "level": 9, "xp_required": 2200 },
+    { "level": 10, "xp_required": 2700 }
+  ],
+  "stages": [
+    { "id": "egg", "name": "Dragon Egg", "xp_required": 0, "emoji": "🥚", "image": "assets/dragon/egg.png" },
+    { "id": "baby", "name": "Baby Dragon", "xp_required": 250, "emoji": "🐣", "image": "assets/dragon/baby.png" },
+    { "id": "teen", "name": "Teen Dragon", "xp_required": 800, "emoji": "🐲", "image": "assets/dragon/teen.png" },
+    { "id": "adult", "name": "Adult Dragon", "xp_required": 1500, "emoji": "🐉", "image": "assets/dragon/adult.png" }
+  ],
+  "goals": [
+    {
+      "id": "goal_repay_on_time",
+      "title": "Pay your credit card on time",
+      "description": "Set up autopay or a reminder so the due date never slips.",
+      "xp": 100,
+      "coins": 60,
+      "progress_source": "manual"
+    },
+    {
+      "id": "goal_no_bnpl",
+      "title": "No new Buy-Now-Pay-Later this month",
+      "description": "Pause Afterpay and Zip for 30 days to protect your credit profile.",
+      "xp": 100,
+      "coins": 60,
+      "progress_source": "manual"
+    },
+    {
+      "id": "goal_cut_bills",
+      "title": "Cut $90+ a month from your bills",
+      "description": "Approve cheaper plans in the Bill Negotiator to free up cash.",
+      "xp": 100,
+      "coins": 60,
+      "progress_source": "bill_savings",
+      "target": 90
+    }
+  ],
+  "shop": [
+    {
+      "id": "item_feast",
+      "name": "Dragon Feast",
+      "slot": "food",
+      "cost": 60,
+      "emoji": "🍗",
+      "image": "assets/shop/feast.png",
+      "description": "A hearty meal. +0 XP — food is its own reward."
+    },
+    {
+      "id": "item_sunnies",
+      "name": "Sunset Sunnies",
+      "slot": "accessory",
+      "cost": 150,
+      "emoji": "🕶️",
+      "image": "assets/shop/sunnies.png",
+      "description": "Shades for a dragon in good financial health."
+    },
+    {
+      "id": "item_tophat",
+      "name": "Top Hat",
+      "slot": "hat",
+      "cost": 180,
+      "emoji": "🎩",
+      "image": "assets/shop/tophat.png",
+      "description": "For a dragon that pays on time."
+    },
+    {
+      "id": "item_scarf",
+      "name": "Westpac Scarf",
+      "slot": "accessory",
+      "cost": 220,
+      "emoji": "🧣",
+      "image": "assets/shop/scarf.png",
+      "description": "Keeps your dragon warm in navy and red."
+    },
+    {
+      "id": "item_lair",
+      "name": "Lava Lair",
+      "slot": "home",
+      "cost": 450,
+      "emoji": "🌋",
+      "image": "assets/shop/lair.png",
+      "description": "A cosy home to grow into."
+    },
+    {
+      "id": "item_perk",
+      "name": "0.25% bonus savings rate",
+      "slot": "perk",
+      "cost": 1200,
+      "emoji": "💎",
+      "image": "assets/shop/perk.png",
+      "locked": true,
+      "description": "Pitch concept: coins unlock real Westpac perks."
+    }
+  ]
+}

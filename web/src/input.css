@@ -1,0 +1,216 @@
+@import "tailwindcss";
+@import "../gel/tokens.css";
+
+/*
+  Tailwind v4 theme: map Westpac GEL primitives to clean utility names.
+  Utilities generated: bg-primary, text-hero, border-line, rounded-2xl, etc.
+*/
+@theme {
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  --color-primary: var(--primitives-color-wbc-primary-500);
+  --color-primary-hover: var(--primitives-color-wbc-primary-400);
+  --color-primary-active: var(--primitives-color-wbc-primary-200);
+  --color-primary-faint: var(--primitives-color-wbc-primary-50);
+  --color-hero: var(--primitives-color-wbc-hero-500);
+  --color-hero-faint: var(--primitives-color-wbc-hero-50);
+  --color-ink: var(--primitives-color-wbc-muted-950);
+  --color-muted: var(--primitives-color-wbc-muted-500);
+  --color-muted-strong: var(--primitives-color-wbc-muted-400);
+  --color-muted-mild: var(--primitives-color-wbc-muted-300);
+  --color-line: var(--primitives-color-wbc-muted-200);
+  --color-page: var(--primitives-color-wbc-muted-100);
+  --color-faint: var(--primitives-color-wbc-muted-50);
+  --color-white: #ffffff;
+  --color-success: var(--primitives-color-success-500);
+  --color-success-mild: var(--primitives-color-success-300);
+  --color-success-faint: var(--primitives-color-success-50);
+  --color-info: var(--primitives-color-info-500);
+  --color-info-mild: var(--primitives-color-info-300);
+  --color-info-faint: var(--primitives-color-info-50);
+  --color-warning: var(--primitives-color-warning-500);
+  --color-warning-mild: var(--primitives-color-warning-300);
+  --color-warning-faint: var(--primitives-color-warning-50);
+  --color-danger: var(--primitives-color-danger-500);
+  --color-danger-mild: var(--primitives-color-danger-300);
+  --color-danger-faint: var(--primitives-color-danger-50);
+  --color-coin: var(--primitives-color-wbc-dance-500);
+  --color-coin-tint: var(--primitives-color-wbc-dance-300);
+  --color-coin-faint: var(--primitives-color-wbc-dance-50);
+
+  --radius-sm: var(--primitives-border-radius-3px);
+  --radius-md: var(--primitives-border-radius-4px);
+  --radius-lg: var(--primitives-border-radius-5px);
+  --radius-xl: var(--primitives-border-radius-6px);
+  --radius-2xl: var(--primitives-border-radius-8px);
+  --radius-3xl: var(--primitives-border-radius-12px);
+  --radius-4xl: var(--primitives-border-radius-16px);
+  --radius-5xl: var(--primitives-border-radius-24px);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--color-page);
+    color: var(--color-ink);
+  }
+}
+
+@layer components {
+  /* ---- desktop stage + phone frame ---- */
+  .stage {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background:
+      radial-gradient(1200px 600px at 50% -10%, var(--color-hero-faint), transparent 60%),
+      var(--color-page);
+  }
+  .phone {
+    width: 390px;
+    height: 844px;
+    max-height: calc(100vh - 48px);
+    background: var(--color-white);
+    border: 1px solid var(--color-line);
+    border-radius: 36px;
+    box-shadow: 0 24px 60px -20px rgba(31, 28, 79, 0.35);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* ---- header ---- */
+  .gel-header {
+    background: var(--color-hero);
+    color: #fff;
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .gel-brand { font-weight: 700; font-size: 18px; letter-spacing: -0.01em; line-height: 1; }
+  .gel-brand-sub { display: block; font-size: 11px; font-weight: 500; opacity: 0.75; margin-top: 3px; }
+  .gel-coin-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff; font-weight: 700; font-size: 13px;
+    padding: 5px 10px; border-radius: var(--radius-2xl);
+  }
+
+  .gel-coin {
+    display: inline-block; width: 11px; height: 11px; border-radius: 50%;
+    background: radial-gradient(circle at 32% 28%, #ffd78a, var(--color-coin) 72%);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+    vertical-align: -1px;
+  }
+
+  /* ---- screen + tab bar ---- */
+  .gel-screen { flex: 1; overflow-y: auto; padding: 16px; background: var(--color-page); }
+  .gel-tabbar {
+    display: flex; border-top: 1px solid var(--color-line);
+    background: var(--color-white); padding: 6px 8px;
+  }
+  .gel-tab {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
+    font-size: 10px; color: var(--color-muted); padding: 6px 0;
+    border-radius: var(--radius-2xl); cursor: pointer; border: 0;
+    background: transparent; font-family: inherit;
+  }
+  .gel-tab .tab-ico { font-size: 20px; line-height: 1; }
+  .gel-tab.active { color: var(--color-primary); background: var(--color-primary-faint); font-weight: 600; }
+
+  /* ---- cards / typography ---- */
+  .gel-card {
+    background: var(--color-white);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-2xl);
+    padding: 14px;
+    margin-bottom: 10px;
+  }
+  .gel-h1 { font-size: 20px; font-weight: 700; color: var(--color-hero); letter-spacing: -0.01em; line-height: 1.2; }
+  .gel-h2 { font-size: 15px; font-weight: 700; color: var(--color-hero); }
+  .gel-muted { color: var(--color-muted); font-size: 12px; line-height: 1.4; }
+
+  /* ---- buttons ---- */
+  .gel-btn-primary {
+    background: var(--color-primary); color: #fff; font-weight: 700; font-size: 14px;
+    padding: 10px 14px; border-radius: var(--radius-md); border: 0; cursor: pointer;
+    font-family: inherit; transition: background 0.15s ease;
+  }
+  .gel-btn-primary:hover { background: var(--color-primary-hover); }
+  .gel-btn-primary:active { background: var(--color-primary-active); }
+  .gel-btn-primary:disabled { background: var(--color-muted-mild); cursor: not-allowed; }
+
+  .gel-btn-ghost {
+    background: transparent; color: var(--color-ink); font-weight: 600; font-size: 14px;
+    padding: 10px 14px; border-radius: var(--radius-md);
+    border: 1px solid var(--color-line); cursor: pointer; font-family: inherit;
+  }
+  .gel-btn-ghost:hover { background: var(--color-faint); }
+
+  /* ---- badges ---- */
+  .gel-badge-save {
+    display: inline-block; background: var(--color-primary-faint); color: var(--color-primary);
+    font-weight: 700; font-size: 11px; padding: 3px 8px; border-radius: var(--radius-md); white-space: nowrap;
+  }
+  .gel-badge-muted {
+    display: inline-block; background: var(--color-faint); color: var(--color-muted);
+    font-weight: 600; font-size: 11px; padding: 3px 8px; border-radius: var(--radius-md); white-space: nowrap;
+  }
+
+  /* ---- alerts ---- */
+  .gel-alert { border-radius: var(--radius-md); padding: 10px 12px; font-size: 12px; line-height: 1.45; }
+  .gel-alert-success { background: var(--color-success-faint); border: 1px solid var(--color-success-mild); color: var(--color-success); }
+  .gel-alert-info { background: var(--color-info-faint); border: 1px solid var(--color-info-mild); color: var(--color-info); }
+  .gel-alert-warning { background: var(--color-warning-faint); border: 1px solid var(--color-warning-mild); color: var(--color-warning); }
+
+  /* ---- progress bars ---- */
+  .gel-bar { height: 8px; background: var(--color-faint); border-radius: var(--radius-lg); overflow: hidden; }
+  .gel-bar-fill { height: 100%; border-radius: var(--radius-lg); transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
+
+  /* ---- toast ---- */
+  .gel-toast {
+    position: absolute; left: 50%; bottom: 84px; transform: translateX(-50%) translateY(20px);
+    background: var(--color-hero); color: #fff; font-weight: 700; font-size: 13px;
+    padding: 10px 16px; border-radius: var(--radius-3xl); box-shadow: 0 10px 30px -8px rgba(31, 28, 79, 0.5);
+    opacity: 0; transition: opacity 0.25s ease, transform 0.25s ease; white-space: nowrap; z-index: 30;
+    pointer-events: none;
+  }
+  .gel-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .gel-toast .gel-coin { background: radial-gradient(circle at 32% 28%, #ffe0a0, #f57a0f 72%); }
+
+  /* ---- modal ---- */
+  .gel-modal-backdrop {
+    position: absolute; inset: 0; background: rgba(6, 2, 54, 0.55);
+    display: flex; align-items: center; justify-content: center; z-index: 40; padding: 24px;
+  }
+  .gel-modal {
+    background: #fff; border-radius: var(--radius-4xl); padding: 24px; text-align: center;
+    max-width: 300px; width: 100%; box-shadow: 0 30px 80px -20px rgba(31, 28, 79, 0.6);
+    animation: gel-pop 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  @keyframes gel-pop { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+  /* ---- images (dragon + shop) with emoji fallback ---- */
+  .gel-dragon-avatar { text-align: center; }
+  .dragon-img { width: 160px; height: 160px; object-fit: contain; margin: 0 auto; }
+  .dragon-img.emoji-fallback { font-size: 150px; line-height: 160px; }
+  .shop-img { width: 52px; height: 52px; object-fit: contain; }
+  .shop-img.emoji-fallback { font-size: 44px; line-height: 52px; }
+
+  /* ---- collapsible "why" ---- */
+  details.gel-why summary {
+    cursor: pointer; font-weight: 600; font-size: 12px; color: var(--color-muted);
+    list-style: none; display: flex; align-items: center; gap: 6px;
+  }
+  details.gel-why summary::before { content: "+"; font-weight: 700; }
+  details.gel-why[open] summary::before { content: "−"; }
+  details.gel-why summary::-webkit-details-marker { display: none; }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "credit-dragon-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Credit Dragon bill negotiator + gamification prototype (HTML + Tailwind, no framework).",
+  "scripts": {
+    "build:css": "tailwindcss -i ./src/input.css -o ./styles.css --minify",
+    "build:data": "node ./tools/build-data.js",
+    "build": "npm run build:data && npm run build:css",
+    "watch:css": "tailwindcss -i ./src/input.css -o ./styles.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.12",
+    "tailwindcss": "^4.1.12"
+  }
+}
