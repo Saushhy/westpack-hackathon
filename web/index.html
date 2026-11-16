@@ -9,21 +9,35 @@
 <body>
   <div class="stage">
     <div class="phone">
-      <header class="gel-header">
-        <div>
-          <span class="gel-brand">Westpac</span>
-          <span class="gel-brand-sub">Credit Dragon</span>
+      <div class="gel-notch"></div>
+
+      <header class="gel-topbar">
+        <div class="gel-statusbar">
+          <span id="status-time">9:41</span>
+          <span class="gel-status-icons">
+            <span class="gel-signal"><i></i><i></i><i></i><i></i></span>
+            <span class="gel-battery"><span class="gel-battery-fill"></span></span>
+          </span>
         </div>
-        <span class="gel-coin-pill"><span class="gel-coin"></span><span id="header-coins">0</span></span>
+        <div class="gel-header-main">
+          <div class="gel-brandrow">
+            <img class="gel-logo" src="assets/gel/wbc-logo.svg" alt="Westpac">
+            <div>
+              <span class="gel-brand">Westpac</span>
+              <span class="gel-brand-sub">Credit Dragon</span>
+            </div>
+          </div>
+          <span class="gel-coin-pill"><span class="gel-coin"></span><span id="header-coins">0</span></span>
+        </div>
       </header>
 
       <main class="gel-screen" id="screen" aria-live="polite"></main>
 
       <nav class="gel-tabbar" id="tabbar">
-        <button class="gel-tab active" data-tab="bills"><span class="tab-ico">💸</span>Bills</button>
-        <button class="gel-tab" data-tab="goals"><span class="tab-ico">🎯</span>Goals</button>
-        <button class="gel-tab" data-tab="dragon"><span class="tab-ico">🐉</span>Dragon</button>
-        <button class="gel-tab" data-tab="shop"><span class="tab-ico">🛍️</span>Shop</button>
+        <button class="gel-tab active" data-tab="bills"><span class="gel-ico tab-ico" style="--ico:url(assets/gel/icons/receipt-outlined.svg)"></span>Bills</button>
+        <button class="gel-tab" data-tab="goals"><span class="gel-ico tab-ico" style="--ico:url(assets/gel/icons/target-outlined.svg)"></span>Goals</button>
+        <button class="gel-tab" data-tab="dragon"><span class="gel-ico tab-ico" style="--ico:url(assets/gel/icons/paw-outlined.svg)"></span>Dragon</button>
+        <button class="gel-tab" data-tab="shop"><span class="gel-ico tab-ico" style="--ico:url(assets/gel/icons/shopping-bag-outlined.svg)"></span>Shop</button>
       </nav>
 
       <div class="gel-toast" id="toast" role="status"></div>

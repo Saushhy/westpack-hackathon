@@ -40,6 +40,54 @@ function imgOrEmoji(src, emoji, alt, cls) {
   );
 }
 
+/* GEL icons for bill categories (pulled from Westpac GEL) */
+const BILL_ICON = {
+  bill_phone: "phone",
+  bill_internet: "desktop",
+  bill_netflix: "video",
+  bill_stan: "video",
+  bill_disney: "video",
+  bill_spotify: "headset",
+  bill_gym: "barbell",
+  bill_rent: "house"
+};
+function iconWrap(bill) {
+  const name = BILL_ICON[bill.id] || "receipt";
+  return (
+    '<span class="gel-ico-wrap"><span class="gel-ico" style="--ico:url(assets/gel/icons/' + name + '-outlined.svg)"></span></span>'
+  );
+}
+
+/* ---------- micro-animations ---------- */
+function animateCount(el, from, to, fmt) {
+  if (!el) return;
+  if (from === to) {
+    el.textContent = fmt(to);
+    return;
+  }
+  const start = performance.now();
+  const dur = 550;
+  function tick(now) {
+    const p = Math.min(1, (now - start) / dur);
+    const eased = 1 - Math.pow(1 - p, 3);
+    el.textContent = fmt(from + (to - from) * eased);
+    if (p < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+function sparkles(n) {
+  const spots = [[18, 32], [82, 16], [14, 64], [86, 70], [50, 8], [50, 90]];
+  let out = "";
+  for (let i = 0; i < n; i++) {
+    const pos = spots[i % spots.length];
+    out +=
+      '<span class="gel-sparkle" style="left:' + pos[0] + "%;top:" + pos[1] +
+      "%;animation-delay:" + (i * 0.09).toFixed(2) + 's">' + (i % 2 ? "✨" : "⭐") + "</span>";
+  }
+  return out;
+}
+
 /* ---------- state ---------- */
 function initialState() {
   return {
@@ -205,9 +253,10 @@ function showEvolution(from, to) {
   $("#modal-root").innerHTML =
     '<div class="gel-modal-backdrop" onclick="if(event.target===this)closeModal()">' +
     '<div class="gel-modal">' +
+    sparkles(8) +
     '<div class="gel-dragon-avatar">' + imgOrEmoji(to.image, to.emoji, to.name, "dragon-img") + "</div>" +
-    '<h2 class="gel-h2" style="margin-top:8px">Your dragon evolved!</h2>' +
-    '<p class="gel-muted" style="margin:8px 0 16px">' + from.name + " → " + to.name + "</p>" +
+    '<h2 class="gel-h2" style="margin-top:10px">Your dragon evolved!</h2>' +
+    '<p class="gel-muted" style="margin:8px 0 18px">' + from.name + " → " + to.name + "</p>" +
     '<button class="gel-btn-primary" onclick="closeModal()">Nice! 🎉</button>' +
     "</div></div>";
 }
@@ -241,16 +290,17 @@ function renderBills() {
   );
 
   const banner =
-    '<div class="gel-card" style="background:var(--color-hero);color:#fff;border:0">' +
-    '<div class="gel-muted" style="color:rgba(255,255,255,0.7)">Your dragon found</div>' +
-    '<div style="font-size:26px;font-weight:800;line-height:1.1">' + fmtAUD(t.savings_monthly) +
-    '<span style="font-size:14px;font-weight:600;opacity:0.8">/mo</span></div>' +
-    '<div style="font-size:12px;opacity:0.85">≈ ' + fmtAUD(t.savings_annual) + " a year</div>" +
-    '<div class="gel-bar" style="background:rgba(255,255,255,0.15);margin-top:12px">' +
-    '<div class="gel-bar-fill" style="width:' + Math.min(100, (switched / t.savings_monthly) * 100) + '%;background:#fff"></div>' +
+    '<div class="gel-card gel-banner">' +
+    '<div class="gel-muted" style="color:rgba(255,255,255,0.72)">Your dragon found</div>' +
+    '<div style="font-size:30px;font-weight:800;line-height:1.05;letter-spacing:-0.02em">' + fmtAUD(t.savings_monthly) +
+    '<span style="font-size:15px;font-weight:600;opacity:0.8">/mo</span></div>' +
+    '<div style="font-size:12px;opacity:0.85;margin-top:2px">≈ ' + fmtAUD(t.savings_annual) + " a year</div>" +
+    '<div class="gel-bar" style="background:rgba(255,255,255,0.16);margin-top:14px">' +
+    '<div class="gel-bar-fill" style="width:' + Math.min(100, (switched / t.savings_monthly) * 100) + '%;background-image:linear-gradient(90deg,#fff,rgba(255,255,255,0.7))"></div>' +
     "</div>" +
-    '<div style="font-size:11px;margin-top:6px;opacity:0.85">' +
-    fmtAUD(switched) + " switched of " + fmtAUD(t.savings_monthly) + " available</div>" +
+    '<div style="font-size:11px;margin-top:7px;opacity:0.85">' +
+    '<span id="banner-switched">' + fmtAUD(switched) + "</span> switched of " + fmtAUD(t.savings_monthly) + " available</div>" +
+    '<span class="gel-shine"></span>' +
     "</div>";
 
   const cards = sorted
@@ -268,7 +318,7 @@ function renderBills() {
           '<div class="gel-card">' +
           '<div class="gel-alert gel-alert-success">✓ ' + confirm + "</div>" +
           '<div style="display:flex;align-items:center;gap:10px;margin-top:10px">' +
-          '<span style="font-size:22px">' + b.icon + "</span>" +
+          iconWrap(b) +
           '<div style="flex:1"><div class="gel-h2">' + b.label + "</div>" +
           '<div class="gel-muted">' + b.provider + " · " + b.plan + "</div></div>" +
           "</div></div>"
@@ -279,7 +329,7 @@ function renderBills() {
         return (
           '<div class="gel-card" style="opacity:0.6">' +
           '<div style="display:flex;align-items:center;gap:10px">' +
-          '<span style="font-size:22px">' + b.icon + "</span>" +
+          iconWrap(b) +
           '<div style="flex:1"><div class="gel-h2">' + b.label + "</div>" +
           '<div class="gel-muted">' + b.provider + " · " + b.plan + "</div></div>" +
           '<span class="gel-badge-muted">Not now</span>' +
@@ -291,7 +341,7 @@ function renderBills() {
         return (
           '<div class="gel-card" style="opacity:0.85">' +
           '<div style="display:flex;align-items:center;gap:10px">' +
-          '<span style="font-size:22px">' + b.icon + "</span>" +
+          iconWrap(b) +
           '<div style="flex:1"><div class="gel-h2">' + b.label + "</div>" +
           '<div class="gel-muted">' + b.provider + " · " + b.plan + "</div></div>" +
           '<span class="gel-badge-muted">' + (b.action_type === "keep" ? "Keeping" : "No offer") + "</span>" +
@@ -301,7 +351,6 @@ function renderBills() {
         );
       }
 
-      // actionable pending
       const offer = b.offer;
       const offerPrice = offer
         ? fmtAUD(offer.amount) + "/" + (offer.billing_period === "fortnightly" ? "fortnight" : "mo")
@@ -314,7 +363,7 @@ function renderBills() {
       return (
         '<div class="gel-card">' +
         '<div style="display:flex;align-items:center;gap:10px">' +
-        '<span style="font-size:22px">' + b.icon + "</span>" +
+        iconWrap(b) +
         '<div style="flex:1"><div class="gel-h2">' + b.label + "</div>" +
         '<div class="gel-muted">' + b.provider + " · " + b.plan + "</div></div>" +
         '<span class="gel-badge-save">' + badge + "</span>" +
@@ -346,7 +395,9 @@ function renderBills() {
     })
     .join("");
 
-  return banner + cards;
+  return (
+    '<div class="gel-section"><h1 class="gel-h1">Bill negotiator</h1></div>' + banner + cards
+  );
 }
 
 function renderGoals() {
@@ -421,24 +472,23 @@ function renderDragon() {
     : "No activity yet.";
 
   return (
-    '<div class="gel-card" style="text-align:center;padding:20px 14px">' +
+    '<div class="gel-card" style="text-align:center;padding:22px 14px">' +
     '<div class="gel-dragon-avatar">' + imgOrEmoji(stage.image, stage.emoji, stage.name, "dragon-img") + "</div>" +
     '<h1 class="gel-h1">' + stage.name + "</h1>" +
     '<div class="gel-muted">Level ' + lvl.level + " · " + fmtWhole(state.xp_total) + " XP · " + state.streak_weeks + "-week streak</div>" +
-    '<div class="gel-coin-pill" style="margin-top:10px;background:var(--color-coin-faint);color:var(--color-coin);border-color:var(--color-coin-tint)">' +
-    coin() + " " + fmtWhole(state.coins) + " coins</div>" +
+    '<div class="gel-coin-pill" style="margin-top:10px">' + coin() + " " + fmtWhole(state.coins) + " coins</div>" +
     "</div>" +
     '<div class="gel-card">' +
     '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--color-muted);margin-bottom:6px">' +
     "<span>Level " + lvl.level + "</span><span>" + (nxt ? "Level " + nxt.level : "Max level") + "</span></div>" +
-    '<div class="gel-bar"><div class="gel-bar-fill" style="width:' + lvlPct + '%;background:var(--color-primary)"></div></div>' +
+    '<div class="gel-bar"><div class="gel-bar-fill" style="width:' + lvlPct + '%"></div></div>' +
     '<div class="gel-muted" style="margin-top:6px">' + (nxt ? fmtWhole(nxt.xp_required - state.xp_total) + " XP to level " + nxt.level : "You've reached the top!") + "</div>" +
     "</div>" +
     '<div class="gel-card">' +
     '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--color-muted);margin-bottom:8px">' +
     "<span>Evolution</span><span>" + (nxtStage ? nxtStage.name : "Adult") + "</span></div>" +
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' + trail + "</div>" +
-    '<div class="gel-bar"><div class="gel-bar-fill" style="width:' + stagePct + '%;background:var(--color-hero)"></div></div>' +
+    '<div class="gel-bar"><div class="gel-bar-fill hero-fill" style="width:' + stagePct + '%"></div></div>' +
     '<div class="gel-muted" style="margin-top:6px">' + (nxtStage ? fmtWhole(nxtStage.xp_required - state.xp_total) + " XP to evolve" : "Fully grown!") + "</div>" +
     "</div>" +
     '<details class="gel-card" style="margin:0">' +
@@ -490,26 +540,44 @@ function renderShop() {
 
 /* ---------- shell ---------- */
 let activeTab = "bills";
+let lastCoins = 0;
+let lastSwitched = 0;
 
 function render() {
-  $("#header-coins").textContent = fmtWhole(state.coins);
+  animateCount($("#header-coins"), lastCoins, state.coins, fmtWhole);
+  lastCoins = state.coins;
+
   const screen = $("#screen");
   if (activeTab === "bills") screen.innerHTML = renderBills();
   else if (activeTab === "goals") screen.innerHTML = renderGoals();
   else if (activeTab === "dragon") screen.innerHTML = renderDragon();
   else screen.innerHTML = renderShop();
+
+  const bs = $("#banner-switched");
+  if (bs) animateCount(bs, lastSwitched, switchedSavings(), fmtAUD);
+  lastSwitched = switchedSavings();
 }
 
 function setTab(tab) {
+  if (tab === activeTab) return;
   activeTab = tab;
   document.querySelectorAll("#tabbar .gel-tab").forEach((b) => {
     b.classList.toggle("active", b.dataset.tab === tab);
   });
   render();
+  const screen = $("#screen");
+  screen.classList.remove("screen-enter");
+  void screen.offsetWidth; // restart animation
+  screen.classList.add("screen-enter");
 }
 
 document.querySelectorAll("#tabbar .gel-tab").forEach((b) => {
   b.addEventListener("click", () => setTab(b.dataset.tab));
 });
+
+// live status-bar clock (Apple-style 9:41 is fine too, but a live time feels more real)
+const now = new Date();
+const timeEl = $("#status-time");
+if (timeEl) timeEl.textContent = now.getHours() + ":" + String(now.getMinutes()).padStart(2, "0");
 
 render();

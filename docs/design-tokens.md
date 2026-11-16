@@ -61,3 +61,21 @@ These exact tokens exist natively in GEL's iOS palette at
 `packages/style-config/src/tokens/ios/wbc/wbc-colors.swift` (e.g. `backgroundHero`,
 `surfacePrimary`, `textHeading`, `borderMutedSoft`). Use the same values so the Figma,
 SwiftUI app and this web prototype all match pixel-for-pixel.
+
+## Brand assets (vendored from GEL)
+
+The prototype uses the **real** Westpac assets, pulled from `WestpacGEL/GEL-next`:
+
+| Asset | Source in GEL | Local path |
+|---|---|---|
+| Westpac logo (red "W") | `packages/ui/assets/logos-symbols/light/WBCLogo-Lm.svg` | `web/assets/gel/wbc-logo.svg` |
+| Icons (outlined) | `packages/ui/assets/icons/outlined/*.svg` | `web/assets/gel/icons/*.svg` |
+
+Icons used — bills: `phone`, `desktop`, `video`, `headset`, `barbell`, `house`; tabs:
+`receipt`, `target`, `paw`, `shopping-bag`. Icons are applied as **CSS masks** so they
+inherit `currentColor` (navy/red) instead of a fixed colour.
+
+The Westpac **brand font** (`Westpac-Bold-v2.007`, referenced by GEL's `brand-fonts.css`)
+is proprietary and not in the public repo, so the prototype uses GEL's own declared
+fallback stack (`--font-family-sans`): `-apple-system, BlinkMacSystemFont, "Segoe UI",
+Helvetica, Arial, sans-serif, …`. Naomi/Shawn can use the real font in Figma/SwiftUI.
