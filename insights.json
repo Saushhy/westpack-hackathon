@@ -1,0 +1,77 @@
+{
+  "customer_persona": "Mia",
+  "credit_score": {
+    "provider": "Equifax Australia (Mocked)",
+    "scale_max": 1200,
+    "current_score": 615,
+    "current_band": "Average",
+    "projected_score_after_plan": 705,
+    "projected_band": "Good",
+    "timeframe_months": 3,
+    "disclaimer": "Spending less does not directly raise your credit score. Completing your plan frees up cash flow so you can make every repayment on time, reduce revolving debt, and avoid new credit enquiries."
+  },
+  "key_insights": [
+    {
+      "id": "ins_001",
+      "title": "Late Credit Card Repayment (12 Oct)",
+      "category": "Repayment History",
+      "severity": "critical",
+      "summary": "Your Westpac Flex Card payment was 3 days late ($165.00 including a $15 late fee).",
+      "bureau_explanation": "Under Comprehensive Credit Reporting (CCR) in Australia, 24 months of on-time repayment history on cards and loans is reported to bureaus. Consistently paying on time is the single largest positive contributor to your score.",
+      "related_transaction_ids": ["tx_020", "tx_056", "tx_058", "tx_090"]
+    },
+    {
+      "id": "ins_002",
+      "title": "5 BNPL Instalments in October ($204.95 Total)",
+      "category": "Credit Enquiries & Debt Load",
+      "severity": "high",
+      "summary": "You juggled 4 Afterpay debits (ASOS & Mecca) alongside a $49.95 Zip Pay monthly instalment.",
+      "bureau_explanation": "Opening multiple Buy-Now-Pay-Later lines can trigger hard enquiries on your credit file, and overlapping instalment commitments reduce the liquidity needed to meet essential debt obligations.",
+      "related_transaction_ids": ["tx_005", "tx_034", "tx_047", "tx_053", "tx_066", "tx_071", "tx_072", "tx_083", "tx_086", "tx_093", "tx_099"]
+    },
+    {
+      "id": "ins_003",
+      "title": "Dishonoured Gym Debit (15 Oct) + $19 in Fees",
+      "category": "Defaults & Cash Flow Timing",
+      "severity": "medium",
+      "summary": "A $34.00 Goodlife Gym debit failed on Thursday 15 Oct, triggering a $9 Westpac fee and a $10 merchant admin fee, just 24 hours before your $950 salary landed on Friday 16 Oct.",
+      "bureau_explanation": "A bounced direct debit does not directly appear on your Equifax file, but repeated dishonours can cause memberships to be cancelled and referred to collection agencies, resulting in a recorded default (debts overdue by 60+ days).",
+      "related_transaction_ids": ["tx_063", "tx_064", "tx_065", "tx_068"]
+    },
+    {
+      "id": "ins_004",
+      "title": "$216.97/month in Optimisable Subscriptions & Telco",
+      "category": "Cash Flow Buffer",
+      "severity": "low",
+      "summary": "You spend $89.00/mo on Vodafone, $68.00/mo on Aussie Broadband, and $59.97/mo across 4 streaming services (Netflix, Stan, Disney+, Spotify).",
+      "bureau_explanation": "Streamlining phone and streaming services frees up roughly $75/month in cash flow, creating a permanent buffer against unexpected mid-week expenses.",
+      "related_transaction_ids": ["tx_003", "tx_015", "tx_021", "tx_023", "tx_024", "tx_025", "tx_033", "tx_049", "tx_055", "tx_059", "tx_060", "tx_061", "tx_070", "tx_085", "tx_091", "tx_093", "tx_095", "tx_098"]
+    }
+  ],
+  "recommended_goals": [
+    {
+      "goal_id": "goal_001",
+      "title": "Westpac Flex Card On-Time Repayment Streak",
+      "target_metric": "Auto-pay minimum amount aligned with Friday paydays",
+      "xp_reward": 150,
+      "coin_reward": 50,
+      "estimated_score_delta": 45
+    },
+    {
+      "goal_id": "goal_002",
+      "title": "Zero New BNPL Purchases for 30 Days",
+      "target_metric": "0 new Afterpay / Zip applications or checkouts",
+      "xp_reward": 120,
+      "coin_reward": 40,
+      "estimated_score_delta": 25
+    },
+    {
+      "goal_id": "goal_003",
+      "title": "Shift Gym Billing Date & Optimise Telco Plan",
+      "target_metric": "Move direct debit to Friday and reduce telco bill",
+      "xp_reward": 100,
+      "coin_reward": 35,
+      "estimated_score_delta": 20
+    }
+  ]
+}
