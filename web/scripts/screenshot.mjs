@@ -31,6 +31,14 @@ await page.evaluate(() => localStorage.clear());
 await page.reload();
 await page.waitForTimeout(800);
 
+// score / credit trajectory (the new hero screen)
+await page.locator('.gel-tab[data-tab="score"]').click();
+await page.waitForTimeout(250);
+await shot("00-score");
+
+// back to bills for the negotiator journey
+await page.locator('.gel-tab[data-tab="bills"]').click();
+await page.waitForTimeout(250);
 await shot("01-bills");
 
 // a single-bill review sheet

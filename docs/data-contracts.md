@@ -1,11 +1,14 @@
 # Data Contracts — Credit Dragon (Santiago's workstream)
 
-Shared source of truth for the **bill negotiator** and **gamification** data. Shawn (SwiftUI),
+Shared source of truth for the **credit trajectory** and **gamification** data. Shawn (SwiftUI),
 Carlos (AI script) and Naomi (design/copy) build against these files.
 
+> **⚠️ Read `CHANGES.md` first** — it records the pivot from "bill negotiator" to "credit
+> trajectory" and the data-integrity rules. This file is the field reference for that pivot.
+
 > **Files owned by Santiago:**
-> - `data/bills.json` — bills the negotiator found, with offers + savings + provider links.
-> - `data/rewards.json` — XP/coin rules, levels, dragon stages, goals, shop.
+> - `data/bills.json` — what the AI found: the score, the credit file, and the bills.
+> - `data/rewards.json` — XP/coin rules, levels, dragon stages, goals, shop, credit factors.
 >
 > **Files owned by Carlos** (at repo root — see "Known mismatches"):
 > - `mia_transactions.json`
@@ -23,6 +26,8 @@ Top-level:
 | `currency` | string | `"AUD"`. |
 | `as_of` | string | `"YYYY-MM-DD"` the analysis is current as of. |
 | `data_notice` | string | Shown in the UI: prices are sample data; links are real; confirm with provider. |
+| `score` | object | The bureau score anchor + forecast (see §1a). |
+| `credit_file` | object | The credit-file facts: goal, BNPL, dishonour risk (see §1b). |
 | `payday.frequency` / `payday.next` | string | Pay cycle. |
 | `totals.*` | number | Headline numbers (see below). |
 | `recommendations[]` | array | Cross-bill "keep one" recommendations (streaming). |
@@ -30,6 +35,33 @@ Top-level:
 `totals` — the negotiable recurring set is **phone + internet + streaming**:
 `recurring_monthly` 216.97 · `savings_monthly` 92.99 · `savings_annual` 1115.88 ·
 `potential_monthly_after_switching` 123.98. Gym and rent are excluded (no cash saving).
+
+### 1a. `score`
+
+| Field | Meaning |
+|---|---|
+| `value` | The number (`612`). |
+| `scale` | `"equifax_au"` — the bureau's own scale (never a bare number). |
+| `max` | The scale ceiling (`1200`). |
+| `source` | `"Equifax"`. |
+| `refreshed_at` | When the score was pulled. |
+| `consent` | `true` — the score is shared only with consent. |
+| `demo_sample` | `true` for the hackathon (the mechanism is real, the number is mock). |
+| `forecast.range` | `[635, 650]` — a **range**, never a single number. |
+| `forecast.horizon_months` | `3`. |
+| `forecast.assumption` | The stated conditions the forecast depends on. |
+| `forecast.previous` | `{ value, refreshed_at, predicted_range, actual }` — the accountability loop. |
+
+### 1b. `credit_file`
+
+| Field | Meaning |
+|---|---|
+| `goal` / `goal_date` | The north star — `"Car loan in 12 months"` by `2027-11-16`. |
+| `bnpl.providers[]` | `{ name, facilities, instalments_due, next_due, amount_due }` — the "credit you don't see". |
+| `bnpl.enquiries_6m` | Credit enquiries in the last 6 months. |
+| `bnpl.active_facilities` | Total BNPL facilities on file. |
+| `bnpl.note` | The framing line: BNPL *is* credit. |
+| `dishonour` | `{ bill_id, risk, reason, action }` — the pre-emptive dishonour forecast. |
 
 ### `recommendations[]` (keep-one)
 
@@ -51,6 +83,9 @@ Top-level:
 |---|---|---|
 | `id` | string | Stable key, e.g. `bill_phone`. |
 | `category` | string | `mobile` / `internet` / `streaming` / `fitness` / `housing`. |
+| `factor` | string | Which bucket this feeds: `cash` / `fees` / `credit` / `none`. Drives the chip. |
+| `evidence_tier` | string | Where the claim came from: `westpac_transactions` / `provider_price` (today) / `westpac_prd` / `gov_benchmark`. |
+| `savings_status` | string | `potential` / `none` (today) / `pending` / `verified` / `lapsed`. |
 | `icon` | string | Emoji fallback only (UI uses GEL SVG icons). |
 | `label`, `provider`, `plan` | string | Current plan. |
 | `billing_period` | string | `"monthly"` / `"fortnightly"`. |
@@ -94,14 +129,20 @@ customer can choose any of the three.
 
 ## 2. `data/rewards.json`
 
-Top-level: `version` (`1`), `currency`, `starting_state`, `actions[]`, `levels[]`,
-`stages[]`, `goals[]`, `shop[]`.
+Top-level: `version` (`1`), `currency`, `credit_factors[]`, `starting_state`, `actions[]`,
+`levels[]`, `stages[]`, `goals[]`, `shop[]`.
 
+- `credit_factors[]`: the four bureau factors the score responds to —
+  `{ id, label, impact, direction, what }`. `direction` is `up`/`down` (a chip, not points).
 - `levels[]`: 10 levels at `0, 100, 250, 450, 700, 1000, 1350, 1750, 2200, 2700` XP.
 - `stages[]`: `{ id, name, xp_required, emoji, image }` — egg 0 · baby 250 · teen 800 · adult 1500.
-  (`image` is a placeholder; the prototype renders the dragon as layered **SVG** so gear can be attached.)
+  (`image` is a placeholder; the prototype renders the dragon as emoji/PNG so gear can be layered on.)
 - `goals[]`: `{ id, title, description, xp, coins, progress_source, target? }`.
 - `shop[]`: `{ id, name, slot, slot_label, cost, emoji, image, description, locked?, unlock_level?, scene?, repeatable? }`.
+
+`actions[]` gains `saving_verified` (awarded only when a saving is **proven** from transactions),
+alongside the existing `bill_switch` / `bill_cancel` / `bill_reschedule` awards that still drive
+the demo click-path to 1080 XP.
 
 Shop `slot` values (each maps to a wear/use behaviour in the Dragon tab):
 
@@ -126,6 +167,7 @@ Shop `slot` values (each maps to a wear/use behaviour in the Dragon tab):
   "xp_total": 320,
   "coins": 120,
   "streak_weeks": 3,
+  "protected": false,
   "bills": { "bill_phone": { "status": "pending" } },
   "goals": { "goal_repay_on_time": { "status": "pending" } },
   "shop": {
@@ -142,6 +184,7 @@ Shop `slot` values (each maps to a wear/use behaviour in the Dragon tab):
 
 - **`shop.equipped`** is keyed by `slot` and stores an item `id` (not the item object).
 - **`choices`** stores the customer's keep-one pick (the AI recommends, they decide).
+- **`protected`** is a boolean — whether the "protected balance" is set for the at-risk debit.
 - **`feeds` / `fed_at`** track food — food is repeatable and never stored in `owned`.
 - **Derived, never stored:** `level`, `stage`.
 - **Idempotency key:** `"{source_id}:{action_id}"` in `awarded[]`.

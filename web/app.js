@@ -58,6 +58,13 @@ function adorn(bill) {
   return '<span class="gel-adorn">' + ico(name) + "</span>";
 }
 
+/* The three-bucket label a change feeds: credit score / cash freed / fees avoided. */
+const FACTOR_LABEL = { cash: "Cash", fees: "Fees", credit: "Credit", none: "" };
+function factorChip(factor) {
+  if (!factor || factor === "none") return "";
+  return `<span class="gel-factor gel-factor--${factor}">${FACTOR_LABEL[factor] || factor}</span>`;
+}
+
 function imgOrEmoji(src, emoji, alt, cls) {
   return (
     '<img src="' + src + '" alt="' + alt + '" class="' + cls + '" loading="lazy" ' +
@@ -103,6 +110,7 @@ function initialState() {
     xp_total: rewards.starting_state.xp_total,
     coins: rewards.starting_state.coins,
     streak_weeks: rewards.starting_state.streak_weeks,
+    protected: false, // protected balance set for the at-risk debit
     bills: {},
     goals: {},
     /* wardrobe: equipped[slot] = shop item id (hat / face / neck / home) */
@@ -125,6 +133,7 @@ function defaultChoices() {
 /* Old saves from a previous build may lack the wardrobe/choices shape. */
 function normalise(s) {
   const base = initialState();
+  if (s.protected === undefined) s.protected = false;
   s.shop = s.shop || {};
   s.shop.owned = s.shop.owned || [];
   s.shop.equipped = Object.assign({}, base.shop.equipped, s.shop.equipped || {});
@@ -764,6 +773,7 @@ function billCard(b) {
       <div class="gel-tagline">
         <span class="gel-badge gel-badge--success">${badge}</span>
         <span class="gel-muted">${b.finding || ""}</span>
+        ${factorChip(b.factor)}
       </div>
       <div class="gel-hr"></div>
       ${compareBlock(b)}
@@ -890,7 +900,7 @@ function savingsPanel() {
   return `
     <section class="gel-panel">
       <div class="gel-panel-head">
-        <span class="gel-panel-title">Savings found</span>
+        <span class="gel-panel-title">Potential savings</span>
         <span class="gel-panel-title">${fmtAUD(available)} / month</span>
       </div>
       <div class="gel-panel-body">
@@ -1248,6 +1258,168 @@ function renderShop() {
     <div class="gel-shop-grid">${items}</div>`;
 }
 
+/* ==========================================================================
+   SCORE — the credit-file trajectory view
+   --------------------------------------------------------------------------
+   The dragon is a picture of the score's trajectory. This tab shows the
+   bureau score (consent-gated, sourced, dated), the forecast as a range with
+   a stated assumption, the three honest buckets, the BNPL "credit you don't
+   see" panel, the four bureau factors as direction (not points), and the
+   predicted-vs-actual accountability loop.
+   ========================================================================== */
+
+function protectedBalanceAction() {
+  if (state.protected) {
+    return `<div class="gel-alert gel-alert--success">
+      ${ico("check")} Protected balance set for Thu 19 Nov. We'll confirm when the debit clears.
+    </div>`;
+  }
+  return `<button class="gel-btn-primary gel-btn-block" type="button" onclick="setProtected()">
+    ${ico("shield")} Set a protected balance
+  </button>`;
+}
+
+function renderScore() {
+  const score = bills.score || {};
+  const cf = bills.credit_file || {};
+  const factors = rewards.credit_factors || [];
+  const forecast = score.forecast || {};
+  const prev = forecast.previous || {};
+  const bnpl = cf.bnpl || {};
+  const gym = bills.bills.find((b) => b.id === "bill_gym");
+  const feesAvoided = (gym && gym.offer && gym.offer.fee_avoided) || 19;
+
+  const factorRows = factors
+    .map((f) => {
+      const up = f.direction === "up";
+      return `
+        <div class="gel-factor-row">
+          <span class="gel-factor-arrow ${up ? "is-up" : "is-down"}">${up ? "↑" : "↓"}</span>
+          <div class="gel-factor-body">
+            <div class="gel-row-between">
+              <span class="gel-bill-title">${f.label}</span>
+              <span class="gel-badge gel-badge--faint">${f.impact}</span>
+            </div>
+            <p class="gel-muted" style="margin:2px 0 0">${f.what}</p>
+          </div>
+        </div>`;
+    })
+    .join("");
+
+  const bnplRows = (bnpl.providers || [])
+    .map(
+      (p) => `
+      <div class="gel-kv gel-bnpl-row">
+        <span class="gel-bnpl-name">${p.name}</span>
+        <span class="gel-muted">${p.facilities} ${p.facilities === 1 ? "facility" : "facilities"} · ${p.instalments_due} due</span>
+        <span class="gel-kv-v">${fmtAUD(p.amount_due)} <span class="gel-money-unit">${fmtDate(p.next_due)}</span></span>
+      </div>`
+    )
+    .join("");
+
+  return `
+    <div class="gel-screen-head">
+      <div>
+        <h1 class="gel-title">Your credit</h1>
+        <p class="gel-muted">${cf.goal || "Credit health"} · ${cf.goal_date ? "by " + fmtDate(cf.goal_date) : ""}</p>
+      </div>
+      <span class="gel-badge gel-badge--hero">${score.source || "Equifax"}</span>
+    </div>
+
+    <section class="gel-panel gel-score-hero">
+      <div class="gel-panel-head">
+        <span class="gel-panel-title">Credit score</span>
+        <span class="gel-panel-title">${score.consent ? "Shared with consent" : ""}</span>
+      </div>
+      <div class="gel-panel-body">
+        <div class="gel-score-num">${score.value != null ? fmtWhole(score.value) : "—"}<span class="gel-score-max">/${score.max != null ? fmtWhole(score.max) : ""}</span></div>
+        <p class="gel-muted" style="margin:4px 0 0">${score.source} · updated ${score.refreshed_at ? fmtDate(score.refreshed_at) : "—"}</p>
+        ${score.demo_sample ? '<p class="gel-note gel-note--warn" style="margin:6px 0 0">Sample score for this demo.</p>' : ""}
+
+        <div class="gel-hr"></div>
+        <div class="gel-forecast">
+          <div class="gel-row-between">
+            <span class="gel-label">Forecast in ${forecast.horizon_months || 3} months</span>
+            <span class="gel-money gel-money--good">${fmtWhole(forecast.range ? forecast.range[0] : 0)}–${fmtWhole(forecast.range ? forecast.range[1] : 0)}</span>
+          </div>
+          <p class="gel-note" style="margin:6px 0 0">If: ${forecast.assumption || "you keep repayments on time."}</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="gel-buckets">
+      <div class="gel-bucket gel-bucket--score">
+        <span class="gel-bucket-label">Credit score</span>
+        <span class="gel-bucket-val">${score.value != null ? fmtWhole(score.value) : "—"}</span>
+        <span class="gel-bucket-sub">held, not grown</span>
+      </div>
+      <div class="gel-bucket gel-bucket--cash">
+        <span class="gel-bucket-label">Cash freed</span>
+        <span class="gel-bucket-val">${fmtAUD(recommendedSavings())}</span>
+        <span class="gel-bucket-sub">/month · potential</span>
+      </div>
+      <div class="gel-bucket gel-bucket--fees">
+        <span class="gel-bucket-label">Fees avoided</span>
+        <span class="gel-bucket-val">${fmtAUD(feesAvoided)}</span>
+        <span class="gel-bucket-sub">dishonour fee</span>
+      </div>
+    </div>
+
+    <section class="gel-cell">
+      <div class="gel-row-between">
+        <span class="gel-label">Credit you don't see</span>
+        <span class="gel-badge gel-badge--faint">${bnpl.active_facilities || 0} facilities</span>
+      </div>
+      <p class="gel-note" style="margin:6px 0 0">${bnpl.note || ""}</p>
+      <div class="gel-hr"></div>
+      ${bnplRows}
+      <div class="gel-hr"></div>
+      <div class="gel-kv">
+        <span class="gel-muted">Credit enquiries</span>
+        <span class="gel-kv-v">${bnpl.enquiries_6m || 0} in 6 months</span>
+      </div>
+    </section>
+
+    <section class="gel-cell">
+      <div class="gel-row-between">
+        <span class="gel-label">What moves it</span>
+        <span class="gel-muted">direction, not points</span>
+      </div>
+      <div class="gel-factor-list">${factorRows}</div>
+    </section>
+
+    <section class="gel-cell">
+      <div class="gel-row-between">
+        <span class="gel-label">Last check</span>
+        <span class="gel-muted">${prev.refreshed_at ? fmtDate(prev.refreshed_at) : "—"}</span>
+      </div>
+      <div class="gel-forecast" style="margin-top:8px">
+        <div class="gel-row-between">
+          <span class="gel-muted">We predicted ${prev.predicted_range ? fmtWhole(prev.predicted_range[0]) + "–" + fmtWhole(prev.predicted_range[1]) : "—"}</span>
+          <span class="gel-money">${prev.actual != null ? fmtWhole(prev.actual) : "—"}</span>
+        </div>
+        <p class="gel-note gel-note--good" style="margin:6px 0 0">You landed inside the range. On-time repayments did the work.</p>
+      </div>
+    </section>
+
+    <section class="gel-cell">
+      <div class="gel-row-between">
+        <span class="gel-label">A debit is at risk</span>
+        <span class="gel-badge gel-badge--warning">Payday minus 1</span>
+      </div>
+      <p class="gel-note" style="margin:6px 0 0">${cf.dishonour ? cf.dishonour.reason : ""}</p>
+      <div class="gel-hr"></div>
+      ${protectedBalanceAction()}
+    </section>`;
+}
+
+function setProtected() {
+  state.protected = true;
+  save();
+  render();
+  toast(ico("shield") + " Protected balance set for Thu 19 Nov");
+}
+
 /* ---------- shell ---------- */
 let activeTab = "bills";
 let lastCoins = 0;
@@ -1258,7 +1430,8 @@ function render() {
   lastCoins = state.coins;
 
   const screen = $("#screen");
-  if (activeTab === "bills") screen.innerHTML = renderBills();
+  if (activeTab === "score") screen.innerHTML = renderScore();
+  else if (activeTab === "bills") screen.innerHTML = renderBills();
   else if (activeTab === "goals") screen.innerHTML = renderGoals();
   else if (activeTab === "dragon") screen.innerHTML = renderDragon();
   else screen.innerHTML = renderShop();

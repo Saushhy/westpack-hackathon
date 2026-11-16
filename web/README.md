@@ -1,10 +1,13 @@
 # Credit Dragon — web prototype (Santiago)
 
-Standalone **HTML + Tailwind** (no framework) prototype of the **bill negotiator** and
-**gamification** (XP, coins, levels, dragon stages, shop).
+Standalone **HTML + Tailwind** (no framework) prototype of the **credit trajectory** (score
+forecast + BNPL visibility + three honest buckets) and the **gamification** (XP, coins, levels,
+dragon stages, shop) plus the bill negotiator as the "cash / fees" layer.
 
 It is styled with the **real Westpac GEL design system** — GEL's own stylesheet, tokens and
 component geometry, compiled locally. See `../docs/design-tokens.md` for the full mapping.
+
+> The pivot from "negotiator" to "credit trajectory" is documented in **`../CHANGES.md`**.
 
 ## Run it
 
@@ -34,8 +37,8 @@ npm run build          # data + icons + css
 ## Testing
 
 ```bash
-npm run audit   # 54 headless assertions: GEL tokens, real font loaded, component geometry,
-                # icons, overflow, contrast, review sheet scroll, and the full demo journey
+npm run audit   # 66 headless assertions: GEL tokens, real font loaded, component geometry,
+                # icons, overflow, contrast, review sheet scroll, score tab, and the full demo journey
 npm run shots   # screenshots each screen into %TEMP%\opencode\cd-shots
 ```
 
@@ -68,9 +71,11 @@ download is needed. Edit the `EDGE` path in `scripts/*.mjs` if Edge lives elsewh
 
 ## Demo click-path (lands at 1080 XP → Teen dragon)
 
-1. **Bills** → review + approve the phone switch, internet switch and gym reschedule
+1. **Score** → see the 612 score, the forecast band, the BNPL "credit you don't see", the four
+   factors, the predicted-vs-actual loop, and set a protected balance.
+2. **Bills** → review + approve the phone switch, internet switch and gym reschedule
    (each opens a review sheet with a provider link).
-2. **Streaming panel** → pick the service to keep, then **Review 2 cancellations** and approve both.
-3. **Goals** → complete "Cut $90+ bills", "Pay card on time", "No new BNPL".
-4. **Dragon** → watch it evolve to Teen at 800 XP, then hit Level 6.
-5. **Shop** → spend the ~600 coins — buy a hat / lair and see the dragon wear it and its scene change.
+3. **Streaming panel** → pick the service to keep, then **Review 2 cancellations** and approve both.
+4. **Goals** → complete "Cut $90+ bills", "Pay card on time", "No new BNPL".
+5. **Dragon** → watch it evolve to Teen at 800 XP, then hit Level 6.
+6. **Shop** → spend the ~600 coins — buy a hat / lair and see the dragon wear it and its scene change.

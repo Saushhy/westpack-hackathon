@@ -1,6 +1,36 @@
 {
   "version": 1,
   "currency": "coins",
+  "credit_factors": [
+    {
+      "id": "repayment_history",
+      "label": "Repayment history",
+      "impact": "largest",
+      "direction": "up",
+      "what": "Pay credit cards, loans and BNPL on time. This is the single biggest factor."
+    },
+    {
+      "id": "credit_enquiries",
+      "label": "Credit enquiries",
+      "impact": "small",
+      "direction": "down",
+      "what": "Every application sits on your file for 12 months. Fewer is better."
+    },
+    {
+      "id": "limits_debt",
+      "label": "Limits & debt",
+      "impact": "moderate",
+      "direction": "down",
+      "what": "High limits and balances read as risk to a lender."
+    },
+    {
+      "id": "defaults",
+      "label": "Defaults",
+      "impact": "severe",
+      "direction": "down",
+      "what": "Unpaid debts sent to collection stay on file for years."
+    }
+  ],
   "starting_state": {
     "xp_total": 320,
     "coins": 120,
@@ -62,6 +92,14 @@
       "coins": 40,
       "cap": { "type": "per_bill" },
       "why_rewards_you": "Avoiding a dishonour fee keeps your account in good standing."
+    },
+    {
+      "id": "saving_verified",
+      "label": "Verified a saving",
+      "xp": 120,
+      "coins": 80,
+      "cap": { "type": "per_bill" },
+      "why_rewards_you": "Awarded only once the old debit stops appearing in your transactions — a saving we can prove, not just promise."
     },
     {
       "id": "savings_streak_4wk",

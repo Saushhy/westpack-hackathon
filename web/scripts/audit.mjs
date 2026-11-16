@@ -328,6 +328,49 @@ await page.waitForTimeout(900);
   check("Buying a home changes the scene", "lava", scene2, scene2 === "lava");
 }
 
+// ============================ score / credit trajectory ============================
+{
+  await page.locator('.gel-tab[data-tab="score"]').click();
+  await page.waitForTimeout(250);
+
+  const score = await page.evaluate(() => ({
+    num: document.querySelector(".gel-score-num")?.textContent.trim() || "",
+    hero: document.querySelector(".gel-badge--hero")?.textContent.trim() || "",
+    buckets: document.querySelectorAll(".gel-bucket").length,
+    factors: document.querySelectorAll(".gel-factor-row").length,
+    text: document.body.innerText,
+  }));
+  check("Score shows 612", "612", score.num, score.num.startsWith("612"));
+  check("Score source = Equifax", "Equifax", score.hero, /Equifax/.test(score.hero));
+  check("Three buckets (score/cash/fees)", "3", String(score.buckets), score.buckets === 3);
+  check("Four bureau factors", "4", String(score.factors), score.factors === 4);
+  check("BNPL shows Afterpay + Zip", "both", [score.text.includes("Afterpay"), score.text.includes("Zip")].every(Boolean) ? "both" : "missing", score.text.includes("Afterpay") && score.text.includes("Zip"));
+  check("Forecast is a range", "635–650", score.text.includes("635") && score.text.includes("650") ? "635–650" : "missing", score.text.includes("635") && score.text.includes("650"));
+  check("Predicted-vs-actual loop present", "present", score.text.includes("We predicted") ? "present" : "missing", score.text.includes("We predicted"));
+
+  const overflow = await page.evaluate(() => {
+    const phone = document.querySelector(".phone");
+    const pr = phone.getBoundingClientRect();
+    const out = [];
+    phone.querySelectorAll("*").forEach((el) => {
+      const r = el.getBoundingClientRect();
+      if (r.right > pr.right + 1 || r.left < pr.left - 1) out.push((el.className || el.tagName).toString().slice(0, 30));
+    });
+    return out.slice(0, 6);
+  });
+  check("Score tab: no horizontal overflow", "[]", JSON.stringify(overflow), overflow.length === 0);
+
+  // protected balance action
+  const pb = page.locator('button.gel-btn-primary', { hasText: "Set a protected balance" });
+  check("Protected balance CTA present", "present", (await pb.count()) > 0 ? "present" : "missing", (await pb.count()) > 0);
+  if ((await pb.count()) > 0) {
+    await pb.click();
+    await page.waitForTimeout(250);
+    const st = await page.evaluate(() => JSON.parse(localStorage.getItem("credit-dragon:state")));
+    check("Protected balance toggled in state", "true", String(st.protected), st.protected === true);
+  }
+}
+
 // ============================ GEL reference page ============================
 {
   const p2 = await browser.newPage({ viewport: { width: 900, height: 1200 } });

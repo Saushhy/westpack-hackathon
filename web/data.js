@@ -6,6 +6,63 @@ window.DATA = {
     "currency": "AUD",
     "as_of": "2026-11-16",
     "data_notice": "Sample data for a hackathon demo. Provider names and plan links are real so they can be checked; prices and plans are illustrative and must be confirmed with the provider before switching.",
+    "score": {
+      "value": 612,
+      "scale": "equifax_au",
+      "max": 1200,
+      "source": "Equifax",
+      "refreshed_at": "2026-11-03",
+      "consent": true,
+      "demo_sample": true,
+      "forecast": {
+        "range": [
+          635,
+          650
+        ],
+        "horizon_months": 3,
+        "assumption": "You keep repayments on time, make no new BNPL applications, and switch two bills.",
+        "previous": {
+          "value": 588,
+          "refreshed_at": "2026-08-05",
+          "predicted_range": [
+            600,
+            618
+          ],
+          "actual": 612
+        }
+      }
+    },
+    "credit_file": {
+      "goal": "Car loan in 12 months",
+      "goal_date": "2027-11-16",
+      "bnpl": {
+        "providers": [
+          {
+            "name": "Afterpay",
+            "facilities": 2,
+            "instalments_due": 3,
+            "next_due": "2026-11-18",
+            "amount_due": 84.5
+          },
+          {
+            "name": "Zip",
+            "facilities": 1,
+            "instalments_due": 1,
+            "next_due": "2026-11-21",
+            "amount_due": 32
+          }
+        ],
+        "enquiries_6m": 2,
+        "active_facilities": 3,
+        "note": "BNPL is credit. It's reported to bureaus and appears on the file lenders see — even though it doesn't feel like a loan."
+      },
+      "dishonour": {
+        "bill_id": "bill_gym",
+        "risk": "high",
+        "reason": "A $34 direct debit lands Thursday 19 Nov, one day before payday. It dishonoured last month.",
+        "action": "Set a protected balance so the debit clears even before payday."
+      }
+    },
     "payday": {
       "frequency": "fortnightly",
       "next": "2026-11-20"
@@ -38,6 +95,9 @@ window.DATA = {
       {
         "id": "bill_phone",
         "category": "mobile",
+        "factor": "cash",
+        "evidence_tier": "provider_price",
+        "savings_status": "potential",
         "icon": "📱",
         "label": "Mobile phone plan",
         "provider": "Vodafone",
@@ -101,6 +161,9 @@ window.DATA = {
       {
         "id": "bill_internet",
         "category": "internet",
+        "factor": "cash",
+        "evidence_tier": "provider_price",
+        "savings_status": "potential",
         "icon": "📶",
         "label": "Home internet",
         "provider": "Aussie Broadband",
@@ -164,6 +227,9 @@ window.DATA = {
       {
         "id": "bill_netflix",
         "category": "streaming",
+        "factor": "cash",
+        "evidence_tier": "westpac_transactions",
+        "savings_status": "potential",
         "icon": "🎬",
         "label": "Streaming — Netflix",
         "provider": "Netflix",
@@ -217,6 +283,9 @@ window.DATA = {
       {
         "id": "bill_stan",
         "category": "streaming",
+        "factor": "cash",
+        "evidence_tier": "westpac_transactions",
+        "savings_status": "potential",
         "icon": "🎬",
         "label": "Streaming — Stan",
         "provider": "Stan",
@@ -270,6 +339,9 @@ window.DATA = {
       {
         "id": "bill_disney",
         "category": "streaming",
+        "factor": "cash",
+        "evidence_tier": "westpac_transactions",
+        "savings_status": "potential",
         "icon": "🎬",
         "label": "Streaming — Disney+",
         "provider": "Disney+",
@@ -323,6 +395,9 @@ window.DATA = {
       {
         "id": "bill_spotify",
         "category": "streaming",
+        "factor": "cash",
+        "evidence_tier": "westpac_transactions",
+        "savings_status": "none",
         "icon": "🎵",
         "label": "Streaming — Spotify",
         "provider": "Spotify",
@@ -365,6 +440,9 @@ window.DATA = {
       {
         "id": "bill_gym",
         "category": "fitness",
+        "factor": "fees",
+        "evidence_tier": "westpac_transactions",
+        "savings_status": "potential",
         "icon": "🏋️",
         "label": "Gym membership",
         "provider": "Goodlife Health Clubs",
@@ -428,6 +506,9 @@ window.DATA = {
       {
         "id": "bill_rent",
         "category": "housing",
+        "factor": "none",
+        "evidence_tier": "westpac_transactions",
+        "savings_status": "none",
         "icon": "🏠",
         "label": "Rent (sharehouse split)",
         "provider": "OSKO Transfer — Rent",
@@ -469,6 +550,36 @@ window.DATA = {
   "rewards": {
     "version": 1,
     "currency": "coins",
+    "credit_factors": [
+      {
+        "id": "repayment_history",
+        "label": "Repayment history",
+        "impact": "largest",
+        "direction": "up",
+        "what": "Pay credit cards, loans and BNPL on time. This is the single biggest factor."
+      },
+      {
+        "id": "credit_enquiries",
+        "label": "Credit enquiries",
+        "impact": "small",
+        "direction": "down",
+        "what": "Every application sits on your file for 12 months. Fewer is better."
+      },
+      {
+        "id": "limits_debt",
+        "label": "Limits & debt",
+        "impact": "moderate",
+        "direction": "down",
+        "what": "High limits and balances read as risk to a lender."
+      },
+      {
+        "id": "defaults",
+        "label": "Defaults",
+        "impact": "severe",
+        "direction": "down",
+        "what": "Unpaid debts sent to collection stay on file for years."
+      }
+    ],
     "starting_state": {
       "xp_total": 320,
       "coins": 120,
@@ -547,6 +658,16 @@ window.DATA = {
           "type": "per_bill"
         },
         "why_rewards_you": "Avoiding a dishonour fee keeps your account in good standing."
+      },
+      {
+        "id": "saving_verified",
+        "label": "Verified a saving",
+        "xp": 120,
+        "coins": 80,
+        "cap": {
+          "type": "per_bill"
+        },
+        "why_rewards_you": "Awarded only once the old debit stops appearing in your transactions — a saving we can prove, not just promise."
       },
       {
         "id": "savings_streak_4wk",
