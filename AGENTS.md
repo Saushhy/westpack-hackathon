@@ -241,3 +241,28 @@ For Friday (if shortlisted):
 - [ ] Dragon look (Westpac colours?) and which USDZ model
 - [ ] Which LLM/API key we use
 - [ ] Do coins unlock real perks in the pitch? (recommended)
+
+---
+
+## 12. Workstream: Santiago — bill negotiator + gamification
+
+**Owner:** Santiago · **Branch:** `feat/santiago-bills-gamification`
+
+Deliverables (build against these — do not fork your own copy):
+
+| File | What it is |
+|---|---|
+| `data/bills.json` | Mia's bills + offers + savings (negotiable set = phone + internet + streaming; plus gym reschedule and rent no-offer). |
+| `data/rewards.json` | XP/coin rules, 10 levels, 4 dragon stages, 3 goals, shop items. |
+| `docs/data-contracts.md` | **Read first.** Full field reference + runtime state schema + known mismatches to fix as a team. |
+| `docs/gamification-spec.md` | Economy, anti-farm rules, the exact demo click-path (lands at 1080 XP → Teen). |
+| `docs/bill-negotiator-spec.md` | Screen states + copy for Shawn's SwiftUI bill screen. |
+| `docs/design-tokens.md` | GEL token → hex mapping (from `WestpacGEL/GEL-next`), for Naomi + Shawn. |
+| `web/` | Standalone HTML + Tailwind (no framework) prototype of bills + goals + dragon + shop. Open `web/index.html`. |
+
+**Headline numbers:** negotiator saves **$92.99/month → $1,115.88/year**. Dragon stages:
+egg (0) → baby (250) → teen (800) → adult (1500).
+
+**For Carlos:** `bills.json` `detected_from` ids reference your `mia_transactions.json`
+(`tx_*`) ids. See `docs/data-contracts.md` §4 for the two numbers/names we need to
+reconcile (file location + the ~$75 vs $92.99 savings figure, and Goodlife vs "Anytime Fitness").
