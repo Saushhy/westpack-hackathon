@@ -130,15 +130,28 @@
       "id": "item_feast",
       "name": "Dragon Feast",
       "slot": "food",
+      "slot_label": "Food",
+      "repeatable": true,
       "cost": 60,
       "emoji": "🍗",
       "image": "assets/shop/feast.png",
-      "description": "A hearty meal. +0 XP — food is its own reward."
+      "description": "Buy it and feed it. Your dragon hops and asks for more."
+    },
+    {
+      "id": "item_cap",
+      "name": "Peak Cap",
+      "slot": "hat",
+      "slot_label": "Hat",
+      "cost": 120,
+      "emoji": "🧢",
+      "image": "assets/shop/cap.png",
+      "description": "Sits on the head of whatever stage your dragon is at."
     },
     {
       "id": "item_sunnies",
       "name": "Sunset Sunnies",
-      "slot": "accessory",
+      "slot": "face",
+      "slot_label": "Face",
       "cost": 150,
       "emoji": "🕶️",
       "image": "assets/shop/sunnies.png",
@@ -148,6 +161,7 @@
       "id": "item_tophat",
       "name": "Top Hat",
       "slot": "hat",
+      "slot_label": "Hat",
       "cost": 180,
       "emoji": "🎩",
       "image": "assets/shop/tophat.png",
@@ -156,25 +170,51 @@
     {
       "id": "item_scarf",
       "name": "Westpac Scarf",
-      "slot": "accessory",
+      "slot": "neck",
+      "slot_label": "Neck",
       "cost": 220,
       "emoji": "🧣",
       "image": "assets/shop/scarf.png",
-      "description": "Keeps your dragon warm in navy and red."
+      "description": "Wraps its neck in Westpac navy and red."
+    },
+    {
+      "id": "item_cave",
+      "name": "Starry Cave",
+      "slot": "home",
+      "slot_label": "Home",
+      "cost": 300,
+      "emoji": "🌌",
+      "scene": "stars",
+      "image": "assets/shop/cave.png",
+      "description": "Changes the sky behind your dragon to a night cave."
+    },
+    {
+      "id": "item_crown",
+      "name": "Gold Crown",
+      "slot": "hat",
+      "slot_label": "Hat",
+      "cost": 320,
+      "emoji": "👑",
+      "unlock_level": 5,
+      "image": "assets/shop/crown.png",
+      "description": "Unlocks at Level 5. Strictly for dragons with good repayment history."
     },
     {
       "id": "item_lair",
       "name": "Lava Lair",
       "slot": "home",
+      "slot_label": "Home",
       "cost": 450,
       "emoji": "🌋",
+      "scene": "lava",
       "image": "assets/shop/lair.png",
-      "description": "A cosy home to grow into."
+      "description": "A cosy lair. Turns the scene behind your dragon volcanic."
     },
     {
       "id": "item_perk",
       "name": "0.25% bonus savings rate",
       "slot": "perk",
+      "slot_label": "Perk",
       "cost": 1200,
       "emoji": "💎",
       "image": "assets/shop/perk.png",

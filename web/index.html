@@ -11,23 +11,27 @@
     <div class="phone">
       <div class="gel-notch"></div>
 
-      <header class="gel-topbar">
-        <div class="gel-statusbar">
-          <span id="status-time">9:41</span>
-          <span class="gel-status-icons">
-            <span class="gel-signal"><i></i><i></i><i></i><i></i></span>
-            <span class="gel-battery"><span class="gel-battery-fill"></span></span>
-          </span>
-        </div>
+      <!-- iOS status bar -->
+      <div class="gel-statusbar">
+        <span id="status-time">9:41</span>
+        <span class="gel-status-icons">
+          <span class="gel-signal"><i></i><i></i><i></i><i></i></span>
+          <span class="gel-battery"><span class="gel-battery-fill"></span></span>
+        </span>
+      </div>
+
+      <!-- GEL Header: white, hairline border, 54px, 12px gutter -->
+      <header class="gel-topbar" id="topbar">
         <div class="gel-header-main">
           <div class="gel-brandrow">
             <img class="gel-logo" src="assets/gel/wbc-logo.svg" alt="Westpac">
-            <div>
-              <span class="gel-brand">Westpac</span>
-              <span class="gel-brand-sub">Credit Dragon</span>
-            </div>
+            <span class="gel-wordmark">Westpac</span>
           </div>
-          <span class="gel-coin-pill"><span class="gel-coin"></span><span id="header-coins">0</span></span>
+          <div class="gel-header-end">
+            <span class="gel-coin-pill"><span class="gel-coin"></span><span id="header-coins">0</span></span>
+            <button class="gel-header-btn" type="button" data-icon="help" aria-label="Help"></button>
+            <button class="gel-header-btn" type="button" data-icon="account" aria-label="Profile"></button>
+          </div>
         </div>
       </header>
 

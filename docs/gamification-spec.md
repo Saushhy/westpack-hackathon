@@ -41,6 +41,25 @@ criterion "opt-in, explainable, user approves every action".
 | Teen | 800 | 🐲 |
 | Adult | 1500 | 🐉 |
 
+The dragon is rendered as **layered SVG** (not a fixed image) so shop items can be attached
+to it — see §4b.
+
+## 4b. Dressing your dragon (wardrobe + scenes + food)
+
+Coins are spent in the shop, and what you buy **changes the dragon** — not just a badge:
+
+- **Hats / shades / scarves** attach to the dragon and scale with its stage (a baby dragon
+  gets a baby-sized hat; the same hat fits the adult to scale). Buying = wearing it; tap to
+  take it off.
+- **Homes** change the **scene** behind the dragon (`Lava Lair` → volcanic, `Starry Cave` →
+  night sky). The default is a plain GEL-tinted sky.
+- **Food** is consumable and repeatable — feeding the dragon makes it hop and shower hearts.
+  It tracks a `feeds` counter, never XP.
+- The dragon is tappable: it replies with a short credit-health tip.
+
+All of this is **cosmetic** and spends coins — it never awards XP, keeping the economy
+credit-health-first.
+
 ## 5. Anti-farm rules
 
 1. **Idempotency** — an award key is `"{source_id}:{action_id}"`; a source can only ever
@@ -60,17 +79,16 @@ Start: **320 XP, 120 coins, level 3, Baby dragon, 3-week streak.**
 |---|---|---|---|---|---|
 | 1 | Approve phone switch (Vodafone → Belong) | 120 | 80 | 440 | |
 | 2 | Approve internet switch (NBN 100 → 50) | 120 | 80 | 560 | → Level 4 |
-| 3 | Cancel Stan | 80 | 50 | 640 | |
-| 4 | Cancel Disney+ | 80 | 50 | 720 | → Level 5 |
-| 5 | Reschedule gym debit to Fridays | 60 | 40 | 780 | |
-| 6 | Complete "Cut $90+ bills" goal | 100 | 60 | 880 | **🐲 Evolves to Teen** |
-| 7 | Complete "Pay card on time" goal | 100 | 60 | 980 | |
-| 8 | Complete "No new BNPL" goal | 100 | 60 | 1080 | → **Level 6** |
+| 3 | Approve both streaming cancellations (Stan + Disney+) | 160 | 100 | 720 | → Level 5 |
+| 4 | Reschedule gym debit to Fridays | 60 | 40 | 780 | |
+| 5 | Complete "Cut $90+ bills" goal | 100 | 60 | 880 | **🐲 Evolves to Teen** |
+| 6 | Complete "Pay card on time" goal | 100 | 60 | 980 | |
+| 7 | Complete "No new BNPL" goal | 100 | 60 | 1080 | → **Level 6** |
 
 **End: 1080 XP, level 6, Teen dragon, 600 coins.** Enough to buy the Lava Lair (450) +
 Dragon Feast (60), with 90 left over — or save toward the 1200-coin perk.
 
-> The evolution lands at step 6 *on purpose*: the dragon grows the moment Mia hits her
+> The evolution lands at step 5 *on purpose*: the dragon grows the moment Mia hits her
 > "cut bills" savings goal, tying the gamification to the money outcome rather than to
 > random clicks.
 

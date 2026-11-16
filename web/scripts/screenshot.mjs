@@ -1,88 +1,121 @@
+/**
+ * Captures the key screens of the prototype into %TEMP%/opencode/cd-shots for review.
+ *   npm run shots
+ */
 import { chromium } from "playwright-core";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { mkdirSync } from "node:fs";
+import { tmpdir } from "node:os";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const indexUrl = "file:///" + join(__dirname, "..", "index.html").replace(/\\/g, "/");
-const outDir = "C:/Users/Santiago/AppData/Local/Temp/opencode/cd-shots";
-mkdirSync(outDir, { recursive: true });
-
+const webRoot = join(__dirname, "..");
+const fileUrl = (p) => "file:///" + join(webRoot, p).replace(/\\/g, "/");
 const EDGE = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
+const OUT = join(tmpdir(), "opencode", "cd-shots");
+mkdirSync(OUT, { recursive: true });
 
-const errors = [];
 const browser = await chromium.launch({ executablePath: EDGE, headless: true });
-const page = await browser.newPage({ viewport: { width: 480, height: 960 } });
-page.on("console", (m) => {
-  if (m.type() === "error") errors.push("[console.error] " + m.text());
-});
-page.on("pageerror", (e) => errors.push("[pageerror] " + e.message));
-page.on("requestfailed", (r) => errors.push("[requestfailed] " + r.url() + " :: " + (r.failure()?.errorText || "?")));
+const page = await browser.newPage({ viewport: { width: 480, height: 980 } });
+await page.goto(fileUrl("index.html"));
+await page.waitForTimeout(800);
 
 const phone = page.locator(".phone");
-const shot = (name) => phone.screenshot({ path: join(outDir, name + ".png") });
+const shot = async (name) => {
+  await phone.screenshot({ path: join(OUT, name + ".png") });
+  console.log("saved", name + ".png");
+};
 
-await page.goto(indexUrl);
-await page.waitForTimeout(900);
+// clean state
+await page.evaluate(() => localStorage.clear());
+await page.reload();
+await page.waitForTimeout(800);
 
-// full desktop stage + bills (initial)
-await page.screenshot({ path: join(outDir, "00-stage.png") });
 await shot("01-bills");
 
-// open "why" on the first actionable bill
-await page.locator("details.gel-why summary").first().click();
-await page.waitForTimeout(300);
-await shot("02-bills-why");
+// a single-bill review sheet
+await page.locator('button.gel-btn-primary', { hasText: "Review change" }).first().click();
+await page.waitForTimeout(350);
+await shot("02-review-sheet");
+await page.locator(".gel-sheet-close").click();
+await page.waitForTimeout(150);
 
-// approve all 5 actionable bills one by one
-for (let i = 0; i < 5; i++) {
-  const btn = page.locator('button.gel-btn-primary', { hasText: "Approve" }).first();
-  if ((await btn.count()) === 0) break;
-  await btn.click();
-  await page.waitForTimeout(550);
-}
-await shot("03-bills-approved");
+// streaming group review
+await page.locator("button", { hasText: "Review 2 cancellations" }).first().click();
+await page.waitForTimeout(350);
+await shot("03-streaming-review");
+await page.locator(".gel-sheet-close").click();
+await page.waitForTimeout(150);
 
-// goals tab
+// goals
 await page.locator('.gel-tab[data-tab="goals"]').click();
-await page.waitForTimeout(450);
+await page.waitForTimeout(250);
 await shot("04-goals");
 
-// complete the "cut bills" goal (ready) -> evolution modal
-await page.locator('button.gel-btn-primary', { hasText: "Complete goal" }).first().click();
-await page.waitForTimeout(900);
-await shot("05-evolution");
-
-await page.locator('button', { hasText: "Nice!" }).first().click();
-await page.waitForTimeout(250);
-
-// complete remaining 2 goals
-for (let i = 0; i < 2; i++) {
-  const btn = page.locator('button.gel-btn-primary', { hasText: "Mark done" }).first();
-  if ((await btn.count()) === 0) break;
-  await btn.click();
-  await page.waitForTimeout(350);
-}
-await shot("06-goals-done");
-
-// dragon tab
+// dragon (plain scene, no gear)
 await page.locator('.gel-tab[data-tab="dragon"]').click();
-await page.waitForTimeout(450);
-await shot("07-dragon");
+await page.waitForTimeout(250);
+await shot("05-dragon");
 
-// shop tab
+// shop
 await page.locator('.gel-tab[data-tab="shop"]').click();
-await page.waitForTimeout(450);
-await shot("08-shop");
+await page.waitForTimeout(250);
+await shot("06-shop");
 
-// buy an affordable item
-const buy = page.locator('button.gel-btn-primary', { hasText: "Buy" }).first();
-if ((await buy.count()) > 0) {
-  await buy.click();
-  await page.waitForTimeout(400);
-  await shot("09-shop-bought");
+// buy cap + scarf + lair (grant coins first), then view dragon dressed
+await page.evaluate(() => {
+  localStorage.setItem(
+    "credit-dragon:state",
+    JSON.stringify({
+      version: 2,
+      xp_total: 320,
+      coins: 1200,
+      streak_weeks: 3,
+      bills: {},
+      goals: {},
+      shop: { owned: [], equipped: { hat: null, face: null, neck: null, home: null }, feeds: 0, fed_at: null },
+      choices: { rec_streaming: "bill_netflix" },
+      awarded: [],
+      ledger: []
+    })
+  );
+});
+await page.reload();
+await page.waitForTimeout(800);
+await page.locator('.gel-tab[data-tab="shop"]').click();
+await page.waitForTimeout(250);
+await page.locator('.gel-shop-item[data-item="item_cap"] button', { hasText: "Buy" }).click();
+await page.waitForTimeout(200);
+await page.locator('.gel-shop-item[data-item="item_scarf"] button', { hasText: "Buy" }).click();
+await page.waitForTimeout(200);
+await page.locator('.gel-shop-item[data-item="item_lair"] button', { hasText: "Buy" }).click();
+await page.waitForTimeout(250);
+await page.locator('.gel-tab[data-tab="dragon"]').click();
+await page.waitForTimeout(300);
+await shot("07-dragon-dressed");
+
+// evolution modal (drop XP just below the teen threshold, then complete one goal)
+await page.evaluate(() => {
+  const s = JSON.parse(localStorage.getItem("credit-dragon:state"));
+  s.xp_total = 720;
+  localStorage.setItem("credit-dragon:state", JSON.stringify(s));
+});await page.reload();
+await page.waitForTimeout(800);
+await page.locator('.gel-tab[data-tab="goals"]').click();
+await page.waitForTimeout(250);
+for (let i = 0; i < 6; i++) {
+  const b = page.locator('button.gel-btn-primary', { hasText: "Mark done" }).first();
+  if ((await b.count()) === 0) break;
+  await b.click();
+  await page.waitForTimeout(250);
+  const dlg = page.locator(".gel-dialog");
+  if ((await dlg.count()) > 0) {
+    await shot("08-evolution");
+    await page.locator(".gel-btn-primary", { hasText: "Continue" }).click();
+    await page.waitForTimeout(150);
+    break;
+  }
 }
 
 await browser.close();
-console.log("OUT_DIR", outDir);
-console.log("ERRORS", errors.length ? "\n" + errors.join("\n") : "(none)");
+console.log("shots written to", OUT);

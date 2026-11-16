@@ -5,6 +5,7 @@ window.DATA = {
     "persona": "Mia",
     "currency": "AUD",
     "as_of": "2026-11-16",
+    "data_notice": "Sample data for a hackathon demo. Provider names and plan links are real so they can be checked; prices and plans are illustrative and must be confirmed with the provider before switching.",
     "payday": {
       "frequency": "fortnightly",
       "next": "2026-11-20"
@@ -15,6 +16,24 @@ window.DATA = {
       "savings_monthly": 92.99,
       "savings_annual": 1115.88
     },
+    "recommendations": [
+      {
+        "id": "rec_streaming",
+        "kind": "keep_one",
+        "label": "Streaming services",
+        "title": "You're paying for 3 streaming services",
+        "bill_ids": [
+          "bill_netflix",
+          "bill_stan",
+          "bill_disney"
+        ],
+        "default_keep": "bill_netflix",
+        "what_we_know": "Netflix ($22.99), Stan ($16.00) and Disney+ ($13.99) have each been charged to this account every month for the last 3 months. That's $52.98 a month, or $635.76 a year.",
+        "what_we_dont_know": "Bank transactions show what you pay for, not what you watch. We can't see your viewing history, so we won't pretend to know which one you'd miss.",
+        "recommendation": "Most people only watch one service at a time. Keep the one you'd miss and pause the other two, then resubscribe whenever you like.",
+        "constraint": "This is a recommendation, not a decision. Only the services you review and approve are cancelled."
+      }
+    ],
     "bills": [
       {
         "id": "bill_phone",
@@ -26,6 +45,7 @@ window.DATA = {
         "billing_period": "monthly",
         "current_amount": 89,
         "current_monthly": 89,
+        "provider_url": "https://www.vodafone.com.au/mobile/sim-only-phone-plans",
         "detected_from": [
           "tx_015",
           "tx_049",
@@ -45,7 +65,15 @@ window.DATA = {
             "Telstra network coverage"
           ],
           "contract": "Month-to-month",
-          "setup_days": 2
+          "commitment": "No lock-in contract, $0 exit fee",
+          "includes": "40GB data, unlimited calls & text, Telstra network",
+          "starts": "Number ports across in about 2 business days",
+          "setup_days": 2,
+          "url": "https://www.belong.com.au/mobile/plans"
+        },
+        "verification": {
+          "checked_at": "2026-11-16",
+          "source": "Provider price page"
         },
         "savings_monthly": 54,
         "savings_annual": 648,
@@ -53,7 +81,22 @@ window.DATA = {
         "risk_notes": "Your number ports across automatically in about 2 days. You'd move from the Vodafone network to Telstra's.",
         "requires_approval": true,
         "xp": 120,
-        "coins": 80
+        "coins": 80,
+        "finding": "Same plan for 3 months — a $35 plan is available.",
+        "evidence": [
+          {
+            "k": "Charged",
+            "v": "5 Sep · 5 Oct · 5 Nov"
+          },
+          {
+            "k": "Average",
+            "v": "$89.00 a month"
+          },
+          {
+            "k": "Available",
+            "v": "Belong 40GB · $35.00"
+          }
+        ]
       },
       {
         "id": "bill_internet",
@@ -65,6 +108,7 @@ window.DATA = {
         "billing_period": "monthly",
         "current_amount": 68,
         "current_monthly": 68,
+        "provider_url": "https://www.aussiebroadband.com.au/internet/nbn-plans/",
         "detected_from": [
           "tx_024",
           "tx_060",
@@ -84,15 +128,38 @@ window.DATA = {
             "No lock-in contract"
           ],
           "contract": "No lock-in",
-          "setup_days": 3
+          "commitment": "No lock-in contract, change plan any time",
+          "includes": "NBN 50/20 speed, unlimited data",
+          "starts": "Takes effect on your next billing cycle (13 Dec)",
+          "setup_days": 3,
+          "url": "https://www.aussiebroadband.com.au/internet/nbn-plans/"
+        },
+        "verification": {
+          "checked_at": "2026-11-16",
+          "source": "Provider price page"
         },
         "savings_monthly": 9,
         "savings_annual": 108,
-        "why": "Your $68 share of the NBN 100 plan appears on 13 Sep, 13 Oct and 13 Nov. Your usage shows NBN 50 would cover the household's streaming and study.",
+        "why": "You've paid $68 a month to Aussie Broadband on 13 Sep, 13 Oct and 13 Nov. The same provider sells an NBN 50 plan for $59.",
         "risk_notes": "Confirm with your housemates before downgrading the speed tier.",
         "requires_approval": true,
         "xp": 120,
-        "coins": 80
+        "coins": 80,
+        "finding": "Same provider has a cheaper speed tier.",
+        "evidence": [
+          {
+            "k": "Charged",
+            "v": "13 Sep · 13 Oct · 13 Nov"
+          },
+          {
+            "k": "Average",
+            "v": "$68.00 a month"
+          },
+          {
+            "k": "Available",
+            "v": "NBN 50 · $59.00"
+          }
+        ]
       },
       {
         "id": "bill_netflix",
@@ -104,21 +171,48 @@ window.DATA = {
         "billing_period": "monthly",
         "current_amount": 22.99,
         "current_monthly": 22.99,
+        "provider_url": "https://www.netflix.com/au/",
         "detected_from": [
           "tx_021",
           "tx_055",
           "tx_091"
         ],
         "confidence": "high",
-        "action_type": "keep",
+        "streaming": true,
+        "action_type": "cancel",
         "offer": null,
-        "savings_monthly": 0,
-        "savings_annual": 0,
-        "why": "You watch Netflix every week, so we're keeping it. No change recommended.",
-        "risk_notes": null,
-        "requires_approval": false,
-        "xp": 0,
-        "coins": 0
+        "cancellation": {
+          "commitment": "Monthly plan, cancel any time",
+          "ends": "Access continues until the end of the current period (21 Dec)",
+          "url": "https://www.netflix.com/au/",
+          "url_label": "View Netflix plans"
+        },
+        "verification": {
+          "checked_at": "2026-11-16",
+          "source": "Provider price page"
+        },
+        "savings_monthly": 22.99,
+        "savings_annual": 275.88,
+        "why": "You've paid Netflix $22.99 on 21 Sep, 21 Oct and 21 Nov. It's one of three streaming services being charged to this account.",
+        "risk_notes": "If you keep Netflix, we leave it alone.",
+        "requires_approval": true,
+        "xp": 80,
+        "coins": 50,
+        "finding": "One of three streaming services on this account.",
+        "evidence": [
+          {
+            "k": "Charged",
+            "v": "21 Sep · 21 Oct · 21 Nov"
+          },
+          {
+            "k": "Average",
+            "v": "$22.99 a month"
+          },
+          {
+            "k": "Also paying",
+            "v": "Stan · Disney+"
+          }
+        ]
       },
       {
         "id": "bill_stan",
@@ -130,21 +224,48 @@ window.DATA = {
         "billing_period": "monthly",
         "current_amount": 16,
         "current_monthly": 16,
+        "provider_url": "https://www.stan.com.au/",
         "detected_from": [
           "tx_023",
           "tx_059",
           "tx_093"
         ],
         "confidence": "high",
+        "streaming": true,
         "action_type": "cancel",
         "offer": null,
+        "cancellation": {
+          "commitment": "No lock-in contract, $0 exit fee",
+          "ends": "Access continues until the end of the current period (3 Dec)",
+          "url": "https://www.stan.com.au/",
+          "url_label": "View Stan plans"
+        },
+        "verification": {
+          "checked_at": "2026-11-16",
+          "source": "Provider price page"
+        },
         "savings_monthly": 16,
         "savings_annual": 192,
-        "why": "You're paying for Netflix, Stan and Disney+ at the same time. Stan hasn't been watched in 6 weeks.",
-        "risk_notes": "Your watchlist is kept for 90 days if you ever resubscribe.",
+        "why": "You've paid Stan $16.00 on 23 Sep, 23 Oct and 23 Nov. It renews monthly whether or not it's opened — and transactions can't tell us which one you watch.",
+        "risk_notes": "Nothing to pay out: your watchlist is kept for 90 days if you resubscribe.",
         "requires_approval": true,
         "xp": 80,
-        "coins": 50
+        "coins": 50,
+        "finding": "One of three streaming services on this account.",
+        "evidence": [
+          {
+            "k": "Charged",
+            "v": "23 Sep · 23 Oct · 23 Nov"
+          },
+          {
+            "k": "Average",
+            "v": "$16.00 a month"
+          },
+          {
+            "k": "Also paying",
+            "v": "Netflix · Disney+"
+          }
+        ]
       },
       {
         "id": "bill_disney",
@@ -156,21 +277,48 @@ window.DATA = {
         "billing_period": "monthly",
         "current_amount": 13.99,
         "current_monthly": 13.99,
+        "provider_url": "https://www.disneyplus.com/en-au",
         "detected_from": [
           "tx_025",
           "tx_061",
           "tx_098"
         ],
         "confidence": "high",
+        "streaming": true,
         "action_type": "cancel",
         "offer": null,
+        "cancellation": {
+          "commitment": "Monthly plan, cancel any time",
+          "ends": "Access continues until the end of the current period (8 Dec)",
+          "url": "https://www.disneyplus.com/en-au",
+          "url_label": "View Disney+ plans"
+        },
+        "verification": {
+          "checked_at": "2026-11-16",
+          "source": "Provider price page"
+        },
         "savings_monthly": 13.99,
         "savings_annual": 167.88,
-        "why": "You watch Netflix weekly but Disney+ was only opened once in October. Cancelling keeps your savings without losing the shows you actually watch.",
-        "risk_notes": "You keep access until the end of the current billing period.",
+        "why": "You've paid Disney+ $13.99 on 25 Sep, 25 Oct and 25 Nov. Three streaming services is $52.98 a month — whether you use them is something only you know.",
+        "risk_notes": "You keep access until the end of the period you've already paid for (8 Dec).",
         "requires_approval": true,
         "xp": 80,
-        "coins": 50
+        "coins": 50,
+        "finding": "One of three streaming services on this account.",
+        "evidence": [
+          {
+            "k": "Charged",
+            "v": "25 Sep · 25 Oct · 25 Nov"
+          },
+          {
+            "k": "Average",
+            "v": "$13.99 a month"
+          },
+          {
+            "k": "Also paying",
+            "v": "Netflix · Stan"
+          }
+        ]
       },
       {
         "id": "bill_spotify",
@@ -182,6 +330,7 @@ window.DATA = {
         "billing_period": "monthly",
         "current_amount": 6.99,
         "current_monthly": 6.99,
+        "provider_url": "https://www.spotify.com/au/premium/",
         "detected_from": [
           "tx_003",
           "tx_033",
@@ -190,13 +339,28 @@ window.DATA = {
         "confidence": "high",
         "action_type": "keep",
         "offer": null,
+        "verification": {
+          "checked_at": "2026-11-16",
+          "source": "Provider price page"
+        },
         "savings_monthly": 0,
         "savings_annual": 0,
         "why": "You're already on the $6.99 student plan — the cheapest available. No change recommended.",
         "risk_notes": null,
         "requires_approval": false,
         "xp": 0,
-        "coins": 0
+        "coins": 0,
+        "finding": "Already on the cheapest student plan.",
+        "evidence": [
+          {
+            "k": "Plan",
+            "v": "Student · $6.99"
+          },
+          {
+            "k": "Charged",
+            "v": "3 Sep · 3 Oct · 3 Nov"
+          }
+        ]
       },
       {
         "id": "bill_gym",
@@ -208,6 +372,7 @@ window.DATA = {
         "billing_period": "fortnightly",
         "current_amount": 34,
         "current_monthly": 73.67,
+        "provider_url": "https://www.goodlife.com.au/memberships/",
         "detected_from": [
           "tx_013",
           "tx_028",
@@ -230,7 +395,16 @@ window.DATA = {
             "Debit moved from Thursday to Friday"
           ],
           "contract": "Existing membership",
-          "setup_days": 0
+          "commitment": "Same membership, same price — only the debit day changes",
+          "includes": "Membership unchanged",
+          "starts": "Next debit, Fri 27 Nov",
+          "fee_avoided": 19,
+          "setup_days": 0,
+          "url": "https://www.goodlife.com.au/memberships/"
+        },
+        "verification": {
+          "checked_at": "2026-11-16",
+          "source": "Provider price page"
         },
         "savings_monthly": 0,
         "savings_annual": 0,
@@ -238,7 +412,18 @@ window.DATA = {
         "risk_notes": "Your fortnightly fee stays the same; only the day of the debit changes.",
         "requires_approval": true,
         "xp": 60,
-        "coins": 40
+        "coins": 40,
+        "finding": "Bounced once — it lands a day before payday.",
+        "evidence": [
+          {
+            "k": "Charged",
+            "v": "7 debits · $34.00"
+          },
+          {
+            "k": "Dishonoured",
+            "v": "15 Oct · $19.00 fee"
+          }
+        ]
       },
       {
         "id": "bill_rent",
@@ -250,6 +435,7 @@ window.DATA = {
         "billing_period": "fortnightly",
         "current_amount": 440,
         "current_monthly": 953.33,
+        "provider_url": null,
         "detected_from": [
           "tx_002",
           "tx_016",
@@ -262,13 +448,21 @@ window.DATA = {
         "confidence": "high",
         "action_type": "no_offer",
         "offer": null,
+        "verification": null,
         "savings_monthly": 0,
         "savings_annual": 0,
         "why": "Rent is a fixed essential. We found no cheaper alternative and would never suggest you move without a good reason.",
         "risk_notes": null,
         "requires_approval": false,
         "xp": 0,
-        "coins": 0
+        "coins": 0,
+        "finding": "Fixed essential — no cheaper option.",
+        "evidence": [
+          {
+            "k": "Charged",
+            "v": "7 transfers · $440.00"
+          }
+        ]
       }
     ]
   },
@@ -480,15 +674,28 @@ window.DATA = {
         "id": "item_feast",
         "name": "Dragon Feast",
         "slot": "food",
+        "slot_label": "Food",
+        "repeatable": true,
         "cost": 60,
         "emoji": "🍗",
         "image": "assets/shop/feast.png",
-        "description": "A hearty meal. +0 XP — food is its own reward."
+        "description": "Buy it and feed it. Your dragon hops and asks for more."
+      },
+      {
+        "id": "item_cap",
+        "name": "Peak Cap",
+        "slot": "hat",
+        "slot_label": "Hat",
+        "cost": 120,
+        "emoji": "🧢",
+        "image": "assets/shop/cap.png",
+        "description": "Sits on the head of whatever stage your dragon is at."
       },
       {
         "id": "item_sunnies",
         "name": "Sunset Sunnies",
-        "slot": "accessory",
+        "slot": "face",
+        "slot_label": "Face",
         "cost": 150,
         "emoji": "🕶️",
         "image": "assets/shop/sunnies.png",
@@ -498,6 +705,7 @@ window.DATA = {
         "id": "item_tophat",
         "name": "Top Hat",
         "slot": "hat",
+        "slot_label": "Hat",
         "cost": 180,
         "emoji": "🎩",
         "image": "assets/shop/tophat.png",
@@ -506,25 +714,51 @@ window.DATA = {
       {
         "id": "item_scarf",
         "name": "Westpac Scarf",
-        "slot": "accessory",
+        "slot": "neck",
+        "slot_label": "Neck",
         "cost": 220,
         "emoji": "🧣",
         "image": "assets/shop/scarf.png",
-        "description": "Keeps your dragon warm in navy and red."
+        "description": "Wraps its neck in Westpac navy and red."
+      },
+      {
+        "id": "item_cave",
+        "name": "Starry Cave",
+        "slot": "home",
+        "slot_label": "Home",
+        "cost": 300,
+        "emoji": "🌌",
+        "scene": "stars",
+        "image": "assets/shop/cave.png",
+        "description": "Changes the sky behind your dragon to a night cave."
+      },
+      {
+        "id": "item_crown",
+        "name": "Gold Crown",
+        "slot": "hat",
+        "slot_label": "Hat",
+        "cost": 320,
+        "emoji": "👑",
+        "unlock_level": 5,
+        "image": "assets/shop/crown.png",
+        "description": "Unlocks at Level 5. Strictly for dragons with good repayment history."
       },
       {
         "id": "item_lair",
         "name": "Lava Lair",
         "slot": "home",
+        "slot_label": "Home",
         "cost": 450,
         "emoji": "🌋",
+        "scene": "lava",
         "image": "assets/shop/lair.png",
-        "description": "A cosy home to grow into."
+        "description": "A cosy lair. Turns the scene behind your dragon volcanic."
       },
       {
         "id": "item_perk",
         "name": "0.25% bonus savings rate",
         "slot": "perk",
+        "slot_label": "Perk",
         "cost": 1200,
         "emoji": "💎",
         "image": "assets/shop/perk.png",

@@ -2,6 +2,7 @@
   "persona": "Mia",
   "currency": "AUD",
   "as_of": "2026-11-16",
+  "data_notice": "Sample data for a hackathon demo. Provider names and plan links are real so they can be checked; prices and plans are illustrative and must be confirmed with the provider before switching.",
   "payday": {
     "frequency": "fortnightly",
     "next": "2026-11-20"
@@ -12,6 +13,24 @@
     "savings_monthly": 92.99,
     "savings_annual": 1115.88
   },
+  "recommendations": [
+    {
+      "id": "rec_streaming",
+      "kind": "keep_one",
+      "label": "Streaming services",
+      "title": "You're paying for 3 streaming services",
+      "bill_ids": [
+        "bill_netflix",
+        "bill_stan",
+        "bill_disney"
+      ],
+      "default_keep": "bill_netflix",
+      "what_we_know": "Netflix ($22.99), Stan ($16.00) and Disney+ ($13.99) have each been charged to this account every month for the last 3 months. That's $52.98 a month, or $635.76 a year.",
+      "what_we_dont_know": "Bank transactions show what you pay for, not what you watch. We can't see your viewing history, so we won't pretend to know which one you'd miss.",
+      "recommendation": "Most people only watch one service at a time. Keep the one you'd miss and pause the other two, then resubscribe whenever you like.",
+      "constraint": "This is a recommendation, not a decision. Only the services you review and approve are cancelled."
+    }
+  ],
   "bills": [
     {
       "id": "bill_phone",
@@ -21,28 +40,60 @@
       "provider": "Vodafone",
       "plan": "Infinite Postpaid",
       "billing_period": "monthly",
-      "current_amount": 89.0,
-      "current_monthly": 89.0,
-      "detected_from": ["tx_015", "tx_049", "tx_085"],
+      "current_amount": 89,
+      "current_monthly": 89,
+      "provider_url": "https://www.vodafone.com.au/mobile/sim-only-phone-plans",
+      "detected_from": [
+        "tx_015",
+        "tx_049",
+        "tx_085"
+      ],
       "confidence": "high",
       "action_type": "switch",
       "offer": {
         "provider": "Belong",
         "plan": "40GB Mobile",
-        "amount": 35.0,
+        "amount": 35,
         "billing_period": "monthly",
-        "monthly": 35.0,
-        "features": ["40GB data", "Unlimited calls & text", "Telstra network coverage"],
+        "monthly": 35,
+        "features": [
+          "40GB data",
+          "Unlimited calls & text",
+          "Telstra network coverage"
+        ],
         "contract": "Month-to-month",
-        "setup_days": 2
+        "commitment": "No lock-in contract, $0 exit fee",
+        "includes": "40GB data, unlimited calls & text, Telstra network",
+        "starts": "Number ports across in about 2 business days",
+        "setup_days": 2,
+        "url": "https://www.belong.com.au/mobile/plans"
       },
-      "savings_monthly": 54.0,
-      "savings_annual": 648.0,
+      "verification": {
+        "checked_at": "2026-11-16",
+        "source": "Provider price page"
+      },
+      "savings_monthly": 54,
+      "savings_annual": 648,
       "why": "You've paid $89 a month to Vodafone on 5 Sep, 5 Oct and 5 Nov. Belong runs on the Telstra network and offers 40GB for $35 a month.",
       "risk_notes": "Your number ports across automatically in about 2 days. You'd move from the Vodafone network to Telstra's.",
       "requires_approval": true,
       "xp": 120,
-      "coins": 80
+      "coins": 80,
+      "finding": "Same plan for 3 months — a $35 plan is available.",
+      "evidence": [
+        {
+          "k": "Charged",
+          "v": "5 Sep · 5 Oct · 5 Nov"
+        },
+        {
+          "k": "Average",
+          "v": "$89.00 a month"
+        },
+        {
+          "k": "Available",
+          "v": "Belong 40GB · $35.00"
+        }
+      ]
     },
     {
       "id": "bill_internet",
@@ -52,28 +103,60 @@
       "provider": "Aussie Broadband",
       "plan": "NBN 100 (sharehouse split)",
       "billing_period": "monthly",
-      "current_amount": 68.0,
-      "current_monthly": 68.0,
-      "detected_from": ["tx_024", "tx_060", "tx_095"],
+      "current_amount": 68,
+      "current_monthly": 68,
+      "provider_url": "https://www.aussiebroadband.com.au/internet/nbn-plans/",
+      "detected_from": [
+        "tx_024",
+        "tx_060",
+        "tx_095"
+      ],
       "confidence": "high",
       "action_type": "switch",
       "offer": {
         "provider": "Aussie Broadband",
         "plan": "NBN 50",
-        "amount": 59.0,
+        "amount": 59,
         "billing_period": "monthly",
-        "monthly": 59.0,
-        "features": ["Same provider", "50/20 speed", "No lock-in contract"],
+        "monthly": 59,
+        "features": [
+          "Same provider",
+          "50/20 speed",
+          "No lock-in contract"
+        ],
         "contract": "No lock-in",
-        "setup_days": 3
+        "commitment": "No lock-in contract, change plan any time",
+        "includes": "NBN 50/20 speed, unlimited data",
+        "starts": "Takes effect on your next billing cycle (13 Dec)",
+        "setup_days": 3,
+        "url": "https://www.aussiebroadband.com.au/internet/nbn-plans/"
       },
-      "savings_monthly": 9.0,
-      "savings_annual": 108.0,
-      "why": "Your $68 share of the NBN 100 plan appears on 13 Sep, 13 Oct and 13 Nov. Your usage shows NBN 50 would cover the household's streaming and study.",
+      "verification": {
+        "checked_at": "2026-11-16",
+        "source": "Provider price page"
+      },
+      "savings_monthly": 9,
+      "savings_annual": 108,
+      "why": "You've paid $68 a month to Aussie Broadband on 13 Sep, 13 Oct and 13 Nov. The same provider sells an NBN 50 plan for $59.",
       "risk_notes": "Confirm with your housemates before downgrading the speed tier.",
       "requires_approval": true,
       "xp": 120,
-      "coins": 80
+      "coins": 80,
+      "finding": "Same provider has a cheaper speed tier.",
+      "evidence": [
+        {
+          "k": "Charged",
+          "v": "13 Sep · 13 Oct · 13 Nov"
+        },
+        {
+          "k": "Average",
+          "v": "$68.00 a month"
+        },
+        {
+          "k": "Available",
+          "v": "NBN 50 · $59.00"
+        }
+      ]
     },
     {
       "id": "bill_netflix",
@@ -85,17 +168,48 @@
       "billing_period": "monthly",
       "current_amount": 22.99,
       "current_monthly": 22.99,
-      "detected_from": ["tx_021", "tx_055", "tx_091"],
+      "provider_url": "https://www.netflix.com/au/",
+      "detected_from": [
+        "tx_021",
+        "tx_055",
+        "tx_091"
+      ],
       "confidence": "high",
-      "action_type": "keep",
+      "streaming": true,
+      "action_type": "cancel",
       "offer": null,
-      "savings_monthly": 0.0,
-      "savings_annual": 0.0,
-      "why": "You watch Netflix every week, so we're keeping it. No change recommended.",
-      "risk_notes": null,
-      "requires_approval": false,
-      "xp": 0,
-      "coins": 0
+      "cancellation": {
+        "commitment": "Monthly plan, cancel any time",
+        "ends": "Access continues until the end of the current period (21 Dec)",
+        "url": "https://www.netflix.com/au/",
+        "url_label": "View Netflix plans"
+      },
+      "verification": {
+        "checked_at": "2026-11-16",
+        "source": "Provider price page"
+      },
+      "savings_monthly": 22.99,
+      "savings_annual": 275.88,
+      "why": "You've paid Netflix $22.99 on 21 Sep, 21 Oct and 21 Nov. It's one of three streaming services being charged to this account.",
+      "risk_notes": "If you keep Netflix, we leave it alone.",
+      "requires_approval": true,
+      "xp": 80,
+      "coins": 50,
+      "finding": "One of three streaming services on this account.",
+      "evidence": [
+        {
+          "k": "Charged",
+          "v": "21 Sep · 21 Oct · 21 Nov"
+        },
+        {
+          "k": "Average",
+          "v": "$22.99 a month"
+        },
+        {
+          "k": "Also paying",
+          "v": "Stan · Disney+"
+        }
+      ]
     },
     {
       "id": "bill_stan",
@@ -105,19 +219,50 @@
       "provider": "Stan",
       "plan": "Standard",
       "billing_period": "monthly",
-      "current_amount": 16.0,
-      "current_monthly": 16.0,
-      "detected_from": ["tx_023", "tx_059", "tx_093"],
+      "current_amount": 16,
+      "current_monthly": 16,
+      "provider_url": "https://www.stan.com.au/",
+      "detected_from": [
+        "tx_023",
+        "tx_059",
+        "tx_093"
+      ],
       "confidence": "high",
+      "streaming": true,
       "action_type": "cancel",
       "offer": null,
-      "savings_monthly": 16.0,
-      "savings_annual": 192.0,
-      "why": "You're paying for Netflix, Stan and Disney+ at the same time. Stan hasn't been watched in 6 weeks.",
-      "risk_notes": "Your watchlist is kept for 90 days if you ever resubscribe.",
+      "cancellation": {
+        "commitment": "No lock-in contract, $0 exit fee",
+        "ends": "Access continues until the end of the current period (3 Dec)",
+        "url": "https://www.stan.com.au/",
+        "url_label": "View Stan plans"
+      },
+      "verification": {
+        "checked_at": "2026-11-16",
+        "source": "Provider price page"
+      },
+      "savings_monthly": 16,
+      "savings_annual": 192,
+      "why": "You've paid Stan $16.00 on 23 Sep, 23 Oct and 23 Nov. It renews monthly whether or not it's opened — and transactions can't tell us which one you watch.",
+      "risk_notes": "Nothing to pay out: your watchlist is kept for 90 days if you resubscribe.",
       "requires_approval": true,
       "xp": 80,
-      "coins": 50
+      "coins": 50,
+      "finding": "One of three streaming services on this account.",
+      "evidence": [
+        {
+          "k": "Charged",
+          "v": "23 Sep · 23 Oct · 23 Nov"
+        },
+        {
+          "k": "Average",
+          "v": "$16.00 a month"
+        },
+        {
+          "k": "Also paying",
+          "v": "Netflix · Disney+"
+        }
+      ]
     },
     {
       "id": "bill_disney",
@@ -129,17 +274,48 @@
       "billing_period": "monthly",
       "current_amount": 13.99,
       "current_monthly": 13.99,
-      "detected_from": ["tx_025", "tx_061", "tx_098"],
+      "provider_url": "https://www.disneyplus.com/en-au",
+      "detected_from": [
+        "tx_025",
+        "tx_061",
+        "tx_098"
+      ],
       "confidence": "high",
+      "streaming": true,
       "action_type": "cancel",
       "offer": null,
+      "cancellation": {
+        "commitment": "Monthly plan, cancel any time",
+        "ends": "Access continues until the end of the current period (8 Dec)",
+        "url": "https://www.disneyplus.com/en-au",
+        "url_label": "View Disney+ plans"
+      },
+      "verification": {
+        "checked_at": "2026-11-16",
+        "source": "Provider price page"
+      },
       "savings_monthly": 13.99,
       "savings_annual": 167.88,
-      "why": "You watch Netflix weekly but Disney+ was only opened once in October. Cancelling keeps your savings without losing the shows you actually watch.",
-      "risk_notes": "You keep access until the end of the current billing period.",
+      "why": "You've paid Disney+ $13.99 on 25 Sep, 25 Oct and 25 Nov. Three streaming services is $52.98 a month — whether you use them is something only you know.",
+      "risk_notes": "You keep access until the end of the period you've already paid for (8 Dec).",
       "requires_approval": true,
       "xp": 80,
-      "coins": 50
+      "coins": 50,
+      "finding": "One of three streaming services on this account.",
+      "evidence": [
+        {
+          "k": "Charged",
+          "v": "25 Sep · 25 Oct · 25 Nov"
+        },
+        {
+          "k": "Average",
+          "v": "$13.99 a month"
+        },
+        {
+          "k": "Also paying",
+          "v": "Netflix · Stan"
+        }
+      ]
     },
     {
       "id": "bill_spotify",
@@ -151,17 +327,37 @@
       "billing_period": "monthly",
       "current_amount": 6.99,
       "current_monthly": 6.99,
-      "detected_from": ["tx_003", "tx_033", "tx_070"],
+      "provider_url": "https://www.spotify.com/au/premium/",
+      "detected_from": [
+        "tx_003",
+        "tx_033",
+        "tx_070"
+      ],
       "confidence": "high",
       "action_type": "keep",
       "offer": null,
-      "savings_monthly": 0.0,
-      "savings_annual": 0.0,
+      "verification": {
+        "checked_at": "2026-11-16",
+        "source": "Provider price page"
+      },
+      "savings_monthly": 0,
+      "savings_annual": 0,
       "why": "You're already on the $6.99 student plan — the cheapest available. No change recommended.",
       "risk_notes": null,
       "requires_approval": false,
       "xp": 0,
-      "coins": 0
+      "coins": 0,
+      "finding": "Already on the cheapest student plan.",
+      "evidence": [
+        {
+          "k": "Plan",
+          "v": "Student · $6.99"
+        },
+        {
+          "k": "Charged",
+          "v": "3 Sep · 3 Oct · 3 Nov"
+        }
+      ]
     },
     {
       "id": "bill_gym",
@@ -171,28 +367,60 @@
       "provider": "Goodlife Health Clubs",
       "plan": "Fortnightly direct debit",
       "billing_period": "fortnightly",
-      "current_amount": 34.0,
+      "current_amount": 34,
       "current_monthly": 73.67,
-      "detected_from": ["tx_013", "tx_028", "tx_044", "tx_063", "tx_068", "tx_079", "tx_094"],
+      "provider_url": "https://www.goodlife.com.au/memberships/",
+      "detected_from": [
+        "tx_013",
+        "tx_028",
+        "tx_044",
+        "tx_063",
+        "tx_068",
+        "tx_079",
+        "tx_094"
+      ],
       "confidence": "high",
       "action_type": "reschedule",
       "offer": {
         "provider": "Goodlife Health Clubs",
         "plan": "Debit moved to Fridays",
-        "amount": 34.0,
+        "amount": 34,
         "billing_period": "fortnightly",
         "monthly": 73.67,
-        "features": ["Same membership", "Debit moved from Thursday to Friday"],
+        "features": [
+          "Same membership",
+          "Debit moved from Thursday to Friday"
+        ],
         "contract": "Existing membership",
-        "setup_days": 0
+        "commitment": "Same membership, same price — only the debit day changes",
+        "includes": "Membership unchanged",
+        "starts": "Next debit, Fri 27 Nov",
+        "fee_avoided": 19,
+        "setup_days": 0,
+        "url": "https://www.goodlife.com.au/memberships/"
       },
-      "savings_monthly": 0.0,
-      "savings_annual": 0.0,
+      "verification": {
+        "checked_at": "2026-11-16",
+        "source": "Provider price page"
+      },
+      "savings_monthly": 0,
+      "savings_annual": 0,
       "why": "Your $34 debit dishonoured on Thursday 15 Oct — one day before payday — costing $19 in bank and gym fees. Moving it to Friday, after you're paid, stops that happening again.",
       "risk_notes": "Your fortnightly fee stays the same; only the day of the debit changes.",
       "requires_approval": true,
       "xp": 60,
-      "coins": 40
+      "coins": 40,
+      "finding": "Bounced once — it lands a day before payday.",
+      "evidence": [
+        {
+          "k": "Charged",
+          "v": "7 debits · $34.00"
+        },
+        {
+          "k": "Dishonoured",
+          "v": "15 Oct · $19.00 fee"
+        }
+      ]
     },
     {
       "id": "bill_rent",
@@ -202,19 +430,36 @@
       "provider": "OSKO Transfer — Rent",
       "plan": "Fortnightly rent split",
       "billing_period": "fortnightly",
-      "current_amount": 440.0,
+      "current_amount": 440,
       "current_monthly": 953.33,
-      "detected_from": ["tx_002", "tx_016", "tx_031", "tx_048", "tx_067", "tx_082", "tx_097"],
+      "provider_url": null,
+      "detected_from": [
+        "tx_002",
+        "tx_016",
+        "tx_031",
+        "tx_048",
+        "tx_067",
+        "tx_082",
+        "tx_097"
+      ],
       "confidence": "high",
       "action_type": "no_offer",
       "offer": null,
-      "savings_monthly": 0.0,
-      "savings_annual": 0.0,
+      "verification": null,
+      "savings_monthly": 0,
+      "savings_annual": 0,
       "why": "Rent is a fixed essential. We found no cheaper alternative and would never suggest you move without a good reason.",
       "risk_notes": null,
       "requires_approval": false,
       "xp": 0,
-      "coins": 0
+      "coins": 0,
+      "finding": "Fixed essential — no cheaper option.",
+      "evidence": [
+        {
+          "k": "Charged",
+          "v": "7 transfers · $440.00"
+        }
+      ]
     }
   ]
 }
