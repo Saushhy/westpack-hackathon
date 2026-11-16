@@ -1,0 +1,77 @@
+{
+  "customer_persona": "David",
+  "credit_score": {
+    "provider": "Equifax Australia (Mocked)",
+    "scale_max": 1200,
+    "current_score": 785,
+    "current_band": "Very Good",
+    "projected_score_after_plan": 860,
+    "projected_band": "Excellent",
+    "timeframe_months": 3,
+    "disclaimer": "David already has an above-average credit score thanks to flawless CCR repayment history. His primary goal is not fixing bad credit, but maximizing mortgage serviceability and borrowing capacity by eliminating phantom credit liabilities and optimizing living expenses."
+  },
+  "key_insights": [
+    {
+      "id": "ins_d001",
+      "title": "$35,000 Unused Credit Card Limits Dragging Borrowing Capacity",
+      "category": "Credit Limits & Debt-to-Income",
+      "severity": "critical",
+      "summary": "You hold $20k with Westpac Altitude Black and $15k with ANZ Platinum, but only utilise 5-10% of this capacity each month.",
+      "bureau_explanation": "Under APRA serviceability rules, lenders evaluate your total credit limits—not just what you owe. Even if paid in full each month, $35k in limits represents a $1,050/month repayment liability, reducing your borrowing power by up to $95,000.",
+      "related_transaction_ids": ["tx_d009", "tx_d026", "tx_d027", "tx_d056", "tx_d057", "tx_d089", "tx_d090"]
+    },
+    {
+      "id": "ins_d002",
+      "title": "Clean Comprehensive Credit Reporting (CCR) Profile",
+      "category": "Repayment History",
+      "severity": "low",
+      "summary": "100% on-time repayment history across car loan ($620/mo) and credit cards over the past 24 months.",
+      "bureau_explanation": "Your consistent payment records protect your score from negative marks and position you in Equifax's top 15% tier for creditworthiness.",
+      "related_transaction_ids": ["tx_d010", "tx_d026", "tx_d044", "tx_d056", "tx_d075", "tx_d089"]
+    },
+    {
+      "id": "ins_d003",
+      "title": "High Genuine Savings Velocity ($3,200/mo)",
+      "category": "Serviceability & Liquidity",
+      "severity": "low",
+      "summary": "Fortnightly savings transfers of $1,600 on payday have added $11,200+ across the quarter with zero emergency withdrawals.",
+      "bureau_explanation": "Demonstrating 3+ consecutive months of genuine savings gives mortgage credit assessors confidence in your liquidity buffer and reduces Loan-to-Value (LVR) risk.",
+      "related_transaction_ids": ["tx_d002", "tx_d017", "tx_d033", "tx_d048", "tx_d063", "tx_d077", "tx_d094"]
+    },
+    {
+      "id": "ins_d004",
+      "title": "$875.95/month in Non-Essential Recurring Overhead",
+      "category": "Living Expenses (HEM)",
+      "severity": "medium",
+      "summary": "High expenditure on Telstra 4-line bundle, un-streamlined health cover, and overlapping wine/media subscriptions.",
+      "bureau_explanation": "Lenders review bank statements prior to issuing formal mortgage pre-approval. Trimming recurring subscriptions proves fiscal discipline during the underwriting period.",
+      "related_transaction_ids": ["tx_d011", "tx_d018", "tx_d020", "tx_d022", "tx_d023", "tx_d045", "tx_d051", "tx_d052", "tx_d054", "tx_d055", "tx_d078", "tx_d084", "tx_d085", "tx_d086", "tx_d087", "tx_d108", "tx_d109", "tx_d110", "tx_d111"]
+    }
+  ],
+  "recommended_goals": [
+    {
+      "goal_id": "goal_d001",
+      "title": "Reduce Total Credit Limits ($35k -> $6k)",
+      "target_metric": "Cut Westpac limit to $6,000 and close secondary ANZ card",
+      "xp_reward": 200,
+      "coin_reward": 80,
+      "estimated_score_delta": 40
+    },
+    {
+      "goal_id": "goal_d002",
+      "title": "Prequalify Car Loan Payout Strategy",
+      "target_metric": "Model borrowing power gain from early car loan discharge",
+      "xp_reward": 150,
+      "coin_reward": 60,
+      "estimated_score_delta": 20
+    },
+    {
+      "goal_id": "goal_d003",
+      "title": "Streamline Living Expenses for Mortgage Audit",
+      "target_metric": "Save $220/month across telco, NBN, and subscriptions",
+      "xp_reward": 120,
+      "coin_reward": 45,
+      "estimated_score_delta": 15
+    }
+  ]
+}
