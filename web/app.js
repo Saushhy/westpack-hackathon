@@ -865,14 +865,6 @@ function goalStatus(g) {
 
 /* Each goal gets the icon for what it actually watches, so three panels do not
    read as three copies of the same card. */
-const GOAL_ICON = {
-  checkin: "paw",
-  on_time: "card",
-  bnpl_on_time: "card",
-  no_new_credit: "shield",
-  no_new_bnpl: "shield"
-};
-
 /* What is left to do first, and within that the goal closest to done, because
    the next win is the one worth surfacing. Completed goals sink to the bottom. */
 function orderedGoals() {
@@ -901,19 +893,16 @@ function renderGoals() {
       return `
         <article class="gel-panel gel-goal" data-goal="${g.id}">
           <div class="gel-panel-head">
-            <span class="gel-goal-head-left">
-              ${ico(GOAL_ICON[g.source] || "target")}
-              <span class="gel-band ${complete ? "is-done" : ""}">${goalStatus(g)}</span>
-            </span>
+            <span class="gel-band ${complete ? "is-done" : ""}">${goalStatus(g)}</span>
             <span class="gel-goal-xp">+${g.xp} XP</span>
           </div>
           <div class="gel-panel-body">
             <div class="gel-goal-title">${g.title}</div>
-            <div class="gel-row-between" style="margin-top:10px">
+            <div class="gel-row-between" style="margin-top:8px">
               <span class="gel-muted">${value} of ${g.target} ${g.unit}</span>
               <span class="gel-muted">${complete ? completedOn(g) : "Next check " + g.next_check}</span>
             </div>
-            <div class="gel-bar gel-bar--skinny" style="margin-top:8px">
+            <div class="gel-bar gel-bar--skinny" style="margin-top:6px">
               <div class="gel-bar-fill ${complete ? "is-done" : ""}" style="width:${fmtPct(goalPct(g))}"></div>
             </div>
             <button class="gel-row-link" type="button" onclick="openGoal('${g.id}')">
@@ -943,7 +932,7 @@ function openGoal(id) {
 
   const head = `
     <div class="gel-sheet-head gel-sheet-head--goal">
-      <span class="gel-adorn">${ico(GOAL_ICON[g.source] || "target")}</span>
+      <span class="gel-adorn">${ico("target")}</span>
       <div class="gel-sheet-head-body">
         <h2 class="gel-sheet-title" id="sheet-title">${g.title}</h2>
         <p class="gel-sheet-sub">${stageName} · ${value} of ${g.target} ${g.unit}</p>

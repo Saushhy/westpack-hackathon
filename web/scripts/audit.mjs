@@ -477,6 +477,7 @@ await page.waitForTimeout(900);
       statuses: cards.map((c) => c.querySelector(".gel-band").textContent.trim()),
       xp: cards.map((c) => c.querySelector(".gel-goal-xp").textContent.trim()),
       icons: cards.filter((c) => !!c.querySelector(".gel-goal-head-left svg")).length,
+      heights: cards.map((c) => Math.round(c.getBoundingClientRect().height)),
       doneLabels: cards
         .filter((c) => /Completed/.test(c.querySelector(".gel-band").textContent))
         .map((c) => c.querySelector(".gel-row-between .gel-muted:last-child").textContent.trim()),
@@ -496,7 +497,7 @@ await page.waitForTimeout(900);
   );
   check("The completed goal says when", "done date", g.doneLabels[0], /^Done \d/.test(g.doneLabels[0]));
   check("Each goal shows its reward", "+100 XP", g.xp.join(","), g.xp.every((x) => /^\+\d+ XP$/.test(x)));
-  check("Each goal has its own icon", "3", String(g.icons), g.icons === 3);
+  check("Cards stay compact", "<190px each", g.heights.join(","), g.heights.every((h) => h < 190));
   check(
     "Goal explanations are not on the card",
     "absent",

@@ -319,16 +319,18 @@
     color: var(--text-mono);
     white-space: nowrap;
   }
-  .gel-band.is-done { background: var(--surface-success); color: #fff; }
+  .gel-band.is-done { background: rgba(255, 255, 255, 0.34); color: var(--text-mono); }
 
   /* goals: the same panel as the score, with the state on the left of the head
-     and the reward on the right */
-  .gel-goal .gel-panel-body { padding-top: 14px; }
-  .gel-goal-head-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
-  .gel-goal-head-left .gel-ico { width: 16px; height: 16px; flex: none; }
+     and the reward on the right. Tighter than a generic panel, because three of
+     them stack on one screen. */
+  .gel-goal .gel-panel-head { padding: 8px 12px; }
+  .gel-goal .gel-panel-body { padding: 12px 16px 14px; }
+  .gel-goal .gel-goal-title { font-size: 19px; line-height: 1.22; margin-top: 0; }
+  .gel-goal .gel-row-link { height: 34px; margin-top: 10px; }
   .gel-goal-xp {
     font-family: var(--font-brand), var(--font-family-sans);
-    font-size: 12px; font-weight: 700; color: var(--text-mono);
+    font-size: 14px; font-weight: 700; color: var(--text-mono);
     font-variant-numeric: tabular-nums;
   }
   /* a finished goal reads green at a glance, without reading the word */
