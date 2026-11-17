@@ -878,7 +878,7 @@ function orderedGoals() {
 function completedOn(g) {
   const at = state.goals[g.id]?.completed_at;
   if (!at) return "Done";
-  return "Done " + fmtDate(at.slice(0, 10));
+  return "Done " + dayMonth(at.slice(0, 10));
 }
 
 /* The goal, as the same kind of panel the score uses: the state and the reward
@@ -889,6 +889,9 @@ function renderGoals() {
     .map((g) => {
       const complete = goalDone(g);
       const value = Math.min(goalValue(g), g.target);
+      const when = complete
+        ? `<span class="gel-when is-done">${ico("check")}${completedOn(g)}</span>`
+        : `<span class="gel-when">${ico("notification")}Next check ${g.next_check}</span>`;
       return `
         <article class="gel-panel gel-goal" data-goal="${g.id}">
           <div class="gel-panel-head">
@@ -897,9 +900,9 @@ function renderGoals() {
           </div>
           <div class="gel-panel-body">
             <div class="gel-goal-title">${g.title}</div>
-            <div class="gel-row-between" style="margin-top:8px">
-              <span class="gel-muted">${value} of ${g.target} ${g.unit}</span>
-              <span class="gel-muted">${complete ? completedOn(g) : "Next check " + g.next_check}</span>
+            <div class="gel-goal-meta">
+              <span class="gel-goal-count"><b>${value}</b><span>/ ${g.target} ${g.unit}</span></span>
+              ${when}
             </div>
             <div class="gel-bar gel-bar--skinny" style="margin-top:6px">
               <div class="gel-bar-fill ${complete ? "is-done" : ""}" style="width:${fmtPct(goalPct(g))}"></div>
@@ -915,7 +918,7 @@ function renderGoals() {
   return `
     <div class="gel-screen-head">
       <div>
-        <h1 class="gel-title">Your plan</h1>
+        <h1 class="gel-title">Your goals</h1>
       </div>
     </div>
     ${cards}`;

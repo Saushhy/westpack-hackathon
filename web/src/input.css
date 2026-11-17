@@ -328,6 +328,25 @@
   .gel-goal .gel-panel-body { padding: 12px 16px 14px; }
   .gel-goal .gel-goal-title { font-size: 19px; line-height: 1.22; margin-top: 0; }
   .gel-goal .gel-row-link { height: 34px; margin-top: 10px; }
+
+  /* the count carries the weight, the timing is an icon and a few words */
+  .gel-goal-meta {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+    margin-top: 8px;
+  }
+  .gel-goal-count { display: inline-flex; align-items: baseline; gap: 4px; }
+  .gel-goal-count b {
+    font-family: var(--font-brand), var(--font-family-sans);
+    font-size: 17px; line-height: 1; font-weight: 700; color: var(--text-heading);
+    font-variant-numeric: tabular-nums;
+  }
+  .gel-goal-count span { font-size: 12px; color: var(--text-muted); }
+  .gel-when {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 12px; color: var(--text-muted); white-space: nowrap;
+  }
+  .gel-when .gel-ico { width: 13px; height: 13px; flex: none; }
+  .gel-when.is-done { color: var(--text-success); }
   .gel-goal-xp {
     font-family: var(--font-brand), var(--font-family-sans);
     font-size: 14px; font-weight: 700; color: var(--text-mono);

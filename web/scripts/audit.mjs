@@ -476,6 +476,7 @@ await page.waitForTimeout(900);
     const body = document.querySelector("#screen").innerText;
     const cards = Array.from(document.querySelectorAll(".gel-goal"));
     return {
+      title: document.querySelector(".gel-title")?.textContent.trim() || "",
       cards: cards.length,
       buttons: document.querySelectorAll("#screen button").length,
       reviews: document.querySelectorAll("#screen .gel-goal .gel-row-link").length,
@@ -486,12 +487,18 @@ await page.waitForTimeout(900);
       heights: cards.map((c) => Math.round(c.getBoundingClientRect().height)),
       doneLabels: cards
         .filter((c) => /Completed/.test(c.querySelector(".gel-band").textContent))
-        .map((c) => c.querySelector(".gel-row-between .gel-muted:last-child").textContent.trim()),
+        .map((c) => c.querySelector(".gel-when")?.textContent.trim() || ""),
+      counts: cards.map((c) => {
+        const n = c.querySelector(".gel-goal-count b")?.textContent.trim() || "";
+        const rest = (c.querySelector(".gel-goal-count span")?.textContent.trim() || "").replace(/^\/\s*/, "");
+        return n + " of " + rest;
+      }),
       body
     };
   });
 
   check("Three goals", "3", String(g.cards), g.cards === 3);
+  check("The tab is titled 'Your goals'", "Your goals", g.title, g.title === "Your goals");
   check("Goals carry a Review button and no action button", "3 reviews", g.reviews + " reviews, " + (g.buttons - g.reviews) + " other", g.reviews === 3 && g.buttons - g.reviews === 0);
   check("No '1 of 3 done' subtitle", "absent", g.body.includes(" of 3 done") ? "present" : "absent", !g.body.includes(" of 3 done"));
   check("No explanatory note above the cards", "absent", /fill in on their own/.test(g.body) ? "present" : "absent", !/fill in on their own/.test(g.body));
@@ -510,7 +517,12 @@ await page.waitForTimeout(900);
     /re-reads your transactions/.test(g.body) ? "present" : "absent",
     !/re-reads your transactions/.test(g.body)
   );
-  check("Goal 3 shows 27 of 30 days", "27 of 30", g.body.includes("27 of 30") ? "27 of 30" : "missing", g.body.includes("27 of 30"));
+  check(
+    "The numbers read as value of target",
+    "27 of 30 days, 2 of 4 instalments, 7 of 7 days",
+    g.counts.join(", "),
+    g.counts.join(", ") === "27 of 30 days, 2 of 4 instalments, 7 of 7 days"
+  );
   check("Bars reflect the data", "90%,50%,100%", g.bars.join(","), g.bars.join(",") === "90%,50%,100%");
   check("Next check is stated", "present", /Next check/.test(g.body) ? "present" : "missing", /Next check/.test(g.body));
   check("No em or en dashes on screen", "clean", dashFree(g.body) ? "clean" : "dash found", dashFree(g.body));
