@@ -169,6 +169,28 @@ actually repays**, because that is what a lender sees:
 
 Audit is now **140 assertions**, including the four persona pages.
 
+### One disclosure component, used everywhere
+
+The score tab's pattern (title and number up front, explanation on demand) is now the rule
+for the whole app. There is a single `<details>` component, `.gel-disc`, with a soft circular
+plus that rotates into a cross:
+
+| Where | What moved behind it |
+|---|---|
+| How your score is built | each factor's explanation, at large type |
+| Your plan | "Why this one", the goal's description |
+| Shop | "What it is", the item blurb that used to sit under every tile |
+
+Also removed: the `why` sentence on the informational Spotify and rent cards. Those cards now
+carry a label, a provider line, an amount and a status badge, and nothing else. The activity
+log on the Dragon tab already used a disclosure and is unchanged.
+
+The reason this matters beyond tidiness: with the paragraphs gone, the main screens read as
+numbers and actions instead of essays, which is what made the score tab feel designed rather
+than generated.
+
+Audit is now **165 assertions**.
+
 ## 4. What changed before that (v3)
 
 ### Deleted

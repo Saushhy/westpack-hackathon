@@ -54,6 +54,19 @@ function ico(name) {
   return '<span class="gel-ico">' + svg + "</span>";
 }
 
+/* One disclosure, used wherever a card would otherwise carry a paragraph:
+   goals, shop items, and the score factors. Native <details>. */
+function disc(label, text, opts) {
+  const cls = "gel-disc" + (opts && opts.lg ? " gel-disc--lg" : "");
+  return `<details class="${cls}">
+    <summary class="gel-disc-row">
+      <span class="gel-disc-label">${label}</span>
+      <span class="gel-disc-icon">${ico("add-circle")}</span>
+    </summary>
+    <div class="gel-disc-body"><p class="gel-disc-text">${text}</p></div>
+  </details>`;
+}
+
 /* The demo runs on one fixed day so every recording behaves the same. */
 const TODAY = bills.as_of;
 
@@ -630,7 +643,6 @@ function billStatusCard(bill) {
   return `
     <article class="gel-cell gel-bill is-muted" data-bill="${bill.id}">
       ${billHead(bill, `<span class="gel-money gel-money--sm gel-money--muted">${fmtAUD(bill.current_amount)}</span>${moneyUnit(bill.billing_period)}`)}
-      <p class="gel-note" style="margin-top:8px">${bill.why}</p>
       <div class="gel-tagline"><span class="gel-badge gel-badge--faint">${label}</span></div>
     </article>`;
 }
@@ -844,26 +856,39 @@ function syncGoals() {
   return results;
 }
 
+/* Where a goal stands, in one word. Nothing is invented: it is the same value
+   the bar is drawn from. */
+function goalStatus(g) {
+  if (goalDone(g)) return "Completed";
+  return goalValue(g) > 0 ? "In progress" : "Not started";
+}
+
+/* The goal, as the same kind of panel the score uses: the state and the reward
+   live in the navy head, the number and the bar in the body, and the reasoning
+   waits behind Review. */
 function renderGoals() {
   const cards = rewards.goals
     .map((g) => {
       const complete = goalDone(g);
       const value = Math.min(goalValue(g), g.target);
       return `
-        <article class="gel-cell gel-goal" data-goal="${g.id}">
-          <div class="gel-row-between">
-            <span class="gel-bill-title">${g.title}</span>
-            <span class="gel-badge ${complete ? "gel-badge--success" : "gel-badge--faint"}">
-              ${complete ? "Done" : value + " of " + g.target}
-            </span>
+        <article class="gel-panel gel-goal" data-goal="${g.id}">
+          <div class="gel-panel-head">
+            <span class="gel-band ${complete ? "is-done" : ""}">${goalStatus(g)}</span>
+            <span class="gel-goal-xp">+${g.xp} XP</span>
           </div>
-          <p class="gel-muted" style="margin:4px 0 0">${g.description}</p>
-          <div class="gel-bar gel-bar--skinny" style="margin-top:10px">
-            <div class="gel-bar-fill" style="width:${fmtPct(goalPct(g))}"></div>
-          </div>
-          <div class="gel-progress-note">
-            <span class="gel-muted">${complete ? "Completed" : "Next check " + g.next_check}</span>
-            <span class="gel-muted">+${g.xp} XP</span>
+          <div class="gel-panel-body">
+            <div class="gel-goal-title">${g.title}</div>
+            <div class="gel-row-between" style="margin-top:10px">
+              <span class="gel-muted">${value} of ${g.target} ${g.unit}</span>
+              <span class="gel-muted">${complete ? "Done" : "Next check " + g.next_check}</span>
+            </div>
+            <div class="gel-bar gel-bar--skinny" style="margin-top:8px">
+              <div class="gel-bar-fill" style="width:${fmtPct(goalPct(g))}"></div>
+            </div>
+            <button class="gel-row-link" type="button" onclick="openGoal('${g.id}')">
+              <span>Review</span>${ico("arrow-right")}
+            </button>
           </div>
         </article>`;
     })
@@ -876,6 +901,52 @@ function renderGoals() {
       </div>
     </div>
     ${cards}`;
+}
+
+/* Why the goal exists, what it watches, and what it pays. */
+function openGoal(id) {
+  const g = rewards.goals.find((x) => x.id === id);
+  if (!g) return;
+  const complete = goalDone(g);
+  const value = Math.min(goalValue(g), g.target);
+  const stageName = goalStatus(g);
+
+  const head = `
+    <div class="gel-sheet-head gel-sheet-head--goal">
+      <span class="gel-adorn">${ico("target")}</span>
+      <div class="gel-sheet-head-body">
+        <h2 class="gel-sheet-title" id="sheet-title">${g.title}</h2>
+        <p class="gel-sheet-sub">${stageName} · ${value} of ${g.target} ${g.unit}</p>
+      </div>
+      <div class="gel-sheet-head-end">
+        <span class="gel-money gel-money--sm">+${g.xp}</span><span class="gel-money-unit">XP</span>
+      </div>
+    </div>`;
+
+  const rows = [
+    ["What it watches", g.watching || "Your transactions"],
+    ["Next check", complete ? "Done" : g.next_check],
+    ["Reward", "+" + g.xp + " XP · +" + g.coins + " coins"]
+  ]
+    .map(([k, v]) => `<div class="gel-kv"><span class="gel-kv-k">${k}</span><span class="gel-kv-v">${v}</span></div>`)
+    .join("");
+
+  const body = `
+    <div class="gel-evidence-card">
+      <span class="gel-evidence-eyebrow">The goal</span>
+      ${rows}
+    </div>
+    <p class="gel-detail">${g.description}</p>
+    <div class="gel-verified" style="margin-top:14px">
+      ${ico("check")} Westpac transaction history · ${fmtDate(TODAY)}
+    </div>`;
+
+  openSheet({
+    title: g.title,
+    head,
+    body,
+    actions: '<button class="gel-btn-ghost" type="button" onclick="closeSheet()">Close</button>'
+  });
 }
 
 /* ==========================================================================
@@ -945,23 +1016,12 @@ function creditAccounts(cf) {
     </section>`;
 }
 
-/* Five titles at a glance, each one expanding in place to explain itself.
-   A native <details> so it works with the keyboard and without JavaScript. */
+/* Five titles at a glance, each one expanding in place to explain itself. */
 function openFactors() {
   const factors = rewards.credit_factors || [];
   const body =
-    '<div class="gel-facts">' +
-    factors
-      .map(
-        (f) => `<details class="gel-fact">
-          <summary class="gel-fact-row">
-            <span class="gel-fact-title">${f.label}</span>
-            <span class="gel-fact-icon">${ico("add-circle")}</span>
-          </summary>
-          <div class="gel-fact-body"><p class="gel-fact-text">${f.what}</p></div>
-        </details>`
-      )
-      .join("") +
+    '<div class="gel-discs">' +
+    factors.map((f) => disc(f.label, f.what, { lg: true })).join("") +
     "</div>";
 
   openSheet({
@@ -1353,7 +1413,7 @@ function renderShop() {
             <span class="gel-money gel-money--sm">${fmtWhole(item.cost)}</span>
             ${coin()}
           </div>
-          <p class="gel-shop-desc">${item.description}</p>
+          ${disc("What it is", item.description)}
           ${shopCta(item)}
         </article>`;
     })
