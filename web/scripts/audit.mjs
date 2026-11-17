@@ -211,10 +211,21 @@ await page.waitForTimeout(900);
   await page.waitForTimeout(400);
   const factors = await page.evaluate(() => {
     const sheet = document.querySelector(".gel-sheet");
+    const rows = Array.from(sheet?.querySelectorAll(".gel-fact") || []);
+    const contentVis = (d) => {
+      try {
+        return getComputedStyle(d, "::details-content").contentVisibility;
+      } catch {
+        return "n/a";
+      }
+    };
     return {
       open: !!sheet,
       title: sheet?.querySelector(".gel-sheet-title")?.textContent.trim() || "",
-      rows: Array.from(sheet?.querySelectorAll(".gel-fact-list li") || []).map((li) => li.textContent.trim()),
+      rows: rows.map((d) => d.querySelector(".gel-fact-title").textContent.trim()),
+      icons: rows.filter((d) => !!d.querySelector(".gel-fact-icon svg")).length,
+      openCount: rows.filter((d) => d.open).length,
+      hidden: rows.map(contentVis),
       badges: sheet ? sheet.querySelectorAll(".gel-badge").length : 0,
       divider: sheet?.querySelector(".gel-sheet-actions")
         ? getComputedStyle(sheet.querySelector(".gel-sheet-actions")).borderTopWidth
@@ -227,17 +238,84 @@ await page.waitForTimeout(900);
   check("Sheet is a bottom sheet (rounded top 12px)", "12px", factors.radius, factors.radius === "12px");
   check("Sheet is titled 'How your score is built'", "How your score is built", factors.title, factors.title === "How your score is built");
   check(
-    "The five factors, titles only",
+    "The five factors, titles first",
     "5 titles",
     factors.rows.join(", "),
     factors.rows.length === 5 &&
       factors.rows[0] === "Repayment history" &&
       factors.rows[4] === "Buy now, pay later"
   );
+  check("Every row carries a plus icon", "5", String(factors.icons), factors.icons === 5);
+  check("All rows start collapsed", "0", String(factors.openCount), factors.openCount === 0);
+  check(
+    "Collapsed rows hide their descriptions",
+    "hidden x5",
+    factors.hidden.join(", "),
+    factors.hidden.length === 5 && factors.hidden.every((v) => v === "hidden")
+  );
   check("No impact badges in the sheet", "0", String(factors.badges), factors.badges === 0);
   check("No rule above the action buttons", "0px", factors.divider, factors.divider === "0px");
-  check("No descriptions in the sheet", "absent", /Paying on time\. It matters/.test(factors.body) ? "present" : "absent", !/Paying on time\. It matters/.test(factors.body));
-  check("No closing note in the sheet", "absent", /promise you points/.test(factors.body) ? "present" : "absent", !/promise you points/.test(factors.body));
+
+  // Expand one: the description has to appear, and close again.
+  await page.locator(".gel-fact-row").first().click();
+  await page.waitForTimeout(400);
+  const expanded = await page.evaluate(() => {
+    const first = document.querySelector(".gel-fact");
+    const row = first.querySelector(".gel-fact-row").getBoundingClientRect();
+    const body = first.querySelector(".gel-fact-body").getBoundingClientRect();
+    const icon = first.querySelector(".gel-fact-icon");
+    const vis = (() => {
+      try {
+        return getComputedStyle(first, "::details-content").contentVisibility;
+      } catch {
+        return "n/a";
+      }
+    })();
+    return {
+      open: first.open,
+      text: first.querySelector(".gel-fact-text").textContent.trim(),
+      visible: vis,
+      rotated: getComputedStyle(icon).transform,
+      iconRadius: getComputedStyle(icon).borderRadius,
+      bodyTop: Math.round(body.top),
+      rowBottom: Math.round(row.bottom),
+      bodyLeft: Math.round(body.left),
+      rowLeft: Math.round(row.left)
+    };
+  });
+  check("Tapping a row expands it", "true", String(expanded.open), expanded.open === true);
+  check("The description is the one from our data", "Paying on time. It matters more than anything else.", expanded.text, expanded.text === "Paying on time. It matters more than anything else.");
+  check("Its description becomes visible", "visible", expanded.visible, expanded.visible === "visible");
+  check("The plus turns into a cross", "rotated", expanded.rotated, expanded.rotated !== "none");
+  check("The plus is a circular control", "50%", expanded.iconRadius, expanded.iconRadius === "50%");
+  check(
+    "The description opens under the title, not beside it",
+    "body top " + expanded.rowBottom,
+    "body top " + expanded.bodyTop,
+    expanded.bodyTop >= expanded.rowBottom - 1
+  );
+  check(
+    "And aligns with the title",
+    expanded.rowLeft,
+    expanded.bodyLeft,
+    expanded.bodyLeft === expanded.rowLeft
+  );
+
+  await page.locator(".gel-fact-row").first().click();
+  await page.waitForTimeout(400);
+  const collapsed = await page.evaluate(() => {
+    const first = document.querySelector(".gel-fact");
+    const vis = (() => {
+      try {
+        return getComputedStyle(first, "::details-content").contentVisibility;
+      } catch {
+        return "n/a";
+      }
+    })();
+    return { open: first.open, visible: vis };
+  });
+  check("Tapping again closes it", "false", String(collapsed.open), collapsed.open === false);
+  check("And its description is hidden again", "hidden", collapsed.visible, collapsed.visible === "hidden");
   await page.locator(".gel-sheet-close").click();
   await page.waitForTimeout(200);
   check("Sheet closes", "0", String(await page.locator(".gel-sheet").count()), (await page.locator(".gel-sheet").count()) === 0);

@@ -793,11 +793,6 @@
     display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
   }
 
-  .gel-fact { display: flex; gap: 10px; margin-top: 14px; }
-  .gel-fact-ico { flex: none; color: var(--text-muted); margin-top: 1px; }
-  .gel-fact-ico .gel-ico { width: 18px; height: 18px; }
-  .gel-fact p { margin: 0; font-size: var(--typography-body-size-10); line-height: 1.5; color: var(--text-muted); }
-
   /* ================= review sheet content =============================== */
   .gel-review-list { display: flex; flex-direction: column; }
   .gel-review-item {
@@ -1027,16 +1022,43 @@
   .gel-row-card:hover { background: var(--surface-muted-faint); }
   .gel-row-card .gel-ico { width: 18px; height: 18px; color: var(--text-muted); flex: none; }
 
-  /* the five factors, as titles only */
-  .gel-fact-list { margin: 0; padding: 0; list-style: none; }
-  .gel-fact-list li {
+  /* the five factors: a title each, expanding in place to explain itself */
+  .gel-facts { margin: 0; }
+  .gel-fact { display: block; border-top: 1px solid var(--border-muted-soft); }
+  .gel-fact:first-child { border-top: 0; }
+  .gel-fact-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 14px 0; cursor: pointer; list-style: none;
+  }
+  .gel-fact-row::-webkit-details-marker { display: none; }
+  .gel-fact-row:focus-visible { outline: 2px solid var(--text-link); outline-offset: 2px; border-radius: var(--rounded-md); }
+  .gel-fact-title {
     font-family: var(--font-brand), var(--font-family-sans);
     font-size: 20px; line-height: 1.25; font-weight: 700; color: var(--text-heading);
-    padding: 16px 0;
-    border-top: 1px solid var(--border-muted-soft);
   }
-  .gel-fact-list li:first-child { border-top: 0; padding-top: 2px; }
-  .gel-fact-list li:last-child { padding-bottom: 6px; }
+  /* the plus, as a soft circular control rather than a bare glyph */
+  .gel-fact-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    flex: none; width: 30px; height: 30px; border-radius: 50%;
+    background: var(--surface-muted-faint); color: var(--text-heading);
+    transition: transform 0.24s var(--ease), background 0.2s var(--ease);
+  }
+  .gel-fact-icon .gel-ico { width: 18px; height: 18px; }
+  .gel-fact[open] .gel-fact-icon {
+    transform: rotate(45deg);
+    background: var(--surface-hero-faint);
+  }
+  /* <details> hides its own content when closed, so the reveal is an animation
+     on open rather than a height transition. It stays honest to measure. */
+  .gel-fact[open] .gel-fact-body { animation: gel-fact-in 0.24s var(--ease); }
+  @keyframes gel-fact-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: none; }
+  }
+  .gel-fact-text {
+    margin: 0; padding: 0 24px 16px 0;
+    font-size: var(--typography-body-size-10); line-height: 1.5; color: var(--text-muted);
+  }
 
   /* ================= credit accounts ==================================== */
   .gel-acc {

@@ -945,13 +945,24 @@ function creditAccounts(cf) {
     </section>`;
 }
 
-/* Just the five things. No impact badges, no descriptions, no closing note:
-   the value is the list itself, not an essay about it. */
+/* Five titles at a glance, each one expanding in place to explain itself.
+   A native <details> so it works with the keyboard and without JavaScript. */
 function openFactors() {
+  const factors = rewards.credit_factors || [];
   const body =
-    '<ul class="gel-fact-list">' +
-    (rewards.credit_factors || []).map((f) => "<li>" + f.label + "</li>").join("") +
-    "</ul>";
+    '<div class="gel-facts">' +
+    factors
+      .map(
+        (f) => `<details class="gel-fact">
+          <summary class="gel-fact-row">
+            <span class="gel-fact-title">${f.label}</span>
+            <span class="gel-fact-icon">${ico("add-circle")}</span>
+          </summary>
+          <div class="gel-fact-body"><p class="gel-fact-text">${f.what}</p></div>
+        </details>`
+      )
+      .join("") +
+    "</div>";
 
   openSheet({
     title: "How your score is built",
