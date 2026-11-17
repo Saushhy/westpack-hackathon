@@ -34,23 +34,44 @@ There is no "switch provider", no promoted brand, and no manual "mark as done".
 
 ## 3. The dragon is the real model now
 
-`/assets/dragon_3d` (an OBJ with separate PBR maps and no material file) is assembled
-into `web/assets/dragon/dragon.glb` by `npm run build:dragon`. 19,782 triangles, three
-maps embedded, 915 kB, all inside the file so it works offline.
+There are **three stages, not four**: egg (0 XP) → baby (800) → adult (1500). The baby is
+the model in `/assets/dragon_3d`; the adult model is still to be supplied, so 🐉 stands in.
+The demo therefore opens on 550 XP as an **egg**, and the egg hatches into the baby during
+the insights journey. "See it in your room" only appears once the dragon exists.
+
+`/assets/dragon_3d` (an OBJ with separate PBR maps and no material file) is assembled into
+`web/assets/dragon/dragon.glb` by `npm run build:dragon`. 19,782 triangles, three maps
+embedded, 915 kB, all inside the file so it works offline.
 
 - `npm run build:dragon` reads the OBJ, downscales the maps with sharp (base colour and
   normal to 1024, a packed ORM map to 512) and attaches them to the glTF. The source has
-  no `.mtl`, so the material is wired by hand.
+  no `.mtl`, so the material is wired by hand. `--src` and `--out` let it build the adult
+  from a second object later.
 - `npm run render:dragon` renders the model in headless Edge through three.js and writes
-  `assets/dragon/{baby,teen,adult}.png` with a transparent background. The app already
-  looked for those filenames, so no rendering code ships to the browser. The egg stage
-  stays the emoji on purpose: the model is a dragon, not an egg.
-- The stage portraits are the same dragon framed larger, so it visibly grows with the
-  score. `WEAR_ANCHOR` was re-measured from the alpha silhouette of each render, so hats
-  and shades land on the head of the real model.
+  `assets/dragon/baby.png` with a transparent background. The app already looked for that
+  filename, so no rendering code ships to the browser.
+- Lighting was toned down after the first pass blew the highlights out: Neutral tone
+  mapping at 0.82 exposure, key 1.15, rim 0.35, hemisphere 0.32, environment 0.35, plus a
+  baked contact shadow so the model sits instead of floating. The tool reports luminance
+  and clipping per stage (`lum 139/255, clipping 0.0%`).
+- The render fits the wider axis, because the wingspan is wider than the body is tall and
+  fitting the height clipped the wings at the frame edge.
+- `WEAR_ANCHOR` was re-measured from the alpha silhouette (>200, which excludes the contact
+  shadow), so hats, shades and scarves land on the real head.
 - The model has **no rig**, so the app wears items at measured offsets and the AR build
-  uses transforms only. See `docs/ar-dragon-handoff.md` for the USDZ path and the
-  RealityKit snippet.
+  uses transforms only. See `docs/ar-dragon-handoff.md`.
+
+### UI changes in this pass
+
+- **Header**: the help and profile buttons are gone. They did nothing, and a dead control on
+  a bank screen is worse than no control.
+- **Insights**: the "N patterns to look at" subtitle is gone. "How we know this" is now a
+  full-width **Review** button (38px, bordered, soft fill) instead of a text link.
+- **What we found**: rebuilt as a flat card with an eyebrow label, three large figures and
+  the two dollar totals as tinted tiles, instead of the navy panel header and key/value
+  rows.
+- **Your plan**: the "1 of 3 done" subtitle and the explanatory note are gone. The cards and
+  their self-filling bars carry it on their own.
 
 ### The dragon speaks, and only from our data
 

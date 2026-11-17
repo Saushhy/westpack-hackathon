@@ -59,15 +59,15 @@ page.on("console", (m) => {
 await page.goto(`http://127.0.0.1:${port}/tools/render/dragon.html`);
 await page.waitForFunction(() => window.__ready === true, null, { timeout: 20000 });
 
-/* Egg stays the emoji: the model is a dragon, not an egg. The other three are
-   the same dragon framed larger, so it visibly grows with the score. */
+/* Three stages total: egg (emoji), baby (this model), adult (the next model,
+   still to be supplied). Rendered from the same camera rig so they match. */
 const STAGES = [
-  { id: "baby", fill: 0.62, yaw: 22, pitch: 7 },
-  { id: "teen", fill: 0.78, yaw: 20, pitch: 6 },
-  { id: "adult", fill: 0.9, yaw: 16, pitch: 5 }
+  { id: "baby", model: "/assets/dragon/dragon.glb", fill: 0.9, yaw: 20, pitch: 6 }
 ];
 
 for (const s of STAGES) {
+  await page.goto(`http://127.0.0.1:${port}/tools/render/dragon.html?model=${encodeURIComponent(s.model)}`);
+  await page.waitForFunction(() => window.__ready === true, null, { timeout: 20000 });
   const info = await page.evaluate((o) => window.renderStage(o), s);
   await page.waitForTimeout(120);
   const file = join(outDir, s.id + ".png");

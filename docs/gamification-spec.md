@@ -28,7 +28,10 @@ written to a ledger (see `data-contracts.md` §3).
 ## 3. Levels and stages
 
 - **Levels**: 10 levels at `0, 100, 250, 450, 700, 1000, 1350, 1750, 2200, 2700` XP.
-- **Stages**: egg (0) → baby (250) → **teen (800)** → adult (1500).
+- **Stages**: three only. egg (0) → **baby (800)** → adult (1500). The baby is the model
+  we have. The adult model is still to be supplied, so 🐉 stands in until then.
+- The demo opens on **550 XP, still an egg**, and hatches into the baby during the insights
+  journey, at 800.
 
 ## 4. Goals fill themselves
 
@@ -51,12 +54,18 @@ the demo. That is the point: the bar does not lie.
 - **Food** is repeatable and counts `feeds`. It never awards XP.
 - The dragon is tappable and answers with a credit-health line.
 
-## 6. Demo click-path (550 → 870 XP, Teen dragon)
+## 6. Demo click-path (550 → 870 XP, the egg hatches into the baby dragon)
 
 1. **Score**: 612/1200 Equifax, forecast 635 to 650, the goal card, Afterpay and Zip with
    next payment dates, the factors sheet.
-2. **On open** the daily check-in and the seven-day goal land: **550 XP, 330 coins**.
-3. **Insights**: six findings, each opening a sheet with evidence and one action. All six
-   take you to **870 XP, 510 coins**, and the dragon evolves to **Teen** partway through.
-4. **Goals**: 1 of 3 done, the other two honestly in progress.
+2. **On open** the daily check-in and the seven-day goal land: **550 XP, 330 coins**. The
+   dragon is still an **egg** here, and the Dragon tab says when it hatches.
+3. **Insights**: six findings, each with a **Review** button that opens a sheet with the
+   evidence and one action. Working through them takes you to **870 XP, 510 coins**, and the
+   egg **hatches into the baby dragon** at 800 XP partway through.
+4. **Goals**: three cards that fill themselves from real signals. The daily one is done; the
+   other two sit at 2 of 4 instalments and 27 of 30 days.
 5. **Dragon and Shop**: spend coins on a hat and a cave and watch it wear them.
+6. **AR**: **See it in your room**, live camera, the baby dragon drops onto the table, drag
+   it, tap it to hear a line built from the customer's own payments.
+7. **Adult (1500 XP)** is the third and final stage. Its model is still to be supplied.

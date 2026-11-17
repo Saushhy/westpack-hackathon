@@ -105,6 +105,12 @@ await page.waitForTimeout(900);
   check("Header height 54px", "54px", h, h === "54px");
   const logo = await page.evaluate(() => document.querySelector(".gel-logo")?.naturalWidth || 0);
   check("Real Westpac logo loaded", ">0", String(logo), logo > 0);
+  const chrome = await page.evaluate(() => ({
+    dead: document.querySelectorAll(".gel-header-btn").length,
+    coin: !!document.querySelector(".gel-coin-pill")
+  }));
+  check("Header has no dead help/profile buttons", "0", String(chrome.dead), chrome.dead === 0);
+  check("Header keeps the coin balance", "true", String(chrome.coin), chrome.coin);
 }
 
 // ============================ buttons / cells / icons ============================
@@ -218,14 +224,26 @@ await page.waitForTimeout(900);
     return {
       cards: document.querySelectorAll(".gel-bill").length,
       why: document.querySelectorAll(".gel-row-link:not(.gel-row-link--tile)").length,
+      whyLabel: document.querySelector(".gel-row-link:not(.gel-row-link--tile)")?.textContent.trim() || "",
+      whyHeight: (() => {
+        const b = document.querySelector(".gel-row-link:not(.gel-row-link--tile)");
+        return b ? getComputedStyle(b).height : "";
+      })(),
       details: document.querySelectorAll("details").length,
       factors: document.querySelectorAll(".gel-factor").length,
+      found: document.querySelectorAll(".gel-found").length,
+      moneyTiles: document.querySelectorAll(".gel-found .gel-money-tile").length,
       body
     };
   });
 
   check("Insights shows >= 6 findings", ">=6", String(ins.cards), ins.cards >= 6);
-  check("Every actionable finding has 'How we know this'", "6", String(ins.why), ins.why === 6);
+  check("Every actionable finding has a Review button", "6", String(ins.why), ins.why === 6);
+  check("The button says Review", "Review", ins.whyLabel, ins.whyLabel.startsWith("Review"));
+  check("Review is a real button (38px tall)", "38px", ins.whyHeight, ins.whyHeight === "38px");
+  check("No 'N patterns to look at' subtitle", "absent", ins.body.includes("patterns to look at") ? "present" : "absent", !ins.body.includes("patterns to look at"));
+  check("What we found is the new summary card", "1", String(ins.found), ins.found === 1);
+  check("The two dollar totals are tiles", "2", String(ins.moneyTiles), ins.moneyTiles === 2);
   check("Accordions replaced by sheets", "0", String(ins.details), ins.details === 0);
   check("Factor chips on findings", ">=5", String(ins.factors), ins.factors >= 5);
   check("Repayment history is named", "present", ins.body.includes("Repayment history") ? "present" : "missing", ins.body.includes("Repayment history"));
@@ -245,6 +263,9 @@ await page.waitForTimeout(900);
   check("Boot XP = 550 (start 320 + check-in 10 + week 120 + goal 100)", "550", String(before.xp_total), before.xp_total === 550);
   check("Boot coins = 330", "330", String(before.coins), before.coins === 330);
   check("Daily goal completed itself", "completed", before.goals.goal_checkin?.status, before.goals.goal_checkin?.status === "completed");
+  const stageCount = await page.evaluate(() => (window.DATA?.rewards?.stages || []).length);
+  check("Three stages only: egg, baby, adult", "3", String(stageCount), stageCount === 3);
+  check("The demo opens as an egg", "egg", before.xp_total < 800 ? "egg" : "hatched", before.xp_total < 800);
 
   // Open one finding: the evidence must be in a sheet, not on the card.
   await page.locator(".gel-row-link:not(.gel-row-link--tile)").first().click();
@@ -289,7 +310,7 @@ await page.waitForTimeout(900);
   const st = await state();
   check("Journey XP = 870", "870", String(st.xp_total), st.xp_total === 870);
   check("Journey coins = 510", "510", String(st.coins), st.coins === 510);
-  check("Dragon is a teen (>= 800 XP)", "teen", st.xp_total >= 800 ? "teen" : "not teen", st.xp_total >= 800);
+  check("The dragon hatched into a baby (>= 800 XP)", "baby", st.xp_total >= 800 ? "baby" : "still an egg", st.xp_total >= 800);
   check("No duplicate awards", "0 dups", new Set(st.awarded).size === st.awarded.length ? "0 dups" : "dups", new Set(st.awarded).size === st.awarded.length);
   check("Exactly one goal completed (the daily one)", "1", String(Object.keys(st.goals).length), Object.keys(st.goals).length === 1);
 }
@@ -305,13 +326,17 @@ await page.waitForTimeout(900);
       cards: document.querySelectorAll(".gel-goal").length,
       buttons: document.querySelectorAll("#screen button").length,
       bars: Array.from(document.querySelectorAll(".gel-goal .gel-bar-fill")).map((b) => b.style.width),
+      doneBadge:
+        document.querySelector('.gel-goal[data-goal="goal_checkin"] .gel-badge')?.textContent.trim() || "",
       body
     };
   });
 
   check("Three goals", "3", String(g.cards), g.cards === 3);
   check("Goals have no buttons at all", "0", String(g.buttons), g.buttons === 0);
-  check("Goal 1 completed itself", "1 of 3 done", g.body.includes("1 of 3 done") ? "1 of 3 done" : "missing", g.body.includes("1 of 3 done"));
+  check("No '1 of 3 done' subtitle", "absent", g.body.includes(" of 3 done") ? "present" : "absent", !g.body.includes(" of 3 done"));
+  check("No explanatory note above the cards", "absent", /fill in on their own/.test(g.body) ? "present" : "absent", !/fill in on their own/.test(g.body));
+  check("Goal 1 shows the Done badge", "Done", g.doneBadge, g.doneBadge === "Done");
   check("Goal 2 shows 2 of 4 instalments", "2 of 4", g.body.includes("2 of 4") ? "2 of 4" : "missing", g.body.includes("2 of 4"));
   check("Goal 3 shows 27 of 30 days", "27 of 30", g.body.includes("27 of 30") ? "27 of 30" : "missing", g.body.includes("27 of 30"));
   check("Bars reflect the data", "100%,50%,90%", g.bars.join(","), g.bars.join(",") === "100%,50%,90%");

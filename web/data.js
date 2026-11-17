@@ -731,16 +731,9 @@ window.DATA = {
       {
         "id": "baby",
         "name": "Baby Dragon",
-        "xp_required": 250,
+        "xp_required": 800,
         "emoji": "🐣",
         "image": "assets/dragon/baby.png"
-      },
-      {
-        "id": "teen",
-        "name": "Teen Dragon",
-        "xp_required": 800,
-        "emoji": "🐲",
-        "image": "assets/dragon/teen.png"
       },
       {
         "id": "adult",

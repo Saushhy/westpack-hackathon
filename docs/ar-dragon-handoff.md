@@ -113,8 +113,9 @@ head.addChild(cap)
 ```
 
 Exact percentages used by the web prototype, measured from the rendered
-silhouette, are in `web/app.js` under `WEAR_ANCHOR`: hat at 92% of height for the
-adult stage, 88% for the teen, 80% for the baby.
+silhouette, are in `web/app.js` under `WEAR_ANCHOR`: hat at 5% of the wrap,
+shades at 18%, scarf at 38%. There are only three stages now (egg, baby,
+adult), so measure the adult when its model arrives.
 
 ## The dragon speaks, and it does not chat
 
@@ -143,6 +144,6 @@ like a bank and not a satnav.
   export one clip from the `.blend`, the level up moment gets much better.
 - The USDZ conversion has not been tested here (no Mac on this machine). Open it
   in Reality Composer first and check the material came through.
-- The web prototype uses three pre-rendered PNGs (`baby`, `teen`, `adult`) rather
-  than a live renderer, because `index.html` has to work by double-click with no
-  server. The GLB is there if you want it in AR.
+- The web prototype uses a pre-rendered PNG of the model (`baby.png`) rather than a live
+  renderer, because `index.html` has to work by double-click with no server. The GLB is
+  there if you want it in AR. The adult stage has no model yet, so it falls back to 🐉.

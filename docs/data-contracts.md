@@ -92,7 +92,8 @@ Top level: `version`, `currency`, `credit_factors[]`, `starting_state`, `actions
   `on_time_repayment`, `no_new_bnpl_month`, `reminder_set`, `protected_balance`,
   `insight_tracked`, `saving_verified`, `savings_streak_4wk`, `shop_purchase`.
 - `levels[]`: 10 levels, 0 to 2700 XP.
-- `stages[]`: egg 0 · baby 250 · teen 800 · adult 1500.
+- `stages[]`: three only, egg 0 · **baby 800** · adult 1500. The demo opens on 550 XP, still
+  an egg, and hatches during the insights journey.
 - `goals[]`: `{ id, title, description, xp, coins, source, target, unit, watching, next_check }`.
 
 | Goal | `source` | `target` | Completes when |

@@ -31,8 +31,11 @@ one to fix.
 
 ```bash
 npm install            # once
+npm start              # http://localhost:4173, needed for the AR camera only
 npm run vendor:gel     # re-download GEL CSS + the Westpac brand font (network)
 npm run fetch:logos    # re-download the 9 brand icons into assets/brands (network)
+npm run build:dragon   # ../assets/dragon_3d -> assets/dragon/dragon.glb
+npm run render:dragon  # dragon.glb -> assets/dragon/baby.png
 npm run build:data     # ../data/*.json + transactions -> data.js
 npm run build:icons    # assets/gel/icons/*.svg -> icons.js (fill -> currentColor)
 npm run build:css      # src/input.css -> styles.css
@@ -42,9 +45,9 @@ npm run build          # data + icons + css
 ## Testing
 
 ```bash
-npm run audit   # 89 headless assertions: GEL tokens, real font, component geometry, logos,
-                # sheets, movements, the dash lint, and the whole demo journey
-npm run shots   # 10 screenshots into %TEMP%\opencode\cd-shots
+npm run audit   # 115 headless assertions: GEL tokens, real font, component geometry, logos,
+                # sheets, movements, the dash lint, AR, and the whole demo journey
+npm run shots   # 12 screenshots into %TEMP%\opencode\cd-shots
 ```
 
 Both drive the system **Microsoft Edge** (headless) through `playwright-core`, so there is no
@@ -64,9 +67,14 @@ browser download. Edit the `EDGE` path in `scripts/*.mjs` if Edge lives elsewher
 | `gel/src/css/**` | Verbatim copy of GEL's stylesheet source (`npm run vendor:gel`). |
 | `assets/gel/` | Westpac logo and GEL outlined icons. |
 | `assets/brands/` | The 9 provider logos Mia actually pays (`npm run fetch:logos`). |
+| `assets/dragon/` | `dragon.glb` and the rendered stage portrait (`npm run render:dragon`). |
 | `assets/fonts/` | Westpac Bold v2.007 (proprietary, see the note below). |
 | `tools/vendor-gel.mjs` | Pulls the GEL CSS and font. |
 | `tools/fetch-logos.mjs` | Pulls the brand icons once, picks a real PNG, skips placeholders. |
+| `tools/build-dragon.mjs` | OBJ + PBR maps to a single `dragon.glb` (sharp downscales the maps). |
+| `tools/render-dragon.mjs` | Renders the GLB in headless three.js to `assets/dragon/baby.png`. |
+| `tools/render/` | The render page three.js needs; never loaded by the app. |
+| `tools/serve.mjs` | Static server on 4173, so the AR camera has a secure context. |
 | `tools/build-data.js` | `data/*.json` + transactions to `data.js`. |
 | `tools/build-icons.js` | GEL SVGs to `icons.js`. |
 
@@ -79,12 +87,16 @@ browser download. Edit the `EDGE` path in `scripts/*.mjs` if Edge lives elsewher
 > demo. They are trademarks of those companies and are used only to identify accounts Mia
 > already holds.
 
-## Demo click-path (550 → 870 XP, Teen dragon)
+## Demo click-path (550 → 870 XP, the egg hatches into the baby dragon)
 
 1. **Score** → 612/1200 (Equifax), forecast 635 to 650, "Your goal: Car loan in 12 months",
    Afterpay and Zip with the next payment date, and "What moves your score" in a sheet.
 2. **On open** → the daily check-in lands and the seven-day goal completes: 550 XP, 330 coins.
-3. **Insights** → six findings, each a sheet with the evidence and one action. All six take
-   you to 870 XP and 510 coins, and the dragon evolves to Teen partway through.
-4. **Goals** → 1 of 3 done, and no buttons. The other two fill from real payments.
+   Still an egg at that point.
+3. **Insights** → six findings, each with a **Review** button that opens a sheet with the
+   evidence and one action. Working through them takes you to 870 XP and 510 coins, and the
+   egg hatches into the baby dragon at 800 XP.
+4. **Goals** → three cards, no buttons. They fill from real payments.
 5. **Dragon / Shop** → spend coins on a hat and a cave and watch the dragon wear them.
+6. **AR** → "See it in your room": live camera, the dragon drops onto the table, drag it, tap
+   it to hear a line built from the customer's own payments.

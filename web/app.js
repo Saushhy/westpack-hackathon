@@ -581,7 +581,7 @@ function insightCard(bill) {
         <span class="gel-muted">${bill.finding || ""}</span>
       </div>
       <button class="gel-row-link" type="button" onclick="openInsight('${bill.id}')">
-        <span>How we know this</span>${ico("arrow-right")}
+        <span>Review</span>${ico("arrow-right")}
       </button>
     </article>`;
 }
@@ -607,39 +607,43 @@ function insightsSummary() {
   const feesAvoided = (bills.totals && bills.totals.fees_avoided) || 0;
 
   return `
-    <section class="gel-panel">
-      <div class="gel-panel-head">
-        <span class="gel-panel-title">What we found</span>
+    <section class="gel-found">
+      <div class="gel-found-top">
+        <span class="gel-found-eyebrow">What we found</span>
         <span class="gel-badge gel-badge--faint">Last 3 months</span>
       </div>
-      <div class="gel-panel-body">
-        <div class="gel-counts">
-          <div class="gel-count"><span class="gel-count-val">${credit}</span><span class="gel-count-label">affect your score</span></div>
-          <div class="gel-count"><span class="gel-count-val">${cash}</span><span class="gel-count-label">free up cash</span></div>
-          <div class="gel-count"><span class="gel-count-val">${fees}</span><span class="gel-count-label">avoid a fee</span></div>
+      <div class="gel-found-stats">
+        <div class="gel-found-stat">
+          <span class="gel-found-num">${credit}</span>
+          <span class="gel-found-label">affect your score</span>
         </div>
-        <div class="gel-hr"></div>
-        <div class="gel-kv">
-          <span class="gel-kv-k">Cash you could free</span>
-          <span class="gel-kv-v gel-money--good">${fmtAUD(cashFree)} a month</span>
+        <div class="gel-found-stat">
+          <span class="gel-found-num">${cash}</span>
+          <span class="gel-found-label">free up cash</span>
         </div>
-        <div class="gel-kv">
-          <span class="gel-kv-k">Fees you could avoid</span>
-          <span class="gel-kv-v">${fmtAUD(feesAvoided)} a month</span>
+        <div class="gel-found-stat">
+          <span class="gel-found-num">${fees}</span>
+          <span class="gel-found-label">avoid a fee</span>
         </div>
-        <p class="gel-note" style="margin-top:10px">Repayment history matters most. Everything else is smaller.</p>
       </div>
+      <div class="gel-found-money">
+        <div class="gel-money-tile gel-money-tile--good">
+          <span class="gel-money-tile-label">Cash you could free</span>
+          <span class="gel-money-tile-value">${fmtAUD(cashFree)}</span>
+          <span class="gel-money-tile-unit">a month</span>
+        </div>
+        <div class="gel-money-tile">
+          <span class="gel-money-tile-label">Fees you could avoid</span>
+          <span class="gel-money-tile-value">${fmtAUD(feesAvoided)}</span>
+          <span class="gel-money-tile-unit">a month</span>
+        </div>
+      </div>
+      <p class="gel-found-note">Repayment history matters most. Everything else is smaller.</p>
     </section>`;
 }
 
 function renderInsights() {
   const order = { remind: 0, protect: 1, track: 2, keep: 3, no_offer: 4 };
-  const open = bills.bills.filter(
-    (b) =>
-      isActionable(b) &&
-      state.bills[b.id]?.status !== "done" &&
-      state.bills[b.id]?.status !== "dismissed"
-  ).length;
 
   const cards = bills.bills
     .slice()
@@ -653,7 +657,6 @@ function renderInsights() {
     <div class="gel-screen-head">
       <div>
         <h1 class="gel-title">Insights</h1>
-        <p class="gel-muted">${open} ${open === 1 ? "pattern" : "patterns"} to look at</p>
       </div>
     </div>
     ${insightsSummary()}
@@ -782,8 +785,6 @@ function syncGoals() {
 }
 
 function renderGoals() {
-  const done = rewards.goals.filter(goalDone).length;
-
   const cards = rewards.goals
     .map((g) => {
       const complete = goalDone(g);
@@ -812,10 +813,8 @@ function renderGoals() {
     <div class="gel-screen-head">
       <div>
         <h1 class="gel-title">Your plan</h1>
-        <p class="gel-muted">${done} of ${rewards.goals.length} done</p>
       </div>
     </div>
-    <p class="gel-note" style="margin-bottom:12px">These fill in on their own. We check your transactions, not a tick box.</p>
     ${cards}`;
 }
 
@@ -973,12 +972,12 @@ function boot() {
 /* Where each worn item sits on the dragon emoji, per stage (top % of the box). */
 /* Anchors are measured from the rendered PNG silhouettes (see
    tools/render-dragon.mjs), so the hat lands on the head of the real model
-   rather than floating over the old emoji. */
+   rather than floating over the old emoji. The adult values are the emoji
+   defaults until its model is rendered. */
 const WEAR_ANCHOR = {
   egg: { hat: 2, face: 34, neck: 60 },
-  baby: { hat: 20, face: 23, neck: 36 },
-  teen: { hat: 12, face: 16, neck: 33 },
-  adult: { hat: 7, face: 11, neck: 31 }
+  baby: { hat: 5, face: 18, neck: 38 },
+  adult: { hat: 2, face: 36, neck: 60 }
 };
 
 function wearGlyph(emoji, slot, top) {
@@ -1167,9 +1166,15 @@ function renderDragon() {
 
     ${sceneHtml()}
 
-    <button class="gel-btn-primary gel-btn-block" type="button" onclick="openAR()" style="margin-bottom:12px">
-      ${ico("camera")} See it in your room
-    </button>
+    ${
+      stage.id === "egg"
+        ? `<p class="gel-note" style="margin:0 0 12px">Your dragon hatches at ${fmtWhole(
+            nextStage(state.xp_total)?.xp_required ?? 800
+          )} XP. Act on an insight to get there.</p>`
+        : `<button class="gel-btn-primary gel-btn-block" type="button" onclick="openAR()" style="margin-bottom:12px">
+             ${ico("camera")} See it in your room
+           </button>`
+    }
 
     <article class="gel-cell">
       <div class="gel-row-between">
