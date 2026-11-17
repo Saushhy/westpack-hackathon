@@ -773,8 +773,7 @@ function openMovements(name, match) {
             .join("")}
         </div>`;
       })
-      .join("") +
-    '<p class="gel-note" style="margin-top:14px">Every line here is a Westpac transaction.</p>';
+      .join("");
 
   openSheet({
     title: name,

@@ -332,6 +332,12 @@ await page.waitForTimeout(900);
   check("Movements are real transactions (>=5 rows)", ">=5", String(moves.rows), moves.rows >= 5);
   check("Movements grouped by month", ">=2", String(moves.months), moves.months >= 2);
   check("Movements show a total", "present", moves.body.includes("payments") ? "present" : "missing", moves.body.includes("payments"));
+  check(
+    "No closing explainer under the movement list",
+    "absent",
+    /Every line here/.test(moves.body) ? "present" : "absent",
+    !/Every line here/.test(moves.body)
+  );
   await page.keyboard.press("Escape");
   await page.waitForTimeout(200);
   check("Escape closes the sheet", "0", String(await page.locator(".gel-sheet").count()), (await page.locator(".gel-sheet").count()) === 0);
