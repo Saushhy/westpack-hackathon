@@ -468,24 +468,25 @@ await page.waitForTimeout(900);
 
   const g = await page.evaluate(() => {
     const body = document.querySelector("#screen").innerText;
+    const cards = Array.from(document.querySelectorAll(".gel-goal"));
     return {
-      cards: document.querySelectorAll(".gel-goal").length,
+      cards: cards.length,
       buttons: document.querySelectorAll("#screen button").length,
+      reviews: document.querySelectorAll("#screen .gel-goal .gel-row-link").length,
       bars: Array.from(document.querySelectorAll(".gel-goal .gel-bar-fill")).map((b) => b.style.width),
-      discs: document.querySelectorAll(".gel-goal .gel-disc").length,
-      doneBadge:
-        document.querySelector('.gel-goal[data-goal="goal_checkin"] .gel-badge')?.textContent.trim() || "",
+      statuses: cards.map((c) => c.querySelector(".gel-band").textContent.trim()),
+      xp: cards.map((c) => c.querySelector(".gel-goal-xp").textContent.trim()),
       body
     };
   });
 
   check("Three goals", "3", String(g.cards), g.cards === 3);
-  check("Goals have no buttons at all", "0", String(g.buttons), g.buttons === 0);
+  check("Goals carry a Review button and no action button", "3 reviews", g.reviews + " reviews, " + (g.buttons - g.reviews) + " other", g.reviews === 3 && g.buttons - g.reviews === 0);
   check("No '1 of 3 done' subtitle", "absent", g.body.includes(" of 3 done") ? "present" : "absent", !g.body.includes(" of 3 done"));
   check("No explanatory note above the cards", "absent", /fill in on their own/.test(g.body) ? "present" : "absent", !/fill in on their own/.test(g.body));
-  check("Goal 1 shows the Done badge", "Done", g.doneBadge, g.doneBadge === "Done");
-  check("Goal 2 shows 2 of 4 instalments", "2 of 4", g.body.includes("2 of 4") ? "2 of 4" : "missing", g.body.includes("2 of 4"));
-  check("Each goal hides its explanation behind a disclosure", "3", String(g.discs), g.discs === 3);
+  check("Goal 1 shows the Done state", "Completed", g.statuses[0], g.statuses[0] === "Completed");
+  check("Goal 2 shows it is in progress", "In progress", g.statuses[1], g.statuses[1] === "In progress");
+  check("Each goal shows its reward", "+100 XP", g.xp.join(","), g.xp.every((x) => /^\+\d+ XP$/.test(x)));
   check(
     "Goal explanations are not on the card",
     "absent",
@@ -496,6 +497,24 @@ await page.waitForTimeout(900);
   check("Bars reflect the data", "100%,50%,90%", g.bars.join(","), g.bars.join(",") === "100%,50%,90%");
   check("Next check is stated", "present", /Next check/.test(g.body) ? "present" : "missing", /Next check/.test(g.body));
   check("No em or en dashes on screen", "clean", dashFree(g.body) ? "clean" : "dash found", dashFree(g.body));
+
+  // Review opens the goal, the same way an insight does.
+  await page.locator("#screen .gel-goal .gel-row-link").first().click();
+  await page.waitForTimeout(400);
+  const gs = await page.evaluate(() => {
+    const s = document.querySelector(".gel-sheet");
+    return {
+      title: s?.querySelector(".gel-sheet-title")?.textContent.trim() || "",
+      body: s?.innerText || "",
+      close: !!s?.querySelector(".gel-sheet-actions .gel-btn-ghost")
+    };
+  });
+  check("Review opens the goal sheet", "present", gs.title || "missing", gs.title.length > 0);
+  check("The goal sheet explains the goal", "present", /re-reads your transactions/.test(gs.body) ? "present" : "missing", /re-reads your transactions/.test(gs.body));
+  check("The goal sheet says what it watches", "present", /What it watches/.test(gs.body) ? "present" : "missing", /What it watches/.test(gs.body));
+  check("The goal sheet closes", "true", String(gs.close), gs.close);
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(200);
 }
 
 // ============================ dragon + wardrobe ============================

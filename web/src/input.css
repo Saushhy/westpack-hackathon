@@ -319,6 +319,20 @@
     color: var(--text-mono);
     white-space: nowrap;
   }
+  .gel-band.is-done { background: var(--surface-success); color: #fff; }
+
+  /* goals: the same panel as the score, with the state on the left of the head
+     and the reward on the right */
+  .gel-goal .gel-panel-body { padding-top: 14px; }
+  .gel-goal-xp {
+    font-family: var(--font-brand), var(--font-family-sans);
+    font-size: 12px; font-weight: 700; color: var(--text-mono);
+    font-variant-numeric: tabular-nums;
+  }
+  .gel-sheet-head--goal .gel-sheet-title {
+    white-space: normal; display: -webkit-box; -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
 
   /* ================= Buttons (GEL Button) =============================== */
   .gel-btn-primary,
@@ -1129,12 +1143,6 @@
 
   .gel-factor-list { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
 
-  /* goals: bar + the "next check" line, never a button */
-  .gel-progress-note {
-    display: flex; align-items: center; justify-content: space-between; gap: 12px;
-    margin-top: 8px;
-  }
-  .gel-progress-note .gel-muted { font-size: 12px; }
 
   .gel-factor {
     display: inline-flex; align-items: center; height: 20px; padding: 0 8px;
