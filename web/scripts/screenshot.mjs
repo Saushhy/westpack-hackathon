@@ -52,7 +52,7 @@ await shot("00-score");
 await tab("insights");
 await shot("01-insights");
 
-await page.locator(".gel-row-link:not(.gel-row-link--tile)").first().click();
+await page.locator(".gel-bill--tap").first().click();
 await page.waitForTimeout(500);
 await shot("02-insight-sheet");
 await page.keyboard.press("Escape");
@@ -81,7 +81,7 @@ await shot("06-dragon-egg");
 // ---------- hatch it: 10 XP short, then act on one finding ----------
 await setState({ xp_total: 790 });
 await tab("insights");
-await page.locator(".gel-row-link:not(.gel-row-link--tile)").first().click();
+await page.locator(".gel-bill--tap").first().click();
 await page.waitForTimeout(400);
 await page.locator(".gel-sheet-actions .gel-btn-primary").click();
 await page.waitForTimeout(800);

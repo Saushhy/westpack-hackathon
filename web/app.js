@@ -458,7 +458,7 @@ function billHead(bill, trailing) {
 }
 
 function evidenceRows(bill) {
-  const rows = bill.evidence || [];
+  const rows = (bill.evidence || []).slice(0, 2);
   if (!rows.length) return "";
   return (
     '<div class="gel-kvs">' +
@@ -550,24 +550,12 @@ function openInsight(id) {
       ${adorn(bill)}
       <div class="gel-sheet-head-body">
         <h2 class="gel-sheet-title" id="sheet-title">${bill.label}</h2>
-        <p class="gel-sheet-sub">${bill.provider} · ${bill.plan}</p>
+        <p class="gel-sheet-sub">${bill.provider}</p>
       </div>
-      ${
-        bill.current_amount
-          ? `<div class="gel-sheet-head-end">
-               <span class="gel-money gel-money--sm">${fmtAUD(bill.current_amount)}</span>${moneyUnit(
-                 bill.billing_period
-               )}
-             </div>`
-          : ""
-      }
     </div>`;
 
   const body = `
-    <div class="gel-evidence-card">
-      <span class="gel-evidence-eyebrow">What we saw</span>
-      ${evidenceRows(bill)}
-    </div>
+    <div class="gel-evidence-card">${evidenceRows(bill)}</div>
     ${bill.detail ? `<p class="gel-detail">${bill.detail}</p>` : ""}
     ${
       bill.advice
@@ -625,16 +613,21 @@ function insightCard(bill) {
     ? `<span class="gel-money gel-money--sm">${fmtAUD(bill.current_amount)}</span>${moneyUnit(bill.billing_period)}`
     : "";
 
+  /* A row, not a report. The whole card is the tap target, the way every other
+     list in the app behaves, so there is no repeated Review button. */
   return `
-    <article class="gel-cell gel-bill" data-bill="${bill.id}">
+    <article class="gel-cell gel-bill gel-bill--tap" data-bill="${bill.id}"
+             role="button" tabindex="0" aria-label="${bill.label}. ${bill.finding || ""} Review."
+             onclick="openInsight('${bill.id}')"
+             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openInsight('${
+               bill.id
+             }')}">
       ${billHead(bill, amount)}
       <div class="gel-tagline">
         ${factorChip(bill.factor)}
-        <span class="gel-muted">${bill.finding || ""}</span>
+        <span class="gel-muted gel-tagline-text">${bill.finding || ""}</span>
+        ${ico("arrow-right")}
       </div>
-      <button class="gel-row-link" type="button" onclick="openInsight('${bill.id}')">
-        <span>Review</span>${ico("arrow-right")}
-      </button>
     </article>`;
 }
 

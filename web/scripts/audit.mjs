@@ -350,14 +350,12 @@ await page.waitForTimeout(900);
 
   const ins = await page.evaluate(() => {
     const body = document.querySelector("#screen").innerText;
+    const taps = Array.from(document.querySelectorAll(".gel-bill--tap"));
     return {
       cards: document.querySelectorAll(".gel-bill").length,
-      why: document.querySelectorAll(".gel-row-link:not(.gel-row-link--tile)").length,
-      whyLabel: document.querySelector(".gel-row-link:not(.gel-row-link--tile)")?.textContent.trim() || "",
-      whyHeight: (() => {
-        const b = document.querySelector(".gel-row-link:not(.gel-row-link--tile)");
-        return b ? getComputedStyle(b).height : "";
-      })(),
+      why: taps.length,
+      tappable: taps.every((t) => t.getAttribute("role") === "button" && t.getAttribute("tabindex") === "0"),
+      buttonsInCards: document.querySelectorAll(".gel-bill button").length,
       details: document.querySelectorAll("details").length,
       factors: document.querySelectorAll(".gel-factor").length,
       found: document.querySelectorAll(".gel-found").length,
@@ -368,9 +366,9 @@ await page.waitForTimeout(900);
   });
 
   check("Insights shows >= 6 findings", ">=6", String(ins.cards), ins.cards >= 6);
-  check("Every actionable finding has a Review button", "6", String(ins.why), ins.why === 6);
-  check("The button says Review", "Review", ins.whyLabel, ins.whyLabel.startsWith("Review"));
-  check("Review is a real button (38px tall)", "38px", ins.whyHeight, ins.whyHeight === "38px");
+  check("Every actionable finding is a tappable row", "6", String(ins.why), ins.why === 6);
+  check("Rows are reachable by keyboard", "true", String(ins.tappable), ins.tappable);
+  check("No repeated Review button on the cards", "0", String(ins.buttonsInCards), ins.buttonsInCards === 0);
   check("No 'N patterns to look at' subtitle", "absent", ins.body.includes("patterns to look at") ? "present" : "absent", !ins.body.includes("patterns to look at"));
   check("What we found is the new summary card", "1", String(ins.found), ins.found === 1);
   check("The two dollar totals are tiles", "2", String(ins.moneyTiles), ins.moneyTiles === 2);
@@ -399,7 +397,7 @@ await page.waitForTimeout(900);
   check("The demo opens as an egg", "egg", before.xp_total < 800 ? "egg" : "hatched", before.xp_total < 800);
 
   // Open one finding: the evidence must be in a sheet, not on the card.
-  await page.locator(".gel-row-link:not(.gel-row-link--tile)").first().click();
+  await page.locator(".gel-bill--tap").first().click();
   await page.waitForTimeout(400);
   const sheet = await page.evaluate(() => {
     const s = document.querySelector(".gel-sheet");
@@ -421,14 +419,14 @@ await page.waitForTimeout(900);
       body: s ? s.innerText : ""
     };
   });
-  check("Review opens a sheet", "present", sheet.open ? "present" : "missing", sheet.open);
-  check("Sheet shows the evidence rows", ">=3", String(sheet.rows), sheet.rows >= 3);
+  check("Tapping a row opens a sheet", "present", sheet.open ? "present" : "missing", sheet.open);
+  check("Sheet shows the evidence rows", "2", String(sheet.rows), sheet.rows === 2);
   check("Sheet carries the action", "present", sheet.action ? "present" : "missing", sheet.action);
   check("Primary action is Westpac red", "rgb(218, 23, 16)", sheet.primaryFill, sheet.primaryFill === "rgb(218, 23, 16)");
   check("Sheet header is the finding itself", "Credit card repayment", sheet.headTitle, sheet.headTitle === "Credit card repayment");
-  check("Header shows the provider line", "Westpac", sheet.headSub, /^Westpac/.test(sheet.headSub));
+  check("Header shows the provider line", "Westpac", sheet.headSub, /^Westpac$/.test(sheet.headSub));
   check("Header carries a brand tile", "true", String(sheet.hasBrandTile), sheet.hasBrandTile);
-  check("Evidence is labelled 'What we saw'", "What we saw", sheet.eyebrow, sheet.eyebrow === "What we saw");
+  check("No eyebrow needed above the rows", "absent", sheet.eyebrow ? "present" : "absent", !sheet.eyebrow);
   check(
     "Leading with the advice, not a lecture",
     "Set a reminder so the next one is on time.",
@@ -448,7 +446,7 @@ await page.waitForTimeout(900);
 
   // Work through the remaining findings.
   for (let i = 0; i < 6; i++) {
-    const link = page.locator(".gel-row-link:not(.gel-row-link--tile)").first();
+    const link = page.locator(".gel-bill--tap").first();
     if ((await link.count()) === 0) break;
     await link.click();
     await page.waitForTimeout(250);
