@@ -324,11 +324,15 @@
   /* goals: the same panel as the score, with the state on the left of the head
      and the reward on the right */
   .gel-goal .gel-panel-body { padding-top: 14px; }
+  .gel-goal-head-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .gel-goal-head-left .gel-ico { width: 16px; height: 16px; flex: none; }
   .gel-goal-xp {
     font-family: var(--font-brand), var(--font-family-sans);
     font-size: 12px; font-weight: 700; color: var(--text-mono);
     font-variant-numeric: tabular-nums;
   }
+  /* a finished goal reads green at a glance, without reading the word */
+  .gel-bar-fill.is-done { background: var(--surface-success); }
   .gel-sheet-head--goal .gel-sheet-title {
     white-space: normal; display: -webkit-box; -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;

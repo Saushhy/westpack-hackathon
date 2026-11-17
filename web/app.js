@@ -863,28 +863,58 @@ function goalStatus(g) {
   return goalValue(g) > 0 ? "In progress" : "Not started";
 }
 
+/* Each goal gets the icon for what it actually watches, so three panels do not
+   read as three copies of the same card. */
+const GOAL_ICON = {
+  checkin: "paw",
+  on_time: "card",
+  bnpl_on_time: "card",
+  no_new_credit: "shield",
+  no_new_bnpl: "shield"
+};
+
+/* What is left to do first, and within that the goal closest to done, because
+   the next win is the one worth surfacing. Completed goals sink to the bottom. */
+function orderedGoals() {
+  return rewards.goals.slice().sort((a, b) => {
+    const da = goalDone(a) ? 1 : 0;
+    const db = goalDone(b) ? 1 : 0;
+    if (da !== db) return da - db;
+    return goalPct(b) - goalPct(a);
+  });
+}
+
+function completedOn(g) {
+  const at = state.goals[g.id]?.completed_at;
+  if (!at) return "Done";
+  return "Done " + fmtDate(at.slice(0, 10));
+}
+
 /* The goal, as the same kind of panel the score uses: the state and the reward
    live in the navy head, the number and the bar in the body, and the reasoning
    waits behind Review. */
 function renderGoals() {
-  const cards = rewards.goals
+  const cards = orderedGoals()
     .map((g) => {
       const complete = goalDone(g);
       const value = Math.min(goalValue(g), g.target);
       return `
         <article class="gel-panel gel-goal" data-goal="${g.id}">
           <div class="gel-panel-head">
-            <span class="gel-band ${complete ? "is-done" : ""}">${goalStatus(g)}</span>
+            <span class="gel-goal-head-left">
+              ${ico(GOAL_ICON[g.source] || "target")}
+              <span class="gel-band ${complete ? "is-done" : ""}">${goalStatus(g)}</span>
+            </span>
             <span class="gel-goal-xp">+${g.xp} XP</span>
           </div>
           <div class="gel-panel-body">
             <div class="gel-goal-title">${g.title}</div>
             <div class="gel-row-between" style="margin-top:10px">
               <span class="gel-muted">${value} of ${g.target} ${g.unit}</span>
-              <span class="gel-muted">${complete ? "Done" : "Next check " + g.next_check}</span>
+              <span class="gel-muted">${complete ? completedOn(g) : "Next check " + g.next_check}</span>
             </div>
             <div class="gel-bar gel-bar--skinny" style="margin-top:8px">
-              <div class="gel-bar-fill" style="width:${fmtPct(goalPct(g))}"></div>
+              <div class="gel-bar-fill ${complete ? "is-done" : ""}" style="width:${fmtPct(goalPct(g))}"></div>
             </div>
             <button class="gel-row-link" type="button" onclick="openGoal('${g.id}')">
               <span>Review</span>${ico("arrow-right")}
@@ -913,7 +943,7 @@ function openGoal(id) {
 
   const head = `
     <div class="gel-sheet-head gel-sheet-head--goal">
-      <span class="gel-adorn">${ico("target")}</span>
+      <span class="gel-adorn">${ico(GOAL_ICON[g.source] || "target")}</span>
       <div class="gel-sheet-head-body">
         <h2 class="gel-sheet-title" id="sheet-title">${g.title}</h2>
         <p class="gel-sheet-sub">${stageName} · ${value} of ${g.target} ${g.unit}</p>

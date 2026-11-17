@@ -476,6 +476,10 @@ await page.waitForTimeout(900);
       bars: Array.from(document.querySelectorAll(".gel-goal .gel-bar-fill")).map((b) => b.style.width),
       statuses: cards.map((c) => c.querySelector(".gel-band").textContent.trim()),
       xp: cards.map((c) => c.querySelector(".gel-goal-xp").textContent.trim()),
+      icons: cards.filter((c) => !!c.querySelector(".gel-goal-head-left svg")).length,
+      doneLabels: cards
+        .filter((c) => /Completed/.test(c.querySelector(".gel-band").textContent))
+        .map((c) => c.querySelector(".gel-row-between .gel-muted:last-child").textContent.trim()),
       body
     };
   });
@@ -484,9 +488,15 @@ await page.waitForTimeout(900);
   check("Goals carry a Review button and no action button", "3 reviews", g.reviews + " reviews, " + (g.buttons - g.reviews) + " other", g.reviews === 3 && g.buttons - g.reviews === 0);
   check("No '1 of 3 done' subtitle", "absent", g.body.includes(" of 3 done") ? "present" : "absent", !g.body.includes(" of 3 done"));
   check("No explanatory note above the cards", "absent", /fill in on their own/.test(g.body) ? "present" : "absent", !/fill in on their own/.test(g.body));
-  check("Goal 1 shows the Done state", "Completed", g.statuses[0], g.statuses[0] === "Completed");
-  check("Goal 2 shows it is in progress", "In progress", g.statuses[1], g.statuses[1] === "In progress");
+  check(
+    "Unfinished goals come first, closest to done on top",
+    "In progress, In progress, Completed",
+    g.statuses.join(", "),
+    g.statuses.join(", ") === "In progress, In progress, Completed"
+  );
+  check("The completed goal says when", "done date", g.doneLabels[0], /^Done \d/.test(g.doneLabels[0]));
   check("Each goal shows its reward", "+100 XP", g.xp.join(","), g.xp.every((x) => /^\+\d+ XP$/.test(x)));
+  check("Each goal has its own icon", "3", String(g.icons), g.icons === 3);
   check(
     "Goal explanations are not on the card",
     "absent",
@@ -494,12 +504,12 @@ await page.waitForTimeout(900);
     !/re-reads your transactions/.test(g.body)
   );
   check("Goal 3 shows 27 of 30 days", "27 of 30", g.body.includes("27 of 30") ? "27 of 30" : "missing", g.body.includes("27 of 30"));
-  check("Bars reflect the data", "100%,50%,90%", g.bars.join(","), g.bars.join(",") === "100%,50%,90%");
+  check("Bars reflect the data", "90%,50%,100%", g.bars.join(","), g.bars.join(",") === "90%,50%,100%");
   check("Next check is stated", "present", /Next check/.test(g.body) ? "present" : "missing", /Next check/.test(g.body));
   check("No em or en dashes on screen", "clean", dashFree(g.body) ? "clean" : "dash found", dashFree(g.body));
 
   // Review opens the goal, the same way an insight does.
-  await page.locator("#screen .gel-goal .gel-row-link").first().click();
+  await page.locator('.gel-goal[data-goal="goal_checkin"] .gel-row-link').click();
   await page.waitForTimeout(400);
   const gs = await page.evaluate(() => {
     const s = document.querySelector(".gel-sheet");
