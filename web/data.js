@@ -11,6 +11,7 @@ window.DATA = {
       "scale": "equifax_au",
       "max": 1200,
       "source": "Equifax",
+      "band": "Average",
       "refreshed_at": "2026-11-03",
       "consent": true,
       "demo_sample": true,

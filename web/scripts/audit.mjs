@@ -162,6 +162,8 @@ await page.waitForTimeout(900);
 // ============================ score tab ============================
 {
   const s = await page.evaluate(() => ({
+    title: document.querySelector(".gel-title")?.textContent.trim() || "",
+    band: document.querySelector(".gel-screen-head .gel-muted")?.textContent.trim() || "",
     num: document.querySelector(".gel-score-num")?.textContent.trim() || "",
     hero: document.querySelector(".gel-badge--hero")?.textContent.trim() || "",
     goalTitle: document.querySelector(".gel-goal-title")?.textContent.trim() || "",
@@ -175,6 +177,8 @@ await page.waitForTimeout(900);
   }));
 
   check("Score shows 612", "612", s.num, s.num.startsWith("612"));
+  check("Title reads 'Mia, this is your score'", "Mia, this is your score", s.title, s.title === "Mia, this is your score");
+  check("Band shown under the title", "Average", s.band, s.band === "Average");
   check("Score source = Equifax", "Equifax", s.hero, /Equifax/.test(s.hero));
   check("Goal card is labelled 'Your goal'", "Your goal", s.goalLabel.join("|"), s.goalLabel.includes("Your goal"));
   check("Goal reads 'Car loan in 12 months'", "Car loan in 12 months", s.goalTitle, s.goalTitle === "Car loan in 12 months");
@@ -532,15 +536,15 @@ await page.waitForTimeout(900);
   const m = await p3.evaluate(() => {
     const st = JSON.parse(localStorage.getItem("credit-dragon:state:marcus") || "null");
     return {
+      title: document.querySelector(".gel-title")?.textContent.trim() || "",
       score: document.querySelector(".gel-score-num")?.textContent.trim() || "",
-      sub: document.querySelector(".gel-screen-head .gel-muted")?.textContent.trim() || "",
       accounts: Array.from(document.querySelectorAll(".gel-acc-name")).map((e) => e.textContent.trim()),
       logos: Array.from(document.querySelectorAll(".gel-acc .gel-brand-img")).map((i) => i.naturalWidth),
       xp: st ? st.xp_total : null
     };
   });
   check("Marcus page loads his own score", "670", m.score.split("/")[0], m.score.split("/")[0] === "670");
-  check("Marcus page names the persona", "Marcus", m.sub.split("·")[0].trim(), m.sub.split("·")[0].trim() === "Marcus");
+  check("The title names the person", "Marcus, this is your score", m.title, m.title === "Marcus, this is your score");
   check(
     "Marcus sees his card, car loan and overdraft",
     "3",
