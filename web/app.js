@@ -2,7 +2,7 @@
 
 const { bills, rewards } = window.DATA;
 const LS_KEY = "credit-dragon:state";
-const STATE_VERSION = 1;
+const STATE_VERSION = 2;
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const coin = () => '<span class="gel-coin"></span>';
@@ -10,6 +10,16 @@ const coin = () => '<span class="gel-coin"></span>';
 const fmtAUD = (n) =>
   "$" + Number(n).toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtWhole = (n) => Number(n).toLocaleString("en-AU");
+const fmtPct = (n) => Math.max(0, Math.min(100, n)).toFixed(0) + "%";
+const fmtDate = (iso) =>
+  new Date(iso + "T00:00:00").toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
+/* Local calendar day, not UTC: a Brisbane evening must not roll back a date. */
+const localDay = (d) =>
+  d.getFullYear() +
+  "-" +
+  String(d.getMonth() + 1).padStart(2, "0") +
+  "-" +
+  String(d.getDate()).padStart(2, "0");
 
 /* ---------- derived lookups ---------- */
 function levelForXp(xp) {
@@ -32,28 +42,63 @@ function nextStage(xp) {
 }
 const actionById = (id) => rewards.actions.find((a) => a.id === id);
 
+/* ---------- GEL icons (pulled from WestpacGEL/GEL-next) ---------- */
+function ico(name) {
+  const svg = (window.GEL_ICONS || {})[name] || "";
+  return '<span class="gel-ico">' + svg + "</span>";
+}
+
+/* The demo runs on one fixed day so every recording behaves the same. */
+const TODAY = bills.as_of;
+
+const BILL_ICON = {
+  bill_card: "card",
+  bill_bnpl: "shopping-bag",
+  bill_phone: "phone",
+  bill_internet: "desktop",
+  bill_streaming: "video",
+  bill_spotify: "headset",
+  bill_gym: "barbell",
+  bill_rent: "house"
+};
+
+/* Brands Mia already pays get their own logo on the tile. If the file is
+   missing we fall back to the GEL icon rather than invent art. */
+function brandFallback(img) {
+  const name = img.getAttribute("data-icon") || "receipt";
+  const tile = img.closest(".gel-adorn");
+  if (!tile) return;
+  tile.classList.remove("gel-adorn--brand");
+  tile.innerHTML = ico(name);
+}
+
+function brandTile(logo, iconName) {
+  if (!logo) return '<span class="gel-adorn">' + ico(iconName) + "</span>";
+  return (
+    '<span class="gel-adorn gel-adorn--brand">' +
+    '<img class="gel-brand-img" src="' + logo + '" alt="" loading="lazy" ' +
+    'data-icon="' + iconName + '" onerror="brandFallback(this)">' +
+    "</span>"
+  );
+}
+
+function adorn(bill) {
+  return brandTile(bill.logo, BILL_ICON[bill.id] || "receipt");
+}
+
+/* The three-bucket label a change feeds: credit score / cash freed / fees avoided. */
+const FACTOR_LABEL = { cash: "Cash", fees: "Fees", credit: "Credit", none: "" };
+function factorChip(factor) {
+  if (!factor || factor === "none") return "";
+  return `<span class="gel-factor gel-factor--${factor}">${FACTOR_LABEL[factor] || factor}</span>`;
+}
+
 function imgOrEmoji(src, emoji, alt, cls) {
   return (
     '<img src="' + src + '" alt="' + alt + '" class="' + cls + '" loading="lazy" ' +
     'onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'inline-block\'">' +
     '<span style="display:none" class="' + cls + ' emoji-fallback">' + emoji + "</span>"
   );
-}
-
-/* GEL icons for bill categories (pulled from Westpac GEL) */
-const BILL_ICON = {
-  bill_phone: "phone",
-  bill_internet: "desktop",
-  bill_netflix: "video",
-  bill_stan: "video",
-  bill_disney: "video",
-  bill_spotify: "headset",
-  bill_gym: "barbell",
-  bill_rent: "house"
-};
-function iconWrap(bill) {
-  const name = BILL_ICON[bill.id] || "receipt";
-  return '<span class="gel-ico-wrap"><span class="gel-ico">' + (window.GEL_ICONS[name] || "") + "</span></span>";
 }
 
 /* ---------- micro-animations ---------- */
@@ -75,7 +120,7 @@ function animateCount(el, from, to, fmt) {
 }
 
 function sparkles(n) {
-  const spots = [[18, 32], [82, 16], [14, 64], [86, 70], [50, 8], [50, 90]];
+  const spots = [[16, 30], [84, 14], [10, 62], [88, 68], [50, 4], [50, 92]];
   let out = "";
   for (let i = 0; i < n; i++) {
     const pos = spots[i % spots.length];
@@ -93,19 +138,40 @@ function initialState() {
     xp_total: rewards.starting_state.xp_total,
     coins: rewards.starting_state.coins,
     streak_weeks: rewards.starting_state.streak_weeks,
+    checkins: (rewards.starting_state.checkins || []).slice(),
+    protected: false, // protected balance set for the at-risk debit
     bills: {},
     goals: {},
-    shop: { owned: [], equipped: {} },
+    /* wardrobe: equipped[slot] = shop item id (hat / face / neck / home) */
+    shop: { owned: [], equipped: { hat: null, face: null, neck: null, home: null }, feeds: 0, fed_at: null },
     awarded: [],
     ledger: []
   };
 }
+
+/* Old saves from a previous build may lack the wardrobe / check-in shape. */
+function normalise(s) {
+  const base = initialState();
+  if (s.protected === undefined) s.protected = false;
+  if (!Array.isArray(s.checkins)) s.checkins = base.checkins;
+  if (!Array.isArray(s.awarded)) s.awarded = [];
+  if (!Array.isArray(s.ledger)) s.ledger = [];
+  s.bills = s.bills || {};
+  s.goals = s.goals || {};
+  s.shop = s.shop || {};
+  s.shop.owned = s.shop.owned || [];
+  s.shop.equipped = Object.assign({}, base.shop.equipped, s.shop.equipped || {});
+  s.shop.feeds = s.shop.feeds || 0;
+  s.shop.fed_at = s.shop.fed_at || null;
+  return s;
+}
+
 function load() {
   try {
     const raw = localStorage.getItem(LS_KEY);
     if (raw) {
       const s = JSON.parse(raw);
-      if (s && s.version === STATE_VERSION) return s;
+      if (s && s.version === STATE_VERSION) return normalise(s);
     }
   } catch (e) {
     /* ignore corrupt state */
@@ -180,46 +246,57 @@ function award(actionId, sourceId, reason) {
 }
 
 /* ---------- handlers (exposed for inline onclick) ---------- */
-const billActionForType = { switch: "bill_switch", cancel: "bill_cancel", reschedule: "bill_reschedule" };
+/* Insight, goal and sheet actions live next to their renderers below
+   (openInsight / runInsight / syncGoals / openSheet / setProtected). */
 
-function approveBill(id) {
-  const bill = bills.bills.find((b) => b.id === id);
-  if (!bill || state.bills[id]?.status === "approved") return;
-  state.bills[id] = { status: "approved", approved_at: new Date().toISOString() };
-  const actionId = billActionForType[bill.action_type];
-  const res = actionId ? award(actionId, id, bill.label + " approved") : null;
+/* ---------- shop + wardrobe ----------
+   What you buy is not a receipt on a shelf: it is worn. Hats, shades, scarves and
+   homes are attached to the dragon in the Dragon tab, and food is consumed. */
+const WEAR_SLOTS = ["hat", "face", "neck", "home"];
+const itemById = (id) => rewards.shop.find((s) => s.id === id) || null;
+const isWearing = (id) => {
+  const it = itemById(id);
+  return !!it && state.shop.equipped[it.slot] === id;
+};
+const wearing = (slot) => itemById(state.shop.equipped[slot]);
+const wornItems = () => WEAR_SLOTS.map((s) => wearing(s)).filter(Boolean);
+
+function wearItem(id) {
+  const item = itemById(id);
+  if (!item || !WEAR_SLOTS.includes(item.slot)) return;
+  state.shop.equipped[item.slot] = id;
   save();
   render();
-  if (res && (res.xp || res.coins)) {
-    toast("+" + res.xp + " XP · +" + res.coins + " " + coin());
-    if (res.evolved) showEvolution(res.fromStage, res.toStage);
-  }
+  toast(item.emoji + " " + item.name + " on, see your dragon");
 }
 
-function declineBill(id) {
-  state.bills[id] = { status: "declined", declined_at: new Date().toISOString() };
+function takeOff(id) {
+  const item = itemById(id);
+  if (!item || !WEAR_SLOTS.includes(item.slot)) return;
+  if (state.shop.equipped[item.slot] === id) state.shop.equipped[item.slot] = null;
   save();
   render();
-}
-
-function completeGoal(id) {
-  const goal = rewards.goals.find((g) => g.id === id);
-  if (!goal || state.goals[id]?.status === "completed") return;
-  state.goals[id] = { status: "completed", completed_at: new Date().toISOString() };
-  const res = award("goal_completed", id, goal.title + " completed");
-  save();
-  render();
-  if (res && (res.xp || res.coins)) {
-    toast("+" + res.xp + " XP · +" + res.coins + " " + coin());
-    if (res.evolved) showEvolution(res.fromStage, res.toStage);
-  }
+  toast(item.name + " taken off");
 }
 
 function buyItem(id) {
-  const item = rewards.shop.find((s) => s.id === id);
-  if (!item || item.locked || state.shop.owned.includes(id) || state.coins < item.cost) return;
+  const item = itemById(id);
+  if (!item || item.locked) return;
+
+  const lvl = levelForXp(state.xp_total).level;
+  if (item.unlock_level && lvl < item.unlock_level) return;
+
+  // food is repeatable: every purchase feeds the dragon again
+  if (item.slot === "food") return feedDragon(item);
+
+  // already owned → wearing it is free
+  if (state.shop.owned.includes(id)) return wearItem(id);
+
+  if (state.coins < item.cost) return;
+
   state.coins -= item.cost;
   state.shop.owned.push(id);
+  if (WEAR_SLOTS.includes(item.slot)) state.shop.equipped[item.slot] = id; // buy = wear it
   state.ledger.push({
     ts: new Date().toISOString(),
     action: "shop_purchase",
@@ -230,14 +307,35 @@ function buyItem(id) {
   });
   save();
   render();
-  toast("−" + item.cost + " " + coin() + " · " + item.name);
+  toast(item.emoji + " " + item.name + " on, " + fmtWhole(item.cost) + " " + coin());
+}
+
+function feedDragon(item) {
+  const food = item || itemById("item_feast");
+  if (!food || state.coins < food.cost) return;
+  state.coins -= food.cost;
+  state.shop.feeds += 1;
+  state.shop.fed_at = new Date().toISOString();
+  state.ledger.push({
+    ts: new Date().toISOString(),
+    action: "shop_purchase",
+    source_id: food.id,
+    xp: 0,
+    coins: -food.cost,
+    reason: "Fed the dragon a " + food.name
+  });
+  save();
+  render();
+  toast(food.emoji + " Nom nom! Your dragon is happy.");
+  hopDragon();
+  hearts();
 }
 
 function closeModal() {
   $("#modal-root").innerHTML = "";
 }
 
-/* ---------- toast + evolution modal ---------- */
+/* ---------- toast + evolution dialog ---------- */
 let toastTimer = null;
 function toast(html) {
   const el = $("#toast");
@@ -247,194 +345,779 @@ function toast(html) {
   toastTimer = setTimeout(() => el.classList.remove("show"), 1900);
 }
 
+/* GEL Modal: rounded-3xl dialog, 24px bold title, 16px body, backdrop black/65 */
 function showEvolution(from, to) {
   $("#modal-root").innerHTML =
-    '<div class="gel-modal-backdrop" onclick="if(event.target===this)closeModal()">' +
-    '<div class="gel-modal">' +
+    '<div class="gel-overlay" onclick="if(event.target===this)closeModal()">' +
+    '<div class="gel-dialog" role="dialog" aria-modal="true" aria-labelledby="evo-title">' +
+    '<button class="gel-dialog-close" type="button" aria-label="Close" onclick="closeModal()">' +
+    ico("close") +
+    "</button>" +
+    '<h2 class="gel-dialog-title" id="evo-title">Your dragon evolved</h2>' +
+    '<div class="gel-dialog-body">' +
+    '<div class="gel-evo-scene">' +
     sparkles(8) +
-    '<div class="gel-dragon-avatar">' + imgOrEmoji(to.image, to.emoji, to.name, "dragon-img") + "</div>" +
-    '<h2 class="gel-h2" style="margin-top:10px">Your dragon evolved!</h2>' +
-    '<p class="gel-muted" style="margin:8px 0 18px">' + from.name + " → " + to.name + "</p>" +
-    '<button class="gel-btn-primary" onclick="closeModal()">Nice! 🎉</button>' +
+    dragonMarkup(to) +
+    "</div>" +
+    '<p style="text-align:center;margin:12px 0 0">' +
+    from.name + " is now a <strong>" + to.name + "</strong></p>" +
+    '<p class="gel-muted" style="text-align:center;margin:6px 0 0">' +
+    fmtWhole(to.xp_required) + " XP reached. Keep repayments on time to keep growing.</p>" +
+    "</div>" +
+    '<div class="gel-dialog-actions">' +
+    '<button class="gel-btn-primary" type="button" onclick="closeModal()">Continue</button>' +
+    "</div>" +
     "</div></div>";
 }
 
-/* ---------- computed ---------- */
-function switchedSavings() {
-  let total = 0;
-  for (const b of bills.bills) {
-    if (
-      (b.action_type === "switch" || b.action_type === "cancel") &&
-      state.bills[b.id]?.status === "approved"
-    ) {
-      total += b.savings_monthly;
-    }
-  }
-  return total;
+/* ==========================================================================
+   SHEETS
+   --------------------------------------------------------------------------
+   One slide-up sheet (GEL BottomSheet) for every detail view: how we know
+   this, what moves your score, the movements behind a BNPL plan. The screen
+   stays short, the detail opens over it, and the action is in the sheet.
+   ========================================================================== */
+
+function sheetKeyHandler(e) {
+  if (e.key === "Escape") closeSheet();
 }
 
-/* ---------- renderers ---------- */
-function priceLabel(bill) {
-  const period = bill.billing_period === "fortnightly" ? "fortnight" : "mo";
-  return fmtAUD(bill.current_amount) + "/" + period;
-}
-
-function renderBills() {
-  const t = bills.totals;
-  const switched = switchedSavings();
-  const order = { switch: 0, cancel: 1, reschedule: 2, keep: 3, no_offer: 4 };
-  const sorted = [...bills.bills].sort(
-    (a, b) => order[a.action_type] - order[b.action_type] || b.savings_monthly - a.savings_monthly
-  );
-
-  const banner =
-    '<div class="gel-card gel-banner">' +
-    '<div class="gel-muted" style="color:rgba(255,255,255,0.72)">Your dragon found</div>' +
-    '<div style="font-size:30px;font-weight:800;line-height:1.05;letter-spacing:-0.02em">' + fmtAUD(t.savings_monthly) +
-    '<span style="font-size:15px;font-weight:600;opacity:0.8">/mo</span></div>' +
-    '<div style="font-size:12px;opacity:0.85;margin-top:2px">≈ ' + fmtAUD(t.savings_annual) + " a year</div>" +
-    '<div class="gel-bar on-hero" style="background:rgba(255,255,255,0.18);margin-top:14px">' +
-    '<div class="gel-bar-fill" style="width:' + Math.min(100, (switched / t.savings_monthly) * 100) + '%;background:#fff"></div>' +
+function openSheet(opts) {
+  const root = $("#modal-root");
+  if (!root) return;
+  root.innerHTML =
+    '<div class="gel-sheet-overlay" onclick="if (event.target === this) closeSheet()">' +
+    '<div class="gel-sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">' +
+    '<button class="gel-sheet-close" type="button" aria-label="Close" onclick="closeSheet()">' +
+    ico("close") +
+    "</button>" +
+    '<h2 class="gel-sheet-title" id="sheet-title">' +
+    opts.title +
+    "</h2>" +
+    '<div class="gel-sheet-body">' +
+    opts.body +
     "</div>" +
-    '<div style="font-size:11px;margin-top:7px;opacity:0.85">' +
-    '<span id="banner-switched">' + fmtAUD(switched) + "</span> switched of " + fmtAUD(t.savings_monthly) + " available</div>" +
-    '<span class="gel-shine"></span>' +
-    "</div>";
+    (opts.actions ? '<div class="gel-sheet-actions">' + opts.actions + "</div>" : "") +
+    "</div></div>";
+  document.addEventListener("keydown", sheetKeyHandler);
+}
 
-  const cards = sorted
-    .map((b) => {
-      const st = state.bills[b.id]?.status || "pending";
+function closeSheet() {
+  const root = $("#modal-root");
+  if (root) root.innerHTML = "";
+  document.removeEventListener("keydown", sheetKeyHandler);
+}
 
-      if (st === "approved") {
-        const confirm =
-          b.action_type === "switch"
-            ? "Switched! You're saving " + fmtAUD(b.savings_monthly) + "/mo."
-            : b.action_type === "cancel"
-            ? "Cancelled. You're saving " + fmtAUD(b.savings_monthly) + "/mo."
-            : "Moved to Fridays. Dishonour fees avoided.";
-        return (
-          '<div class="gel-card">' +
-          '<div class="gel-alert gel-alert-success">✓ ' + confirm + "</div>" +
-          '<div style="display:flex;align-items:center;gap:10px;margin-top:10px">' +
-          iconWrap(b) +
-          '<div style="flex:1"><div class="gel-h2">' + b.label + "</div>" +
-          '<div class="gel-muted">' + b.provider + " · " + b.plan + "</div></div>" +
-          "</div></div>"
-        );
-      }
+/* ==========================================================================
+   INSIGHTS
+   --------------------------------------------------------------------------
+   Each card is a finding from Westpac's own transaction data, mapped to what
+   actually moves an Australian credit score (repayment history, enquiries,
+   limits, defaults). The card stays short. Tapping it opens the evidence and
+   the one action.
+   ========================================================================== */
 
-      if (st === "declined") {
-        return (
-          '<div class="gel-card" style="opacity:0.6">' +
-          '<div style="display:flex;align-items:center;gap:10px">' +
-          iconWrap(b) +
-          '<div style="flex:1"><div class="gel-h2">' + b.label + "</div>" +
-          '<div class="gel-muted">' + b.provider + " · " + b.plan + "</div></div>" +
-          '<span class="gel-badge-muted">Not now</span>' +
-          "</div></div>"
-        );
-      }
+const insightActionForType = {
+  remind: "reminder_set",
+  track: "insight_tracked",
+  protect: "protected_balance"
+};
 
-      if (b.action_type === "keep" || b.action_type === "no_offer") {
-        return (
-          '<div class="gel-card" style="opacity:0.85">' +
-          '<div style="display:flex;align-items:center;gap:10px">' +
-          iconWrap(b) +
-          '<div style="flex:1"><div class="gel-h2">' + b.label + "</div>" +
-          '<div class="gel-muted">' + b.provider + " · " + b.plan + "</div></div>" +
-          '<span class="gel-badge-muted">' + (b.action_type === "keep" ? "Keeping" : "No offer") + "</span>" +
-          "</div>" +
-          '<p class="gel-muted" style="margin-top:8px">' + b.why + "</p>" +
-          "</div>"
-        );
-      }
+const moneyUnit = (p) =>
+  '<span class="gel-money-unit">/' + (p === "fortnightly" ? "fortnight" : "mo") + "</span>";
 
-      const offer = b.offer;
-      const offerPrice = offer
-        ? fmtAUD(offer.amount) + "/" + (offer.billing_period === "fortnightly" ? "fortnight" : "mo")
-        : "";
-      const badge =
-        b.action_type === "reschedule"
-          ? "Avoid $19 in fees"
-          : "Save " + fmtAUD(b.savings_monthly) + "/mo";
+function billHead(bill, trailing) {
+  return `
+    <div class="gel-bill-head">
+      ${adorn(bill)}
+      <div class="gel-cell-body">
+        <div class="gel-bill-title">${bill.label}</div>
+        <div class="gel-muted">${bill.provider} · ${bill.plan}</div>
+      </div>
+      <div class="gel-bill-amount">${trailing || ""}</div>
+    </div>`;
+}
 
-      return (
-        '<div class="gel-card">' +
-        '<div style="display:flex;align-items:center;gap:10px">' +
-        iconWrap(b) +
-        '<div style="flex:1"><div class="gel-h2">' + b.label + "</div>" +
-        '<div class="gel-muted">' + b.provider + " · " + b.plan + "</div></div>" +
-        '<span class="gel-badge-save">' + badge + "</span>" +
-        "</div>" +
-        '<div style="display:flex;align-items:center;gap:10px;margin-top:12px">' +
-        '<div style="flex:1"><div class="gel-muted">Current</div>' +
-        '<div style="font-weight:700;color:var(--color-muted);text-decoration:' + (offer ? "line-through" : "none") + '">' +
-        priceLabel(b) + "</div></div>" +
-        (offer
-          ? '<div style="flex:1;text-align:right"><div class="gel-muted">New</div>' +
-            '<div style="font-weight:800;color:var(--color-success)">' + offerPrice + "</div></div>"
-          : "") +
-        "</div>" +
-        (offer
-          ? '<div style="font-size:11px;color:var(--color-muted);margin-top:8px">' +
-            offer.features.join(" · ") + "</div>"
-          : "") +
-        '<details class="gel-why" style="margin-top:10px">' +
-        "<summary>Why am I showing you this?</summary>" +
-        '<p style="font-size:12px;color:var(--color-ink);margin-top:6px">' + b.why + "</p>" +
-        (b.risk_notes ? '<div class="gel-alert gel-alert-warning" style="margin-top:8px">' + b.risk_notes + "</div>" : "") +
-        '<p class="gel-muted" style="margin-top:8px">Nothing happens until you approve.</p>' +
-        "</details>" +
-        '<div style="display:flex;gap:8px;margin-top:12px">' +
-        '<button class="gel-btn-primary" style="flex:1" onclick="approveBill(\'' + b.id + "')\">Approve</button>" +
-        '<button class="gel-btn-ghost" onclick="declineBill(\'' + b.id + "')\">Not now</button>" +
-        "</div></div>"
-      );
-    })
+function evidenceRows(bill) {
+  const rows = bill.evidence || [];
+  if (!rows.length) return "";
+  return (
+    '<div class="gel-kvs">' +
+    rows
+      .map(
+        (r) =>
+          `<div class="gel-kv"><span class="gel-kv-k">${r.k}</span><span class="gel-kv-v">${r.v}</span></div>`
+      )
+      .join("") +
+    "</div>"
+  );
+}
+
+/* Neutral source link. The customer checks the source themselves. */
+function sourceLink(bill) {
+  let url = "";
+  let label = "";
+  if (bill.benchmark && bill.benchmark.source_url) {
+    url = bill.benchmark.source_url;
+    label = "Check the market · " + (bill.benchmark.source || "neutral source");
+  } else if (bill.provider_url) {
+    url = bill.provider_url;
+    label = "View " + bill.provider + " details";
+  }
+  if (!url) return "";
+  return `<div class="gel-linkrow">
+    <a class="gel-link gel-link-sm" href="${url}" target="_blank" rel="noopener noreferrer">
+      ${label}${ico("arrow-right")}
+    </a>
+  </div>`;
+}
+
+function isActionable(bill) {
+  return ["remind", "protect", "track"].includes(bill.action_type);
+}
+
+function actOnInsight(id) {
+  const bill = bills.bills.find((b) => b.id === id);
+  if (!bill || state.bills[id]?.status === "done") return null;
+  state.bills[id] = { status: "done", acted_at: new Date().toISOString() };
+  if (bill.action_type === "protect") state.protected = true;
+  const actionId = insightActionForType[bill.action_type];
+  return actionId ? award(actionId, id, bill.label) : null;
+}
+
+function runInsight(id) {
+  const res = actOnInsight(id);
+  if (!res) return;
+  const goalResults = syncGoals();
+  save();
+  render();
+
+  const all = [res].concat(goalResults);
+  const xp = all.reduce((a, r) => a + r.xp, 0);
+  const coins = all.reduce((a, r) => a + r.coins, 0);
+  if (xp || coins) toast("+" + xp + " XP · +" + coins + " " + coin());
+  const evolved = all.find((r) => r.evolved);
+  if (evolved) showEvolution(evolved.fromStage, evolved.toStage);
+}
+
+function dismissInsight(id) {
+  state.bills[id] = { status: "dismissed", dismissed_at: new Date().toISOString() };
+  save();
+  render();
+}
+
+const ACTION_COPY = {
+  remind: { label: "Set a reminder", icon: "notification" },
+  protect: { label: "Protect balance", icon: "shield" },
+  track: { label: "Track this", icon: "check" }
+};
+
+function doneCopy(bill) {
+  if (bill.action_type === "remind") return "Reminder set. Your next repayment should land on time.";
+  if (bill.action_type === "protect") return "Protected balance set for Thu 19 Nov.";
+  if (bill.action_type === "track") return "We're watching this and will report back.";
+  return "Noted.";
+}
+
+/* The sheet: evidence, why it matters, the one action. */
+function openInsight(id) {
+  const bill = bills.bills.find((b) => b.id === id);
+  if (!bill) return;
+  const copy = ACTION_COPY[bill.action_type] || ACTION_COPY.track;
+
+  const body = `
+    <div class="gel-evidence">${evidenceRows(bill)}</div>
+    <p class="gel-note" style="margin-top:14px">${bill.why}</p>
+    ${bill.advice ? `<p class="gel-note gel-note--warn" style="margin-top:6px">${bill.advice}</p>` : ""}
+    ${sourceLink(bill)}
+    <div class="gel-verified" style="margin-top:14px">
+      ${ico("check")}
+      ${bill.verification ? bill.verification.source + " · " + fmtDate(bill.verification.checked_at) : "From your transactions"}
+    </div>`;
+
+  const actions = `
+    <button class="gel-btn-primary gel-btn-block" type="button" onclick="actFromSheet('${bill.id}')">
+      ${ico(copy.icon)} ${copy.label}
+    </button>
+    <button class="gel-btn-text" type="button" onclick="dismissFromSheet('${bill.id}')">Dismiss</button>`;
+
+  openSheet({ title: bill.label, body, actions });
+}
+
+function actFromSheet(id) {
+  closeSheet();
+  runInsight(id);
+}
+
+function dismissFromSheet(id) {
+  closeSheet();
+  dismissInsight(id);
+}
+
+function insightCard(bill) {
+  const st = state.bills[bill.id]?.status;
+
+  if (st === "dismissed")
+    return `<article class="gel-cell gel-bill is-muted" data-bill="${bill.id}">
+      ${billHead(bill, `<span class="gel-badge gel-badge--faint">Dismissed</span>`)}
+    </article>`;
+
+  if (st === "done")
+    return `<article class="gel-cell gel-bill is-done" data-bill="${bill.id}">
+      ${billHead(bill, `<span class="gel-badge gel-badge--success">Done</span>`)}
+      <div class="gel-hr"></div>
+      <p class="gel-note gel-note--good">${doneCopy(bill)}</p>
+    </article>`;
+
+  const amount = bill.current_amount
+    ? `<span class="gel-money gel-money--sm">${fmtAUD(bill.current_amount)}</span>${moneyUnit(bill.billing_period)}`
+    : "";
+
+  return `
+    <article class="gel-cell gel-bill" data-bill="${bill.id}">
+      ${billHead(bill, amount)}
+      <div class="gel-tagline">
+        ${factorChip(bill.factor)}
+        <span class="gel-muted">${bill.finding || ""}</span>
+      </div>
+      <button class="gel-row-link" type="button" onclick="openInsight('${bill.id}')">
+        <span>How we know this</span>${ico("arrow-right")}
+      </button>
+    </article>`;
+}
+
+function billStatusCard(bill) {
+  const label = bill.action_type === "keep" ? "Keeping" : "No change";
+  return `
+    <article class="gel-cell gel-bill is-muted" data-bill="${bill.id}">
+      ${billHead(bill, `<span class="gel-money gel-money--sm gel-money--muted">${fmtAUD(bill.current_amount)}</span>${moneyUnit(bill.billing_period)}`)}
+      <p class="gel-note" style="margin-top:8px">${bill.why}</p>
+      <div class="gel-tagline"><span class="gel-badge gel-badge--faint">${label}</span></div>
+    </article>`;
+}
+
+function insightsSummary() {
+  const credit = bills.bills.filter((b) => b.factor === "credit" && isActionable(b)).length;
+  const cash = bills.bills.filter((b) => b.factor === "cash" && isActionable(b)).length;
+  const fees = bills.bills.filter((b) => b.factor === "fees" && isActionable(b)).length;
+  const cashFree = bills.bills.reduce(
+    (a, b) => (b.factor === "cash" && b.savings_status === "potential" ? a + b.savings_monthly : a),
+    0
+  );
+  const feesAvoided = (bills.totals && bills.totals.fees_avoided) || 0;
+
+  return `
+    <section class="gel-panel">
+      <div class="gel-panel-head">
+        <span class="gel-panel-title">What we found</span>
+        <span class="gel-badge gel-badge--faint">Last 3 months</span>
+      </div>
+      <div class="gel-panel-body">
+        <div class="gel-counts">
+          <div class="gel-count"><span class="gel-count-val">${credit}</span><span class="gel-count-label">affect your score</span></div>
+          <div class="gel-count"><span class="gel-count-val">${cash}</span><span class="gel-count-label">free up cash</span></div>
+          <div class="gel-count"><span class="gel-count-val">${fees}</span><span class="gel-count-label">avoid a fee</span></div>
+        </div>
+        <div class="gel-hr"></div>
+        <div class="gel-kv">
+          <span class="gel-kv-k">Cash you could free</span>
+          <span class="gel-kv-v gel-money--good">${fmtAUD(cashFree)} a month</span>
+        </div>
+        <div class="gel-kv">
+          <span class="gel-kv-k">Fees you could avoid</span>
+          <span class="gel-kv-v">${fmtAUD(feesAvoided)} a month</span>
+        </div>
+        <p class="gel-note" style="margin-top:10px">Repayment history matters most. Everything else is smaller.</p>
+      </div>
+    </section>`;
+}
+
+function renderInsights() {
+  const order = { remind: 0, protect: 1, track: 2, keep: 3, no_offer: 4 };
+  const open = bills.bills.filter(
+    (b) =>
+      isActionable(b) &&
+      state.bills[b.id]?.status !== "done" &&
+      state.bills[b.id]?.status !== "dismissed"
+  ).length;
+
+  const cards = bills.bills
+    .slice()
+    .sort((a, b) => order[a.action_type] - order[b.action_type])
+    .map((b) =>
+      b.action_type === "keep" || b.action_type === "no_offer" ? billStatusCard(b) : insightCard(b)
+    )
     .join("");
 
-  return (
-    '<div class="gel-section"><h1 class="gel-h1">Bill negotiator</h1></div>' + banner + cards
-  );
+  return `
+    <div class="gel-screen-head">
+      <div>
+        <h1 class="gel-title">Insights</h1>
+        <p class="gel-muted">${open} ${open === 1 ? "pattern" : "patterns"} to look at</p>
+      </div>
+    </div>
+    ${insightsSummary()}
+    ${cards}`;
+}
+
+/* ==========================================================================
+   MOVEMENTS
+   --------------------------------------------------------------------------
+   The rows behind a provider come straight from Carlos's transaction file, so
+   "Afterpay costs you $X" is always checkable against real payments.
+   ========================================================================== */
+
+const monthLabel = (ym) =>
+  new Date(ym + "-01T00:00:00").toLocaleDateString("en-AU", { month: "short", year: "numeric" });
+
+function movementsFor(match) {
+  const re = new RegExp(match, "i");
+  return ((window.DATA && window.DATA.transactions) || [])
+    .filter((t) => re.test(t.merchant || "") || re.test(t.description || ""))
+    .sort((a, b) => (a.date < b.date ? 1 : -1));
+}
+
+function openMovements(name, match) {
+  const rows = movementsFor(match);
+  if (!rows.length) return;
+
+  const total = rows.reduce((a, t) => (t.type === "debit" ? a + t.amount : a), 0);
+
+  const groups = {};
+  for (const t of rows) {
+    const ym = t.date.slice(0, 7);
+    (groups[ym] = groups[ym] || []).push(t);
+  }
+
+  const body =
+    `<div class="gel-kv">
+      <span class="gel-kv-k">${rows.length} payments</span>
+      <span class="gel-kv-v gel-money">${fmtAUD(total)}</span>
+    </div>` +
+    Object.keys(groups)
+      .sort()
+      .reverse()
+      .map((ym) => {
+        const list = groups[ym];
+        const sub = list.reduce((a, t) => a + t.amount, 0);
+        return `<div class="gel-move-month">
+          <div class="gel-row-between">
+            <span class="gel-label">${monthLabel(ym)}</span>
+            <span class="gel-muted">${fmtAUD(sub)}</span>
+          </div>
+          ${list
+            .map(
+              (t) => `<div class="gel-move">
+                <span class="gel-move-day">${t.date.slice(8)}</span>
+                <span class="gel-cell-body">
+                  <span class="gel-move-desc">${t.description}</span>
+                  <span class="gel-muted">${t.merchant}</span>
+                </span>
+                <span class="gel-money gel-money--sm">${fmtAUD(t.amount)}</span>
+              </div>`
+            )
+            .join("")}
+        </div>`;
+      })
+      .join("") +
+    '<p class="gel-note" style="margin-top:14px">Every line here is a Westpac transaction.</p>';
+
+  openSheet({
+    title: name,
+    body,
+    actions: '<button class="gel-btn-ghost" type="button" onclick="closeSheet()">Close</button>'
+  });
+}
+
+/* ==========================================================================
+   GOALS
+   --------------------------------------------------------------------------
+   Goals fill themselves. There is no "mark as done" button: each one reads a
+   real signal (your check-ins, your instalments, your new facilities) and
+   completes when the data says it happened.
+   ========================================================================== */
+
+function checkinsInWindow() {
+  const window7 = [];
+  const base = new Date(TODAY + "T00:00:00").getTime();
+  for (let i = 0; i < 7; i++) {
+    window7.push(localDay(new Date(base - i * 86400000)));
+  }
+  return (state.checkins || []).filter((d) => window7.includes(d)).length;
+}
+
+function bnplPaidOnTime() {
+  return (bills.credit_file?.bnpl?.providers || []).reduce((a, p) => a + (p.paid_on_time || 0), 0);
+}
+
+function daysSinceNewFacility() {
+  const last = bills.credit_file?.bnpl?.last_facility_date;
+  if (!last) return 0;
+  const ms = new Date(TODAY + "T00:00:00") - new Date(last + "T00:00:00");
+  return Math.max(0, Math.round(ms / 86400000));
+}
+
+function goalValue(g) {
+  if (g.source === "checkin") return checkinsInWindow();
+  if (g.source === "bnpl_on_time") return bnplPaidOnTime();
+  if (g.source === "no_new_bnpl") return daysSinceNewFacility();
+  return 0;
+}
+
+const goalPct = (g) => Math.min(100, (goalValue(g) / g.target) * 100);const goalDone = (g) => state.goals[g.id]?.status === "completed";
+
+/* Called after any award and once at boot: a goal completes itself, and the
+   XP follows it. Returns the award results so the caller can celebrate. */
+function syncGoals() {
+  const results = [];
+  for (const g of rewards.goals) {
+    if (goalDone(g)) continue;
+    if (goalValue(g) >= g.target) {
+      state.goals[g.id] = { status: "completed", completed_at: new Date().toISOString() };
+      const r = award("goal_completed", g.id, g.title);
+      if (r) results.push(r);
+    }
+  }
+  return results;
 }
 
 function renderGoals() {
-  const switched = switchedSavings();
+  const done = rewards.goals.filter(goalDone).length;
+
   const cards = rewards.goals
     .map((g) => {
-      const done = state.goals[g.id]?.status === "completed";
-      let progress = 0;
-      if (done) progress = 100;
-      else if (g.progress_source === "bill_savings") progress = Math.min(100, (switched / g.target) * 100);
-
-      const ready = !done && g.progress_source === "bill_savings" && switched >= g.target;
-      const sub = done
-        ? "Completed ✓"
-        : g.progress_source === "bill_savings"
-        ? fmtAUD(Math.min(switched, g.target)) + " / " + fmtAUD(g.target) + " saved"
-        : "Tap to complete";
-
-      return (
-        '<div class="gel-card">' +
-        '<div class="gel-h2">' + g.title + "</div>" +
-        '<div class="gel-muted" style="margin-top:2px">' + g.description + "</div>" +
-        '<div class="gel-bar" style="margin-top:10px">' +
-        '<div class="gel-bar-fill" style="width:' + progress + "%;background:" + (done ? "var(--color-success)" : "var(--color-primary)") + '"></div>' +
-        "</div>" +
-        '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">' +
-        '<span class="gel-muted">' + sub + "</span>" +
-        '<span class="gel-badge-muted">+' + g.xp + " XP · +" + g.coins + " " + coin() + "</span>" +
-        "</div>" +
-        (!done
-          ? '<button class="gel-btn-primary" style="width:100%;margin-top:12px" onclick="completeGoal(\'' + g.id + "')\">" +
-            (ready ? "Complete goal" : "Mark done") + "</button>"
-          : "") +
-        "</div>"
-      );
+      const complete = goalDone(g);
+      const value = Math.min(goalValue(g), g.target);
+      return `
+        <article class="gel-cell gel-goal" data-goal="${g.id}">
+          <div class="gel-row-between">
+            <span class="gel-bill-title">${g.title}</span>
+            <span class="gel-badge ${complete ? "gel-badge--success" : "gel-badge--faint"}">
+              ${complete ? "Done" : value + " of " + g.target}
+            </span>
+          </div>
+          <p class="gel-muted" style="margin:4px 0 0">${g.description}</p>
+          <div class="gel-bar gel-bar--skinny" style="margin-top:10px">
+            <div class="gel-bar-fill" style="width:${fmtPct(goalPct(g))}"></div>
+          </div>
+          <div class="gel-progress-note">
+            <span class="gel-muted">${complete ? "Completed" : "Next check " + g.next_check}</span>
+            <span class="gel-muted">+${g.xp} XP</span>
+          </div>
+        </article>`;
     })
     .join("");
 
-  return '<h1 class="gel-h1" style="margin-bottom:12px">Credit health plan</h1>' + cards;
+  return `
+    <div class="gel-screen-head">
+      <div>
+        <h1 class="gel-title">Your plan</h1>
+        <p class="gel-muted">${done} of ${rewards.goals.length} done</p>
+      </div>
+    </div>
+    <p class="gel-note" style="margin-bottom:12px">These fill in on their own. We check your transactions, not a tick box.</p>
+    ${cards}`;
+}
+
+/* ==========================================================================
+   SCORE
+   --------------------------------------------------------------------------
+   Four things and one sheet: the score, the goal, the credit you can't see,
+   and what moves the score. No bucket strip, no bank products, no forecast
+   history. The detail lives in a sheet so the screen stays calm.
+   ========================================================================== */
+
+function bnplRow(p) {
+  return `
+    <button class="gel-row-link gel-row-link--tile" type="button"
+            onclick="openMovements('${p.name}', '${p.match}')">
+      <span class="gel-adorn gel-adorn--brand">
+        <img class="gel-brand-img" src="${p.logo}" alt="" loading="lazy"
+             data-icon="shopping-bag" onerror="brandFallback(this)">
+      </span>
+      <span class="gel-cell-body">
+        <span class="gel-move-name">${p.name}</span>
+        <span class="gel-muted">Next payment ${fmtAUD(p.amount_due)} on ${fmtDate(p.next_due)}</span>
+      </span>
+      ${ico("arrow-right")}
+    </button>`;
+}
+
+function openFactors() {
+  const body =
+    (rewards.credit_factors || [])
+      .map((f) => {
+        const up = f.direction === "up";
+        return `<div class="gel-factor-row" style="margin-bottom:16px">
+          <span class="gel-factor-arrow ${up ? "is-up" : "is-down"}">${up ? "↑" : "↓"}</span>
+          <div class="gel-factor-body">
+            <div class="gel-row-between">
+              <span class="gel-move-name">${f.label}</span>
+              <span class="gel-badge gel-badge--faint">${f.impact}</span>
+            </div>
+            <p class="gel-muted" style="margin:2px 0 0">${f.what}</p>
+          </div>
+        </div>`;
+      })
+      .join("") +
+    '<p class="gel-note">Direction only. Nobody can promise you points.</p>';
+
+  openSheet({
+    title: "What moves your score",
+    body,
+    actions: '<button class="gel-btn-ghost" type="button" onclick="closeSheet()">Close</button>'
+  });
+}
+
+function renderScore() {
+  const score = bills.score || {};
+  const cf = bills.credit_file || {};
+  const forecast = score.forecast || {};
+  const bnpl = cf.bnpl || {};
+  const providers = bnpl.providers || [];
+
+  return `
+    <div class="gel-screen-head">
+      <div>
+        <h1 class="gel-title">Your score</h1>
+        <p class="gel-muted">${score.consent ? "Shared with your consent" : ""}</p>
+      </div>
+      <span class="gel-badge gel-badge--hero">${score.source || "Equifax"}</span>
+    </div>
+
+    <section class="gel-panel gel-score-hero">
+      <div class="gel-panel-head">
+        <span class="gel-panel-title">Credit score</span>
+      </div>
+      <div class="gel-panel-body">
+        <div class="gel-score-num">${score.value != null ? fmtWhole(score.value) : ""}<span class="gel-score-max">/${score.max != null ? fmtWhole(score.max) : ""}</span></div>
+        <p class="gel-muted" style="margin:4px 0 0">Updated ${score.refreshed_at ? fmtDate(score.refreshed_at) : ""}</p>
+        ${score.demo_sample ? '<p class="gel-note gel-note--warn" style="margin:6px 0 0">Sample score for this demo.</p>' : ""}
+        <div class="gel-hr"></div>
+        <div class="gel-forecast">
+          <div class="gel-row-between">
+            <span class="gel-label">In ${forecast.horizon_months || 3} months</span>
+            <span class="gel-money gel-money--good">${forecast.range ? fmtWhole(forecast.range[0]) + " to " + fmtWhole(forecast.range[1]) : ""}</span>
+          </div>
+          <p class="gel-note" style="margin:6px 0 0">If ${forecast.assumption || "you keep repayments on time."}</p>
+        </div>
+      </div>
+    </section>
+
+    <article class="gel-cell" data-goal-banner>
+      <span class="gel-label">Your goal</span>
+      <div class="gel-goal-title">${cf.goal || ""}</div>
+      <div class="gel-row-between" style="margin-top:8px">
+        <span class="gel-muted">${cf.goal_date ? fmtDate(cf.goal_date) : ""}</span>
+        <span class="gel-badge gel-badge--success">${cf.goal_note || "On track"}</span>
+      </div>
+    </article>
+
+    <section class="gel-cell">
+      <div class="gel-row-between">
+        <span class="gel-label">Credit you don't see</span>
+        <span class="gel-badge gel-badge--faint">${bnpl.active_facilities || 0} plans</span>
+      </div>
+      <div style="margin-top:6px">${providers.map(bnplRow).join("")}</div>
+      <p class="gel-note" style="margin-top:10px">${bnpl.note || ""}</p>
+    </section>
+
+    <button class="gel-btn-ghost gel-btn-block" type="button" onclick="openFactors()">
+      What moves your score ${ico("arrow-right")}
+    </button>`;
+}
+
+function setProtected() {
+  if (state.protected) return;
+  state.protected = true;
+  const gym = bills.bills.find((b) => b.id === "bill_gym");
+  if (gym && state.bills[gym.id]?.status !== "done") {
+    state.bills[gym.id] = { status: "done", acted_at: new Date().toISOString() };
+    award("protected_balance", gym.id, gym.label);
+  }
+  syncGoals();
+  save();
+  render();
+  toast(ico("shield") + " Protected balance set for Thu 19 Nov");
+}
+
+/* ---------- boot ----------
+   The demo runs on a fixed clock (bills.as_of) so it behaves the same in every
+   recording. Opening the app records today's check-in, which is what fills the
+   daily goal. */
+function boot() {
+  state.checkins = state.checkins || [];
+  if (!state.checkins.includes(TODAY)) {
+    state.checkins.push(TODAY);
+    award("daily_checkin", TODAY, "Daily check-in");
+  }
+  if (checkinsInWindow() >= 7) {
+    const windowStart = localDay(new Date(new Date(TODAY + "T00:00:00").getTime() - 6 * 86400000));
+    award("checkin_week", windowStart, "Seven days in a row");
+  }
+  syncGoals();
+  save();
+  render();
+}
+
+/* ==========================================================================
+   DRAGON
+   --------------------------------------------------------------------------
+   The dragon keeps the original emoji / PNG-art look (the version you liked),
+   but is now interactive: shop items are worn as layered emoji on top of it, a
+   "home" changes the scene behind it, food makes it hop, and tapping it gives a
+   credit-health tip. Naomi's PNGs drop in at assets/dragon/*.png and
+   assets/shop/*.png; until then the emoji stand in.
+   ========================================================================== */
+
+/* Where each worn item sits on the dragon emoji, per stage (top % of the box). */
+/* Anchors are measured from the rendered PNG silhouettes (see
+   tools/render-dragon.mjs), so the hat lands on the head of the real model
+   rather than floating over the old emoji. */
+const WEAR_ANCHOR = {
+  egg: { hat: 2, face: 34, neck: 60 },
+  baby: { hat: 20, face: 23, neck: 36 },
+  teen: { hat: 12, face: 16, neck: 33 },
+  adult: { hat: 7, face: 11, neck: 31 }
+};
+
+function wearGlyph(emoji, slot, top) {
+  return `<span class="dragon-wear dragon-wear--${slot}" style="top:${top}%">${emoji}</span>`;
+}
+
+/* The dragon itself (real model render, or emoji) with whatever it's wearing. */
+function dragonMarkup(stage, equipped) {
+  const eq = equipped || state.shop.equipped;
+  const hat = itemById(eq.hat);
+  const face = itemById(eq.face);
+  const neck = itemById(eq.neck);
+  const anchor = WEAR_ANCHOR[stage.id] || WEAR_ANCHOR.baby;
+  const art = stage.id === "egg" ? "" : " gel-dragon-wrap--art";
+  return `
+    <div class="gel-dragon-wrap${art}" id="dragon-art">
+      ${imgOrEmoji(stage.image, stage.emoji, stage.name, "dragon-img")}
+      ${neck ? wearGlyph(neck.emoji, "neck", anchor.neck) : ""}
+      ${face ? wearGlyph(face.emoji, "face", anchor.face) : ""}
+      ${hat ? wearGlyph(hat.emoji, "hat", anchor.hat) : ""}
+    </div>`;
+}
+
+function sceneId() {
+  const home = itemById(state.shop.equipped.home);
+  return (home && home.scene) || "plain";
+}
+
+function sceneHtml(extraClass) {
+  const stage = stageForXp(state.xp_total);
+  return `<div class="gel-scene ${extraClass || ""}" data-scene="${sceneId()}" onclick="pokeDragon()"
+               role="button" tabindex="0" aria-label="Your ${stage.name}. Tap to interact.">
+    <div class="gel-scene-sky"></div>
+    ${dragonMarkup(stage)}
+    <div class="gel-bubble" id="dragon-bubble"></div>
+    <div class="gel-hearts" id="dragon-hearts"></div>
+  </div>`;
+}
+
+/* Personality only. Every factual line is composed in dragonSaid() below, from
+   bills.json and the customer's own state, so the dragon cannot invent a number. */
+const DRAGON_LINES = [
+  "Rawr. Every repayment on time makes me a little bigger.",
+  "I only grow from good money habits, never from shopping.",
+  "Bills first, snacks later. That's the rule.",
+  "A dishonour fee is the only thing that makes me grumpy."
+];
+
+const dayMonth = (iso) =>
+  new Date(iso + "T00:00:00").toLocaleDateString("en-AU", { day: "numeric", month: "short" });
+
+/**
+ * What the dragon can say right now. Fixed composition, no model call:
+ * each line quotes a figure that exists in bills.json or in the saved state,
+ * which is the compliance rule for this build. Tap cycles through them.
+ */
+function dragonSaid() {
+  const out = [];
+  const cf = bills.credit_file || {};
+  const providers = (cf.bnpl && cf.bnpl.providers) || [];
+  const next = providers
+    .filter((p) => p.next_due)
+    .sort((a, b) => (a.next_due < b.next_due ? -1 : 1))[0];
+  const payday = bills.payday && bills.payday.next;
+
+  if (next) {
+    const before = payday && next.next_due < payday;
+    out.push(
+      next.name + " takes " + fmtAUD(next.amount_due) + " on " + dayMonth(next.next_due) + "." +
+        (payday ? (before ? " Keep cash aside for it." : " Payday lands first.") : "")
+    );
+  }
+
+  const late = bills.bills.find((b) => b.id === "bill_card");
+  if (late && state.bills[late.id]?.status !== "done") {
+    out.push("Your card payment was 3 days late in October.");
+  }
+
+  const gym = bills.bills.find((b) => b.id === "bill_gym");
+  if (gym && state.bills[gym.id]?.status !== "done") {
+    out.push("The gym takes $34 on Thursday. Payday is Friday.");
+  }
+
+  for (const g of rewards.goals) {
+    if (goalDone(g)) continue;
+    const v = goalValue(g);
+    if (g.source === "bnpl_on_time") {
+      out.push(v + " of " + g.target + " instalments paid on time.");
+    } else if (g.source === "no_new_bnpl") {
+      out.push(v + " days with no new plan. " + (g.target - v) + " more fills this one.");
+    } else if (g.source === "checkin") {
+      out.push(checkinsInWindow() + " of " + g.target + " days checked. That bar is full.");
+    }
+  }
+
+  const filled = rewards.goals.filter(goalDone).length;
+  if (filled) {
+    out.push(filled + " goal filled itself, straight from your transactions.");
+  }
+
+  return out.concat(DRAGON_LINES);
+}
+
+let lineIdx = -1; // first tap reads the top line
+function pokeDragon() {
+  const bubble = $("#dragon-bubble");
+  if (bubble) {
+    const lines = dragonSaid();
+    lineIdx = (lineIdx + 1) % lines.length;
+    bubble.textContent = lines[lineIdx];
+    bubble.classList.add("show");
+    clearTimeout(pokeDragon.timer);
+    pokeDragon.timer = setTimeout(() => bubble.classList.remove("show"), 4200);
+  }
+  hopDragon();
+}
+
+function hopDragon() {
+  const art = $("#dragon-art");
+  if (!art) return;
+  art.classList.remove("is-happy");
+  void art.offsetWidth;
+  art.classList.add("is-happy");
+}
+
+function hearts() {
+  const box = $("#dragon-hearts");
+  if (!box) return;
+  box.innerHTML = Array.from({ length: 5 })
+    .map(
+      (_, i) =>
+        `<span class="gel-heart" style="left:${28 + i * 11}%;animation-delay:${(i * 0.08).toFixed(2)}s">${
+          i % 2 ? "💛" : "❤️"
+        }</span>`
+    )
+    .join("");
+  setTimeout(() => {
+    if (box) box.innerHTML = "";
+  }, 1600);
 }
 
 function renderDragon() {
@@ -442,118 +1125,354 @@ function renderDragon() {
   const lvl = levelForXp(state.xp_total);
   const nxt = nextLevel(state.xp_total);
   const nxtStage = nextStage(state.xp_total);
-
-  const lvlPct = nxt
-    ? ((state.xp_total - lvl.xp_required) / (nxt.xp_required - lvl.xp_required)) * 100
-    : 100;
+  const lvlPct = nxt ? ((state.xp_total - lvl.xp_required) / (nxt.xp_required - lvl.xp_required)) * 100 : 100;
   const stagePct = nxtStage
     ? ((state.xp_total - stage.xp_required) / (nxtStage.xp_required - stage.xp_required)) * 100
     : 100;
 
+  const worn = wornItems();
+  const wardrobe = worn.length
+    ? worn.map((it) => `<span class="gel-worn">${it.emoji} ${it.name}</span>`).join("")
+    : `<span class="gel-muted">Nothing on yet. Visit the shop to dress your dragon.</span>`;
+
   const trail = rewards.stages
     .map((s) => {
       const reached = state.xp_total >= s.xp_required;
-      return '<span style="font-size:' + (reached ? 18 : 12) + "px;opacity:" + (reached ? 1 : 0.35) + '">' + s.emoji + "</span>";
+      return `<span class="gel-stage-dot ${reached ? "is-reached" : ""}">${s.emoji}</span>`;
     })
-    .join('<span class="gel-muted" style="margin:0 3px">·</span>');
+    .join("");
 
   const ledgerHtml = state.ledger.length
     ? state.ledger
         .slice()
         .reverse()
+        .slice(0, 8)
         .map(
-          (e) =>
-            '<div style="padding:5px 0;border-top:1px solid var(--color-line)">' +
-            e.reason + " — <b>+" + e.xp + " XP · " + (e.coins >= 0 ? "+" : "") + e.coins + " " + coin() + "</b></div>"
+          (e) => `<div class="gel-kv">
+            <span class="gel-muted">${e.reason}</span>
+            <span class="gel-kv-v">+${e.xp} XP · ${e.coins >= 0 ? "+" : ""}${e.coins}</span>
+          </div>`
         )
         .join("")
-    : "No activity yet.";
+    : `<p class="gel-muted">No activity yet.</p>`;
 
-  return (
-    '<div class="gel-card" style="text-align:center;padding:22px 14px">' +
-    '<div class="gel-dragon-avatar">' + imgOrEmoji(stage.image, stage.emoji, stage.name, "dragon-img") + "</div>" +
-    '<h1 class="gel-h1">' + stage.name + "</h1>" +
-    '<div class="gel-muted">Level ' + lvl.level + " · " + fmtWhole(state.xp_total) + " XP · " + state.streak_weeks + "-week streak</div>" +
-    '<div class="gel-coin-pill" style="margin-top:10px">' + coin() + " " + fmtWhole(state.coins) + " coins</div>" +
-    "</div>" +
-    '<div class="gel-card">' +
-    '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--color-muted);margin-bottom:6px">' +
-    "<span>Level " + lvl.level + "</span><span>" + (nxt ? "Level " + nxt.level : "Max level") + "</span></div>" +
-    '<div class="gel-bar"><div class="gel-bar-fill primary-fill" style="width:' + lvlPct + '%"></div></div>' +
-    '<div class="gel-muted" style="margin-top:6px">' + (nxt ? fmtWhole(nxt.xp_required - state.xp_total) + " XP to level " + nxt.level : "You've reached the top!") + "</div>" +
-    "</div>" +
-    '<div class="gel-card">' +
-    '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--color-muted);margin-bottom:8px">' +
-    "<span>Evolution</span><span>" + (nxtStage ? nxtStage.name : "Adult") + "</span></div>" +
-    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' + trail + "</div>" +
-    '<div class="gel-bar"><div class="gel-bar-fill" style="width:' + stagePct + '%"></div></div>' +
-    '<div class="gel-muted" style="margin-top:6px">' + (nxtStage ? fmtWhole(nxtStage.xp_required - state.xp_total) + " XP to evolve" : "Fully grown!") + "</div>" +
-    "</div>" +
-    '<details class="gel-card" style="margin:0">' +
-    '<summary class="gel-h2" style="cursor:pointer">Activity log (audit)</summary>' +
-    '<div style="margin-top:8px;font-size:11px;color:var(--color-muted)">' + ledgerHtml + "</div>" +
-    "</details>" +
-    '<button class="gel-btn-ghost" style="width:100%;margin-top:12px" onclick="reset()">Reset demo</button>'
-  );
+  return `
+    <div class="gel-screen-head">
+      <div>
+        <h1 class="gel-title">${stage.name}</h1>
+        <p class="gel-muted">Level ${lvl.level} · ${fmtWhole(state.xp_total)} XP · ${state.streak_weeks}-week streak</p>
+      </div>
+      <span class="gel-coin-pill">${coin()}${fmtWhole(state.coins)}</span>
+    </div>
+
+    ${sceneHtml()}
+
+    <button class="gel-btn-primary gel-btn-block" type="button" onclick="openAR()" style="margin-bottom:12px">
+      ${ico("camera")} See it in your room
+    </button>
+
+    <article class="gel-cell">
+      <div class="gel-row-between">
+        <span class="gel-label">Wearing</span>
+        <button class="gel-btn-text gel-btn-text--sm" type="button" onclick="setTab('shop')">Change</button>
+      </div>
+      <div class="gel-wornlist">${wardrobe}</div>
+      <div class="gel-hr"></div>
+      <div class="gel-row-between">
+        <span class="gel-label">Feasts</span>
+        <span class="gel-kv-v">${state.shop.feeds}</span>
+      </div>
+    </article>
+
+    <article class="gel-cell">
+      <div class="gel-row-between">
+        <span class="gel-label">Level ${lvl.level}</span>
+        <span class="gel-label">${nxt ? "Level " + nxt.level : "Max level"}</span>
+      </div>
+      <div class="gel-bar" style="margin-top:6px">
+        <div class="gel-bar-fill" style="width:${fmtPct(lvlPct)}">
+          <span class="gel-bar-label">${fmtPct(lvlPct)}</span>
+        </div>
+      </div>
+      <p class="gel-note">${
+        nxt ? fmtWhole(nxt.xp_required - state.xp_total) + " XP to Level " + nxt.level : "You've reached the top level."
+      }</p>
+    </article>
+
+    <article class="gel-cell">
+      <div class="gel-stage-trail">${trail}</div>
+      <div class="gel-bar gel-bar--skinny">
+        <div class="gel-bar-fill" style="width:${fmtPct(stagePct)}"></div>
+      </div>
+      <p class="gel-note">${
+        nxtStage ? fmtWhole(nxtStage.xp_required - state.xp_total) + " XP to evolve into " + nxtStage.name : "Fully grown."
+      }</p>
+    </article>
+
+    <details class="gel-cell">
+      <summary class="gel-summary">Activity log</summary>
+      <div style="margin-top:6px">${ledgerHtml}</div>
+    </details>
+
+    <button class="gel-btn-ghost gel-btn-block" type="button" onclick="reset()">Reset demo</button>`;
+}
+
+function shopCta(item) {
+  const owned = state.shop.owned.includes(item.id);
+  const unlocked = !item.unlock_level || levelForXp(state.xp_total).level >= item.unlock_level;
+  const affordable = state.coins >= item.cost;
+
+  if (item.locked) return `<span class="gel-badge gel-badge--hero">Pitch concept</span>`;
+  if (!unlocked)
+    return `<span class="gel-badge gel-badge--faint">Unlocks at Level ${item.unlock_level}</span>`;
+  if (item.slot === "food")
+    return `<button class="gel-btn-primary gel-btn-sm gel-btn-block" type="button" ${affordable ? "" : "disabled"}
+              onclick="buyItem('${item.id}')">${affordable ? "Buy &amp; feed" : "Not enough coins"}</button>`;
+  if (owned && isWearing(item.id))
+    return `<button class="gel-btn-ghost gel-btn-sm gel-btn-block" type="button"
+              onclick="takeOff('${item.id}')">Wearing, take off</button>`;
+  if (owned)
+    return `<button class="gel-btn-primary gel-btn-sm gel-btn-block" type="button"
+              onclick="wearItem('${item.id}')">Wear</button>`;
+  return `<button class="gel-btn-primary gel-btn-sm gel-btn-block" type="button" ${affordable ? "" : "disabled"}
+            onclick="buyItem('${item.id}')">${affordable ? "Buy " + fmtWhole(item.cost) : "Not enough coins"}</button>`;
 }
 
 function renderShop() {
+  const stage = stageForXp(state.xp_total);
+  const worn = wornItems();
   const items = rewards.shop
     .map((item) => {
-      const owned = state.shop.owned.includes(item.id);
-      const locked = !!item.locked;
-      const affordable = state.coins >= item.cost;
-
-      let cta;
-      if (locked) {
-        cta = '<span class="gel-badge-muted">Pitch concept</span>';
-      } else if (owned) {
-        cta = '<span class="gel-badge-save">Owned ✓</span>';
-      } else {
-        cta =
-          '<button class="gel-btn-primary" style="width:100%"' + (affordable ? "" : " disabled") +
-          ' onclick="buyItem(\'' + item.id + "')\">" + (affordable ? "Buy" : "Not enough coins") + "</button>";
-      }
-
-      return (
-        '<div class="gel-card" style="text-align:center;margin:0">' +
-        '<div style="height:54px;display:flex;align-items:center;justify-content:center">' +
-        imgOrEmoji(item.image, item.emoji, item.name, "shop-img") + "</div>" +
-        '<div class="gel-h2" style="margin-top:6px">' + item.name + "</div>" +
-        '<div class="gel-muted" style="min-height:30px">' + item.description + "</div>" +
-        '<div style="margin:10px 0;font-weight:800;color:var(--color-coin)">' +
-        (locked ? "🔒 " : "") + fmtWhole(item.cost) + " " + coin() + "</div>" +
-        cta +
-        "</div>"
-      );
+      const wearingNow = isWearing(item.id);
+      return `
+        <article class="gel-cell gel-shop-item ${wearingNow ? "is-worn" : ""}" data-item="${item.id}">
+          <div class="gel-shop-art">
+            ${imgOrEmoji(item.image, item.emoji, item.name, "shop-img")}
+            ${wearingNow ? `<span class="gel-shop-worn">${ico("check")}</span>` : ""}
+          </div>
+          <div class="gel-shop-name">${item.name}</div>
+          <div class="gel-shop-price">
+            <span class="gel-money gel-money--sm">${fmtWhole(item.cost)}</span>
+            ${coin()}
+          </div>
+          <p class="gel-shop-desc">${item.description}</p>
+          ${shopCta(item)}
+        </article>`;
     })
     .join("");
 
-  return (
-    '<h1 class="gel-h1" style="margin-bottom:6px">Dragon shop</h1>' +
-    '<p class="gel-muted" style="margin-bottom:12px">You have ' + fmtWhole(state.coins) + " " + coin() + "</p>" +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' + items + "</div>"
-  );
+  return `
+    <div class="gel-screen-head">
+      <div>
+        <h1 class="gel-title">Dragon shop</h1>
+        <p class="gel-muted">${worn.length ? worn.length + " items worn · " : ""}${fmtWhole(state.coins)} coins</p>
+      </div>
+      <span class="gel-badge gel-badge--faint">${stage.emoji} ${stage.name}</span>
+    </div>
+
+    ${sceneHtml("gel-scene--mini")}
+
+    <div class="gel-shop-grid">${items}</div>`;
 }
 
+/* ==========================================================================
+   AR VIEW
+   --------------------------------------------------------------------------
+   The camera frame is the room, the dragon sits on it, and the only thing it
+   ever says is a line composed from our own data (dragonSaid). No generation,
+   no open chat: compliance decision for this build.
+
+   The camera needs a secure context, so from file:// the browser will refuse
+   getUserMedia and we fall back to a drawn tabletop. `npm start` serves it on
+   localhost, where the real camera works. Everything else is identical.
+   ========================================================================== */
+
+let arStream = null;
+const arPos = { x: 50, y: 58, scale: 1, drag: null };
+
+function arStageMarkup() {
+  const stage = stageForXp(state.xp_total);
+  return `
+    <video class="gel-ar-video" id="ar-video" playsinline muted autoplay></video>
+    <div class="gel-ar-room" aria-hidden="true">
+      <div class="gel-ar-room-wall"></div>
+      <div class="gel-ar-room-table"></div>
+    </div>
+    <div class="gel-ar-hud">
+      <button class="gel-ar-close" type="button" onclick="closeAR()" aria-label="Close">
+        ${ico("close")}
+      </button>
+      <span class="gel-ar-tag" id="ar-tag">Camera off, demo tabletop</span>
+    </div>
+    <div class="gel-ar-stage" id="ar-stage">
+      <div class="gel-ar-hold" id="ar-hold">
+        <div class="gel-ar-dragon" id="ar-dragon" role="button" tabindex="0"
+             aria-label="Your ${stage.name}. Tap to hear it.">
+          ${imgOrEmoji(stage.image, stage.emoji, stage.name, "ar-img")}
+        </div>
+      </div>
+      <div class="gel-ar-bubble" id="ar-bubble"></div>
+    </div>
+    <div class="gel-ar-controls">
+      <button class="gel-btn-ghost gel-btn-sm" type="button" onclick="arSay()">Say something</button>
+      <button class="gel-btn-ghost gel-btn-sm" type="button" onclick="arZoom(-1)">Smaller</button>
+      <button class="gel-btn-ghost gel-btn-sm" type="button" onclick="arZoom(1)">Bigger</button>
+      <button class="gel-btn-primary gel-btn-sm" type="button" onclick="closeAR()">Done</button>
+    </div>`;
+}
+
+function arApply() {
+  const hold = $("#ar-hold");
+  if (!hold) return;
+  hold.style.left = arPos.x + "%";
+  hold.style.top = arPos.y + "%";
+  hold.style.width = Math.round(210 * arPos.scale) + "px";
+}
+
+function openAR() {
+  const root = $("#ar-root");
+  if (!root) return;
+  root.hidden = false;
+  root.innerHTML = arStageMarkup();
+  arPos.x = 50;
+  arPos.y = 58;
+  arPos.scale = 1;
+  arApply();
+  arWireDrag();
+  arStartCamera();
+  arDrop();
+  setTimeout(arSay, 900);
+}
+
+function closeAR() {
+  arStopCamera();
+  const root = $("#ar-root");
+  if (!root) return;
+  root.hidden = true;
+  root.innerHTML = "";
+}
+
+async function arStartCamera() {
+  const video = $("#ar-video");
+  const tag = $("#ar-tag");
+  if (!video) return;
+  const media = navigator.mediaDevices;
+  if (!media || !media.getUserMedia) {
+    if (tag) tag.textContent = "Camera off, demo tabletop";
+    return;
+  }
+  try {
+    arStream = await media.getUserMedia({
+      video: { facingMode: { ideal: "environment" } },
+      audio: false
+    });
+    video.srcObject = arStream;
+    await video.play().catch(() => {});
+    video.classList.add("is-live");
+    if (tag) tag.textContent = "Live camera";
+  } catch {
+    if (tag) tag.textContent = "Camera off, demo tabletop";
+  }
+}
+
+function arStopCamera() {
+  if (arStream) {
+    for (const track of arStream.getTracks()) track.stop();
+    arStream = null;
+  }
+}
+
+/* Dropping it out of the air is what sells the placement. */
+function arDrop() {
+  const hold = $("#ar-hold");
+  if (!hold) return;
+  hold.classList.remove("is-dropping");
+  void hold.offsetWidth;
+  hold.classList.add("is-dropping");
+}
+
+function arSay() {
+  const bubble = $("#ar-bubble");
+  if (!bubble) return;
+  const lines = dragonSaid();
+  arPos.line = ((arPos.line ?? -1) + 1) % lines.length;
+  bubble.textContent = lines[arPos.line];
+  bubble.classList.add("show");
+  clearTimeout(arSay.timer);
+  arSay.timer = setTimeout(() => bubble.classList.remove("show"), 5200);
+}
+
+function arZoom(dir) {
+  arPos.scale = Math.min(1.9, Math.max(0.55, arPos.scale + dir * 0.15));
+  arApply();
+}
+
+/* Drag it anywhere on the table. Pointer events cover mouse and touch. */
+function arWireDrag() {
+  const hold = $("#ar-hold");
+  const stage = $("#ar-stage");
+  if (!hold || !stage) return;
+
+  const toPct = (e) => {
+    const r = stage.getBoundingClientRect();
+    return {
+      x: ((e.clientX - r.left) / r.width) * 100,
+      y: ((e.clientY - r.top) / r.height) * 100
+    };
+  };
+
+  hold.addEventListener("pointerdown", (e) => {
+    if (e.target.closest("button")) return;
+    hold.setPointerCapture(e.pointerId);
+    arPos.drag = { dx: arPos.x - toPct(e).x, dy: arPos.y - toPct(e).y, moved: false };
+    hold.classList.add("is-held");
+  });
+
+  hold.addEventListener("pointermove", (e) => {
+    if (!arPos.drag) return;
+    const p = toPct(e);
+    arPos.x = Math.min(92, Math.max(8, p.x + arPos.drag.dx));
+    arPos.y = Math.min(88, Math.max(24, p.y + arPos.drag.dy));
+    arPos.drag.moved = true;
+    arApply();
+  });
+
+  const end = () => {
+    if (!arPos.drag) return;
+    const moved = arPos.drag.moved;
+    arPos.drag = null;
+    hold.classList.remove("is-held");
+    if (!moved) arSay();
+  };
+  hold.addEventListener("pointerup", end);
+  hold.addEventListener("pointercancel", end);
+
+  hold.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      arSay();
+    }
+  });
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !$("#ar-root")?.hidden) closeAR();
+});
+
 /* ---------- shell ---------- */
-let activeTab = "bills";
+let activeTab = "score";
 let lastCoins = 0;
-let lastSwitched = 0;
 
 function render() {
   animateCount($("#header-coins"), lastCoins, state.coins, fmtWhole);
   lastCoins = state.coins;
 
   const screen = $("#screen");
-  if (activeTab === "bills") screen.innerHTML = renderBills();
+  if (activeTab === "score") screen.innerHTML = renderScore();
+  else if (activeTab === "insights") screen.innerHTML = renderInsights();
   else if (activeTab === "goals") screen.innerHTML = renderGoals();
   else if (activeTab === "dragon") screen.innerHTML = renderDragon();
   else screen.innerHTML = renderShop();
-
-  const bs = $("#banner-switched");
-  if (bs) animateCount(bs, lastSwitched, switchedSavings(), fmtAUD);
-  lastSwitched = switchedSavings();
 }
 
 function setTab(tab) {
@@ -579,9 +1498,16 @@ document.querySelectorAll("[data-icon]").forEach((el) => {
   if (window.GEL_ICONS && window.GEL_ICONS[name]) el.innerHTML = window.GEL_ICONS[name];
 });
 
-// live status-bar clock (Apple-style 9:41 is fine too, but a live time feels more real)
+// GEL Header gains a shadow once the screen is scrolled (matches GEL `scrolled`)
+const topbar = $("#topbar");
+const screenEl = $("#screen");
+screenEl.addEventListener("scroll", () => {
+  topbar.classList.toggle("scrolled", screenEl.scrollTop > 2);
+});
+
+// live status-bar clock
 const now = new Date();
 const timeEl = $("#status-time");
 if (timeEl) timeEl.textContent = now.getHours() + ":" + String(now.getMinutes()).padStart(2, "0");
 
-render();
+boot();

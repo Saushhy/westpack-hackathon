@@ -1,174 +1,151 @@
-# Data Contracts — Credit Dragon (Santiago's workstream)
+# Data Contracts: Credit Dragon (Santiago's workstream)
 
-Shared source of truth for the **bill negotiator** and **gamification** data. Shawn (SwiftUI),
-Carlos (AI script) and Naomi (design/copy) build against these files.
+Shared source of truth for the **credit-score coach** and **gamification** data. Shawn
+(SwiftUI), Carlos (AI script) and Naomi (design and copy) build against these files.
 
-> **Files owned by Santiago:**
-> - `data/bills.json` — bills the negotiator found, with offers + savings.
-> - `data/rewards.json` — XP/coin rules, levels, dragon stages, goals, shop.
->
-> **Files owned by Carlos** (already in repo, at root — see "Known mismatches" below):
-> - `mia_transactions.json`
-> - `mia_questions.json`
+> **Read `CHANGES.md` first.** It records the pivot away from the bill negotiator and the
+> rules behind the UI. This file is the field reference.
+
+> **Files owned by Santiago:** `data/bills.json` · `data/rewards.json`.
+> **Files owned by Carlos:** `mia_transactions.json` · `mia_questions.json` (repo root).
 
 ---
 
 ## 1. `data/bills.json`
 
-Top-level:
+Top level:
 
 | Field | Type | Meaning |
 |---|---|---|
-| `persona` | string | Demo customer (`"Mia"`). |
-| `currency` | string | `"AUD"`. |
-| `as_of` | string | `"YYYY-MM-DD"` the analysis is current as of. |
-| `payday.frequency` | string | `"fortnightly"`. |
-| `payday.next` | string | Next pay date. |
-| `totals.recurring_monthly` | number | Monthly total of the *negotiable* recurring set (phone + internet + streaming). Matches Carlos's `q_005` figure: **216.97**. |
-| `totals.savings_monthly` | number | Total monthly savings from switch + cancel actions: **92.99**. |
-| `totals.savings_annual` | number | `92.99 × 12` = **1115.88**. |
-| `totals.potential_monthly_after_switching` | number | `216.97 − 92.99` = **123.98**. |
+| `persona` / `currency` / `as_of` | string | `"Mia"`, `"AUD"`, `"2026-11-17"`. `as_of` is the **demo clock**. |
+| `data_notice` | string | The framing line: a coach, never a broker. |
+| `score` | object | Bureau score and forecast (§1a). |
+| `credit_file` | object | Goal, BNPL, dishonour risk (§1b). |
+| `payday` | object | `{ frequency, next }`. |
+| `totals` | object | `{ recurring_monthly, potential_cash_freed_monthly, potential_cash_freed_annual, fees_avoided }`. |
+| `bills[]` | array | The **findings** (§1c). |
 
-> Gym and rent are **excluded** from `totals` because they produce no cash saving
-> (reschedule / no-offer). They still appear in `bills` so the demo shows the AI is honest.
+### 1a. `score`
 
-Each entry in `bills[]`:
+`value` · `scale` (`"equifax_au"`) · `max` (1200) · `source` (`"Equifax"`) · `refreshed_at` ·
+`consent` · `demo_sample` · `forecast: { range: [635, 650], horizon_months, assumption }`.
 
-| Field | Type | Notes |
-|---|---|---|
-| `id` | string | Stable key, e.g. `bill_phone`. Used for award idempotency. |
-| `category` | string | `mobile` / `internet` / `streaming` / `fitness` / `housing`. |
-| `icon` | string | Emoji for the prototype UI only. |
-| `label` | string | Human label. |
-| `provider` | string | Current provider / merchant. |
-| `plan` | string | Current plan name. |
-| `billing_period` | string | `"monthly"` or `"fortnightly"`. |
-| `current_amount` | number | Price **per billing period**. |
-| `current_monthly` | number | Monthly equivalent (for totals & savings). |
-| `detected_from` | string[] | **Carlos's transaction ids** this bill was inferred from. |
-| `confidence` | string | `high` / `medium`. |
-| `action_type` | string | One of `switch`, `cancel`, `reschedule`, `keep`, `no_offer`. |
-| `offer` | object \| null | Replacement offer (see below). `null` for `cancel`/`keep`/`no_offer`. |
-| `savings_monthly` | number | Monthly saving after approving. |
-| `savings_annual` | number | Annual saving. |
-| `why` | string | The "why am I asking" explanation shown on the card. |
-| `risk_notes` | string \| null | Any caveat shown before approval. |
-| `requires_approval` | boolean | Always `true` for actionable bills (human-in-the-loop). |
-| `xp` / `coins` | number | Reward for approving this bill. Zero for non-actions. |
+The forecast is always a **range with a stated assumption**, never a promised number.
+There is deliberately no forecast history in the UI.
 
-`offer` object:
+### 1b. `credit_file`
 
-| Field | Type |
+- `goal` / `goal_date` / `goal_note`: "Car loan in 12 months", 2027-11-17, "On track".
+- `bnpl.providers[]`: `{ name, logo, match, plans, instalments_left, next_due, amount_due,
+  paid_on_time, instalments_cycle }`.
+  - `logo` is a path under `web/assets/brands/`.
+  - `match` is the case-insensitive pattern used to find the real payments in the
+    transaction file, so the Movements sheet is always checkable.
+  - `paid_on_time` / `instalments_cycle` drive the "pay every Afterpay and Zip on time" goal.
+- `bnpl.enquiries_6m` · `active_facilities` · `last_facility_date` (drives the "no new BNPL"
+  goal) · `note`.
+- `dishonour`: `{ bill_id, risk, reason, action }`.
+
+### 1c. `bills[]`, the findings
+
+| Field | Values / meaning |
 |---|---|
-| `provider`, `plan` | string |
-| `amount` | number (per `billing_period`) |
-| `billing_period` | string |
-| `monthly` | number (monthly equivalent) |
-| `features` | string[] |
-| `contract` | string |
-| `setup_days` | number |
+| `id` | stable key (`bill_card`, `bill_bnpl`, `bill_gym`, ...). |
+| `factor` | `credit` / `cash` / `fees` / `none`, the chip on the card. |
+| `evidence_tier` | `westpac_transactions` / `gov_benchmark` / `provider_price`. |
+| `savings_status` | `potential` / `none` (later `pending` / `verified` / `lapsed`). |
+| `action_type` | `remind` · `protect` · `track` · `keep` · `no_offer`. |
+| `logo` | path to a brand logo, or `null` for a GEL icon. |
+| `provider_match` | `["Afterpay", "Zip"]`, the merchants this finding covers. |
+| `benchmark` | (phone only) `{ low, high, source, source_url, checked_at, note }`. |
+| `finding` | One short headline, under 12 words. |
+| `evidence` | `[{ k, v }]`, transaction-grounded facts, 2 or 3 rows. |
+| `why` | Why it matters. One sentence. |
+| `advice` | The action line. One short sentence. |
+| `verification` | `{ checked_at, source }`. |
+| `savings_monthly` / `savings_annual` | Cash potential, 0 for credit and fees. |
+| `xp` / `coins` | Mirrors the action in `rewards.json`. |
 
-### The action types
+`action_type` to action:
 
-| action_type | Meaning | Example |
-|---|---|---|
-| `switch` | Replace with a cheaper plan. | Vodafone → Belong. |
-| `cancel` | Cancel a redundant subscription. | Stan, Disney+. |
-| `reschedule` | Move a debit date (no cash saving, avoids fees). | Goodlife gym. |
-| `keep` | Reviewed, no change recommended. | Netflix (used weekly), Spotify (student). |
-| `no_offer` | Essential, no cheaper option found. | Rent. |
+| action_type | Button in the sheet | Action id | XP |
+|---|---|---|---|
+| `remind` | Set a reminder | `reminder_set` | 100 |
+| `protect` | Protect balance | `protected_balance` | 60 |
+| `track` | Track this | `insight_tracked` | 40 |
+| `keep` / `no_offer` | none | none | 0 |
 
-The `keep` and `no_offer` rows are the credibility signal: the AI does **not** invent
-savings or cancel things the customer actually uses.
+**Copy rule:** no em dashes or en dashes, and `why` stays under about 14 words. The audit
+enforces the dash rule on every screen.
 
 ---
 
 ## 2. `data/rewards.json`
 
-Top-level:
+Top level: `version`, `currency`, `credit_factors[]`, `starting_state`, `actions[]`,
+`levels[]`, `stages[]`, `goals[]`, `shop[]`.
 
-| Field | Meaning |
-|---|---|
-| `version` | Schema version (`1`). |
-| `currency` | `"coins"`. |
-| `starting_state` | Baseline `{ xp_total, coins, streak_weeks }` for the demo. |
-| `actions[]` | Reward rules (see below). |
-| `levels[]` | XP thresholds per level. |
-| `stages[]` | Dragon evolution thresholds. |
-| `goals[]` | The 3 credit-health plan goals. |
-| `shop[]` | Items purchasable with coins. |
+- `credit_factors[]`: `{ id, label, impact, direction, what }`.
+- `starting_state`: `{ xp_total: 320, coins: 200, streak_weeks: 3, checkins: [6 dates] }`.
+  The six dates plus demo day make seven, so the weekly goal completes on first open.
+- `actions[]`: `daily_checkin`, `checkin_week`, `question_answered`, `goal_completed`,
+  `on_time_repayment`, `no_new_bnpl_month`, `reminder_set`, `protected_balance`,
+  `insight_tracked`, `saving_verified`, `savings_streak_4wk`, `shop_purchase`.
+- `levels[]`: 10 levels, 0 to 2700 XP.
+- `stages[]`: egg 0 · baby 250 · teen 800 · adult 1500.
+- `goals[]`: `{ id, title, description, xp, coins, source, target, unit, watching, next_check }`.
 
-`actions[]` entries:
+| Goal | `source` | `target` | Completes when |
+|---|---|---|---|
+| Your dragon checks your file daily | `checkin` | 7 | 7 check-ins in the last 7 days |
+| Pay every Afterpay and Zip on time | `bnpl_on_time` | 4 | `paid_on_time` reaches the cycle total |
+| Go a month without new BNPL | `no_new_bnpl` | 30 | 30 days since `last_facility_date` |
 
-| Field | Meaning |
-|---|---|
-| `id` | Action id (links to `bill.action_type` / goal completion). |
-| `label` | Display name. |
-| `xp`, `coins` | Reward. `coins: null` = spends an item's `cost` (shop_purchase). |
-| `cap` | `{ type, limit }`. Types: `per_bill`, `per_goal`, `per_month`, `none`. |
-| `why_rewards_you` | The explainable reason (shown in the UI / used in pitch). |
-
-`levels[]`: `{ level, xp_required }` — 10 levels: 0, 100, 250, 450, 700, 1000, 1350, 1750, 2200, 2700.
-
-`stages[]`: `{ id, name, xp_required, emoji, image }` —
-egg (0) → baby (250) → teen (800) → adult (1500).
-
-`goals[]`: `{ id, title, description, xp, coins, progress_source, target? }`.
-`progress_source` is `manual` or `bill_savings` (the "cut bills" goal auto-tracks savings vs `target`).
-
-`shop[]`: `{ id, name, slot, cost, emoji, image, locked?, description }`.
-The `item_perk` (0.25% bonus savings rate) is `locked: true` — a pitch hook, not purchasable.
+- `shop[]`: `{ id, name, slot, slot_label, cost, emoji, image, description, ... }`, where
+  `slot` is `hat` / `face` / `neck` / `home` / `food` / `perk`.
 
 ---
 
-## 3. Runtime state (for Shawn's SwiftUI + our prototype)
-
-Persisted locally (prototype uses `localStorage` key `credit-dragon:state`). SwiftUI should
-persist the same shape (e.g. `UserDefaults`/`@AppStorage` as JSON):
+## 3. Runtime state (`localStorage` in the prototype, `@AppStorage` in SwiftUI)
 
 ```json
 {
-  "version": 1,
-  "xp_total": 320,
-  "coins": 120,
+  "version": 2,
+  "xp_total": 550,
+  "coins": 330,
   "streak_weeks": 3,
-  "bills": { "bill_phone": { "status": "pending", "approved_at": null } },
-  "goals": { "goal_repay_on_time": { "status": "pending", "completed_at": null } },
-  "shop": { "owned": ["item_feast"], "equipped": {} },
-  "awarded": ["bill_phone:bill_switch"],
+  "checkins": ["2026-11-11", "...", "2026-11-17"],
+  "protected": false,
+  "bills": { "bill_card": { "status": "done" } },
+  "goals": { "goal_checkin": { "status": "completed" } },
+  "shop": {
+    "owned": ["item_cap"],
+    "equipped": { "hat": "item_cap", "face": null, "neck": null, "home": null },
+    "feeds": 0,
+    "fed_at": null
+  },
+  "awarded": ["2026-11-17:daily_checkin", "..."],
   "ledger": [
-    {
-      "ts": "2026-11-16T13:00:00Z",
-      "action": "bill_switch",
-      "source_id": "bill_phone",
-      "xp": 120,
-      "coins": 80,
-      "reason": "Switched Vodafone → Belong"
-    }
+    { "ts": "...", "action": "reminder_set", "source_id": "bill_card", "xp": 100, "coins": 60, "reason": "Credit card repayment" }
   ]
 }
 ```
 
-- **Derived, never stored:** `level` (highest `levels[]` where `xp_required ≤ xp_total`),
-  `stage` (highest `stages[]` where `xp_required ≤ xp_total`).
-- **Idempotency key:** `"{source_id}:{action_id}"` — e.g. `bill_phone:bill_switch`,
-  `goal_repay_on_time:goal_completed`. Stored in `awarded[]` so nothing ever double-pays.
-- **Monthly caps** (`per_month`) are evaluated against the ledger timestamps for the
-  current calendar month.
+- `bills[id].status` is `"done"` (acted on) or `"dismissed"`, otherwise absent.
+- `checkins[]` holds ISO local dates. `checkinsInWindow()` counts the last 7.
+- `goals[id].status` is `"completed"`. Only `syncGoals()` may set it.
+- `awarded[]` idempotency key is `"{source_id}:{action_id}"`.
+- Derived, never stored: `level`, `stage`.
 
 ---
 
 ## 4. Known mismatches to reconcile as a team
 
-1. **Carlos's files are at the repo root**, named `mia_transactions.json` and
-   `mia_questions.json`. The brief (`AGENTS.md` §4) expected `transactions.json` +
-   `questions.json` under `/data/`. *Recommend moving them into `/data/` and dropping the
-   `mia_` prefix so all AIs agree on one path — but that's Carlos's call.*
-2. **Savings headline.** Carlos's `q_005` says "~$75/month → $900/year" as a first-pass
-   estimate. The full negotiator lands at **$92.99/month → $1,115.88/year** (phone −$54,
-   internet −$9, Stan −$16, Disney+ −$13.99). In the video, frame it as "the AI's quick
-   estimate was ~$75; the full negotiator found $93". Don't let the two numbers appear as a
-   contradiction — pick one phrasing and use it everywhere.
-3. **Persona detail.** The brief §3 persona said "Anytime Fitness"; Carlos's transactions
-   use **Goodlife Health Clubs** ($34/fortnight, dishonoured 15 Oct). `bills.json` follows
-   Carlos (Goodlife). Update the brief/pitch to Goodlife.
+1. **Carlos's files** sit at the repo root. `web/tools/build-data.js` reads
+   `data/transactions.json` first and falls back to `mia_transactions.json`, so he can move
+   it whenever he likes.
+2. **`detected_from`** on `bill_card` is still `[]`. Carlos should map the late-repayment and
+   card transactions once his file settles. `bill_bnpl` is already mapped.
+3. **Persona detail**: brief §3 says "Anytime Fitness", the transactions say **Goodlife**.
+   `bills.json` follows the transactions.
+4. **Score scale and BNPL status** need a second pair of eyes before they go on a slide.

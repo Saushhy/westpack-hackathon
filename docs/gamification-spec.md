@@ -1,86 +1,62 @@
-# Gamification spec — Credit Dragon
+# Gamification spec: Credit Dragon
 
-How XP, coins, levels and dragon stages work, and why the rules are credit-health-first
-(not engagement-farming).
+How XP, coins, levels and dragon stages work, and why every rule is credit-health-first.
 
 ## 1. Design principle
 
-> Rewards only ever come from behaviours that improve **credit health** — paying on time,
-> avoiding new credit, and freeing up cash so repayments never bounce. There is **no XP for
-> spending**, opening the app, or the volume of transactions.
+> Rewards only ever come from behaviours that improve **credit health**: paying on time,
+> protecting a debit at risk, and holding off new credit. There is no XP for spending.
 
-Every award is **explainable** and **auditable**: each one carries a `why_rewards_you`
-string and is written to a ledger (see `data-contracts.md` §3). This feeds the judging
-criterion "opt-in, explainable, user approves every action".
+Every award is explainable and auditable. It carries a `why_rewards_you` string and is
+written to a ledger (see `data-contracts.md` §3).
 
 ## 2. Reward table (`data/rewards.json` → `actions`)
 
 | Action | XP | Coins | Cap | Why it rewards you |
 |---|---|---|---|---|
-| On-time repayment | 150 | 100 | 1 / month | Repayment history is the #1 factor in an AU credit score. |
-| No new BNPL this month | 250 | 150 | 1 / month | Fewer enquiries & debts protects the credit file. |
-| Switch a bill | 120 | 80 | once / bill | Frees cash for on-time repayments. |
-| Complete a plan goal | 100 | 60 | once / goal | A verifiable step toward better credit health. |
-| Cancel a subscription | 80 | 50 | once / bill | Cuts recurring spend to pay down debt. |
-| Reschedule a payment | 60 | 40 | once / bill | Avoids dishonour fees & keeps the account in good standing. |
-| 4-week savings streak | 200 | 120 | 1 / month | Consistency is what moves a score. |
-| Answer a question | 25 | 10 | 5 / month | Engaging personalises the plan — kept tiny so it can't be farmed. |
-| Shop purchase | 0 | −cost | — | Spending coins never earns XP. |
+| Daily check-in (`daily_checkin`) | 10 | 10 | one per day | Tiny on purpose. It cannot be farmed. |
+| Seven days in a row (`checkin_week`) | 120 | 60 | once per 7-day window | A week of checking turns awareness into habit. |
+| Set a repayment reminder (`reminder_set`) | 100 | 60 | per finding | The step that makes an on-time payment happen. |
+| Protect a debit at risk (`protected_balance`) | 60 | 40 | per finding | Stops a dishonour becoming a black mark. |
+| Track a money pattern (`insight_tracked`) | 40 | 20 | per finding | Lets us watch it and confirm what happens. |
+| Completed a plan goal (`goal_completed`) | 100 | 60 | per goal | Only fires when the data says it happened. |
+| On-time repayment (`on_time_repayment`) | 150 | 100 | 1 per month | Repayment history is the biggest factor. |
+| No new BNPL this month (`no_new_bnpl_month`) | 250 | 150 | 1 per month | Fewer enquiries and less debt. |
+| Verified a saving (`saving_verified`) | 120 | 80 | per finding | Reserved for a saving proven by transactions. |
+| Shop purchase | 0 | spend | none | Cosmetics never earn XP. |
 
-## 3. Level curve (`levels`)
+## 3. Levels and stages
 
-1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10
-`0, 100, 250, 450, 700, 1000, 1350, 1750, 2200, 2700` XP.
+- **Levels**: 10 levels at `0, 100, 250, 450, 700, 1000, 1350, 1750, 2200, 2700` XP.
+- **Stages**: egg (0) → baby (250) → **teen (800)** → adult (1500).
 
-## 4. Dragon stages (`stages`)
+## 4. Goals fill themselves
 
-| Stage | XP to reach | Emoji |
+There are no goal buttons in the app. `syncGoals()` reads a real signal and completes the
+goal, and the XP follows:
+
+| Goal | Signal | Target |
 |---|---|---|
-| Egg | 0 | 🥚 |
-| Baby | 250 | 🐣 |
-| Teen | 800 | 🐲 |
-| Adult | 1500 | 🐉 |
+| Your dragon checks your file daily | `state.checkins` inside the last 7 days | 7 |
+| Pay every Afterpay and Zip on time | `bnpl.providers[].paid_on_time` | cycle total |
+| Go a month without new BNPL | days since `bnpl.last_facility_date` | 30 |
 
-## 5. Anti-farm rules
+Because only real payments can move goals 2 and 3, they sit at 2 of 4 and 27 of 30 during
+the demo. That is the point: the bar does not lie.
 
-1. **Idempotency** — an award key is `"{source_id}:{action_id}"`; a source can only ever
-   pay once (you can't re-approve the same bill for XP).
-2. **Monthly caps** — credit-relevant actions (repayment, no-BNPL, streak) pay at most once
-   per calendar month.
-3. **Questions pay the least** (25 XP) — prevents tapping randomly to level up.
-4. **No XP for spending** — shop purchases only spend coins.
-5. **No refunds / no arbitrage** — bought items can't be sold back.
-6. **Everything is ledgered** with a timestamp + reason → auditable.
+## 5. Dressing your dragon (wardrobe, scenes, food)
 
-## 6. Worked demo session (this is what Santiago clicks on stage)
+- **Hats, shades and scarves** attach to the dragon and scale with its stage.
+- **Homes** change the scene behind it (`Starry Cave` → night sky, `Lava Lair` → volcanic).
+- **Food** is repeatable and counts `feeds`. It never awards XP.
+- The dragon is tappable and answers with a credit-health line.
 
-Start: **320 XP, 120 coins, level 3, Baby dragon, 3-week streak.**
+## 6. Demo click-path (550 → 870 XP, Teen dragon)
 
-| # | Action | +XP | +coins | XP after | Note |
-|---|---|---|---|---|---|
-| 1 | Approve phone switch (Vodafone → Belong) | 120 | 80 | 440 | |
-| 2 | Approve internet switch (NBN 100 → 50) | 120 | 80 | 560 | → Level 4 |
-| 3 | Cancel Stan | 80 | 50 | 640 | |
-| 4 | Cancel Disney+ | 80 | 50 | 720 | → Level 5 |
-| 5 | Reschedule gym debit to Fridays | 60 | 40 | 780 | |
-| 6 | Complete "Cut $90+ bills" goal | 100 | 60 | 880 | **🐲 Evolves to Teen** |
-| 7 | Complete "Pay card on time" goal | 100 | 60 | 980 | |
-| 8 | Complete "No new BNPL" goal | 100 | 60 | 1080 | → **Level 6** |
-
-**End: 1080 XP, level 6, Teen dragon, 600 coins.** Enough to buy the Lava Lair (450) +
-Dragon Feast (60), with 90 left over — or save toward the 1200-coin perk.
-
-> The evolution lands at step 6 *on purpose*: the dragon grows the moment Mia hits her
-> "cut bills" savings goal, tying the gamification to the money outcome rather than to
-> random clicks.
-
-## 7. Pitch lines (judge-facing)
-
-- "The dragon only grows when your credit health does — every reward maps to a behaviour
-  the credit bureaus actually measure."
-- "We deliberately pay **less** for answering questions than for switching a bill, so the
-  game can't be farmed and the incentives point at real behaviour change."
-- "Every coin is earned through a ledgered, explainable action. Nothing is granted for
-  opening the app or spending money."
-- "Coins can later unlock **real Westpac perks** (e.g. a bonus savings rate), giving the
-  bank a commercial reason to build it and the customer a reason to stay healthy."
+1. **Score**: 612/1200 Equifax, forecast 635 to 650, the goal card, Afterpay and Zip with
+   next payment dates, the factors sheet.
+2. **On open** the daily check-in and the seven-day goal land: **550 XP, 330 coins**.
+3. **Insights**: six findings, each opening a sheet with evidence and one action. All six
+   take you to **870 XP, 510 coins**, and the dragon evolves to **Teen** partway through.
+4. **Goals**: 1 of 3 done, the other two honestly in progress.
+5. **Dragon and Shop**: spend coins on a hat and a cave and watch it wear them.

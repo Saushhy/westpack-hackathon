@@ -1,0 +1,163 @@
+# CHANGES: Credit Dragon, a credit-score coach
+
+> **Read this first if you are an AI or a teammate picking up this branch.**
+> Branch: `feat/santiago-credit-trajectory` · Owner: Santiago · Updated Tue 17 Nov 2026
+
+This records the product direction we agreed in person and the exact data and UI that
+implements it. It supersedes the earlier "bill negotiator" framing entirely.
+
+---
+
+## 1. What the product is
+
+> **The dragon is a picture of your credit score's trajectory.** It reads Westpac's own
+> transaction data, finds the habits that move an Australian credit score (money you have
+> borrowed, whether you pay on time, debits that could bounce), and gives you one action at
+> a time. Acting on them grows and dresses the dragon.
+
+There is no "switch provider", no promoted brand, and no manual "mark as done".
+
+---
+
+## 2. The rules that shape the UI
+
+1. **No brand the customer does not already pay.** Naming Afterpay, Zip, Vodafone, Netflix
+   or Goodlife is their own data. Recommending anyone else is promotion, so we do not.
+2. **The AI never claims a saving.** A finding is *potential* until the transaction shows it
+   happened.
+3. **The score is the ground truth, XP comes from behaviour.** Nobody can promise points, so
+   the forecast is a range with a stated assumption, and factors are direction only.
+4. **Goals fill themselves.** A goal completes when the data says it happened, never when
+   someone taps a button.
+
+---
+
+## 3. The dragon is the real model now
+
+`/assets/dragon_3d` (an OBJ with separate PBR maps and no material file) is assembled
+into `web/assets/dragon/dragon.glb` by `npm run build:dragon`. 19,782 triangles, three
+maps embedded, 915 kB, all inside the file so it works offline.
+
+- `npm run build:dragon` reads the OBJ, downscales the maps with sharp (base colour and
+  normal to 1024, a packed ORM map to 512) and attaches them to the glTF. The source has
+  no `.mtl`, so the material is wired by hand.
+- `npm run render:dragon` renders the model in headless Edge through three.js and writes
+  `assets/dragon/{baby,teen,adult}.png` with a transparent background. The app already
+  looked for those filenames, so no rendering code ships to the browser. The egg stage
+  stays the emoji on purpose: the model is a dragon, not an egg.
+- The stage portraits are the same dragon framed larger, so it visibly grows with the
+  score. `WEAR_ANCHOR` was re-measured from the alpha silhouette of each render, so hats
+  and shades land on the head of the real model.
+- The model has **no rig**, so the app wears items at measured offsets and the AR build
+  uses transforms only. See `docs/ar-dragon-handoff.md` for the USDZ path and the
+  RealityKit snippet.
+
+### The dragon speaks, and only from our data
+
+The compliance rule for this build: **no free chat, no generation at runtime.** The
+dragon's bubble is composed by `dragonSaid()` in `web/app.js` from `bills.json` and the
+saved state, so every line quotes a figure the transaction file proves:
+
+- "Afterpay takes $84.50 on 18 Nov. Keep cash aside for it."
+- "Your card payment was 3 days late in October."
+- "2 of 4 instalments paid on time."
+
+The audit asserts that the first line matches the real payment, that goal progress is
+live, and that no other provider is ever named.
+
+---
+
+## 4. What changed before that (v3)
+
+### Deleted
+- **Low Rate Card panel** and the `westpac_products` array. It read as an advert with no
+  clear purpose.
+- **"Last check" predicted-vs-actual block**, plus `score.forecast.previous`.
+- **"A debit is at risk" block** on the Score tab. It duplicated the gym finding in Insights.
+- **The three-bucket strip** (score / cash / fees). The big score panel does that job better.
+  The two dollar figures moved into the Insights summary.
+- **Every "mark done" / "complete goal" button.** Goals are computed.
+
+### Added
+- **Real brand logos** in `web/assets/brands/` (9 files), fetched once by
+  `npm run fetch:logos` and committed so the prototype still works offline. `adorn()` prefers
+  the logo and falls back to the GEL icon when a file is missing.
+- **Movements sheet.** Tapping Afterpay or Zip lists the real payments from Carlos's
+  transaction file, grouped by month with subtotals.
+- **Self-filling goals**, three of them, each driven by a real signal.
+- **A generic slide-up sheet** (`openSheet`) used by every detail view.
+- **Daily check-in** on boot (`daily_checkin` 10 XP, `checkin_week` 120 XP).
+
+### Rewritten
+- **All user-facing copy.** No em dashes or en dashes anywhere in the app, one idea per
+  sentence, `why` under about 14 words. The audit fails the build if a dash comes back.
+- **BNPL rows** now read `Next payment $84.50 on 18 Nov` instead of `2 facilities · 3 due`.
+
+---
+
+## 5. Where the data comes from
+
+| Tier | Source | In the app |
+|---|---|---|
+| 1. Westpac transactions | Recurring debits, repayment timing, dishonours, BNPL | Every finding's `evidence`, and the movements sheets |
+| 2. Neutral benchmark | ACCC price monitoring (brand-free range, link out) | The phone finding's `benchmark` |
+
+Tier 2 (Westpac's own CDR product data) is no longer shown in the UI. The endpoint is
+recorded here for later: `GET https://digital-api.westpac.com.au/cds-au/v1/banking/products`
+(list `x-v: 5`, detail `x-v: 7`).
+
+---
+
+## 6. Schema
+
+### `data/bills.json`
+- `score` is now `{ value, scale, max, source, refreshed_at, consent, demo_sample, forecast:
+  { range, horizon_months, assumption } }`. No `previous`.
+- `credit_file.bnpl.providers[]` gained `logo`, `match` (regex for the transactions),
+  `paid_on_time`, `instalments_cycle`, `plans`. `bnpl` also has `last_facility_date`.
+- `totals.fees_avoided` added (was a hardcoded fallback in `app.js`).
+- `bills[]` entries gained `logo` and `provider_match`, and lost `offer`, `risk_notes` and
+  `requires_approval` where they were noise.
+- `westpac_products` and `recommendations` are gone.
+
+### `data/rewards.json`
+- `starting_state.checkins[]` seeds six days so the seventh (demo day) completes the week.
+- New actions: `daily_checkin` (10 XP), `checkin_week` (120 XP).
+- `goals[]` are now `{ id, title, description, xp, coins, source, target, unit, watching,
+  next_check }` where `source` is `checkin` / `bnpl_on_time` / `no_new_bnpl`.
+
+---
+
+## 7. The demo journey
+
+1. **Score**: 612/1200 Equifax, forecast 635 to 650, "Your goal: Car loan in 12 months",
+   Afterpay and Zip with next payment dates, and a "What moves your score" sheet.
+2. **Opening the app** records the daily check-in, which completes the seven-day goal:
+   **550 XP, 330 coins** before you touch anything.
+3. **Insights**: six findings, each opening a sheet with the evidence and one action.
+   Acting on all six takes you to **870 XP and 510 coins**, and the dragon **evolves to Teen**
+   in the middle of them (it crosses 800).
+4. **Goals**: 1 of 3 done. The other two sit at 2 of 4 instalments and 27 of 30 days, and
+   will complete themselves when the payments land.
+5. **Dragon and Shop**: spend coins on a hat and a cave and watch it wear them.
+
+The old "1080 XP / 600 coins / $92.99 saved" numbers are retired. There is no switching total.
+
+---
+
+## 7. Still to do as a team
+
+1. **Carlos** owns the insight text and questions. Santiago owns the factor to action to
+   dragon mapping. Confirm the split.
+2. **Carlos's transaction file** still lives at the repo root as `mia_transactions.json`.
+   `build-data.js` reads it from either the root or `/data/transactions.json`, so moving it is
+   safe whenever he is ready.
+3. **Verify before the slide**: the Equifax score scale, and the current BNPL reporting rules.
+4. **Naomi's dragon and shop PNGs** are still pending. The emoji is the designed fallback.
+
+---
+
+## 8. How to see it
+
+Open `web/index.html` by double-click, or look at `%TEMP%\opencode\cd-shots`.
+From `web/`: `npm run audit` (89 assertions) and `npm run shots`.

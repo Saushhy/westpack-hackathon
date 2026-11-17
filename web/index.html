@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Credit Dragon — Westpac</title>
+  <title>Credit Dragon · Westpac</title>
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
@@ -11,36 +11,42 @@
     <div class="phone">
       <div class="gel-notch"></div>
 
-      <header class="gel-topbar">
-        <div class="gel-statusbar">
-          <span id="status-time">9:41</span>
-          <span class="gel-status-icons">
-            <span class="gel-signal"><i></i><i></i><i></i><i></i></span>
-            <span class="gel-battery"><span class="gel-battery-fill"></span></span>
-          </span>
-        </div>
+      <!-- iOS status bar -->
+      <div class="gel-statusbar">
+        <span id="status-time">9:41</span>
+        <span class="gel-status-icons">
+          <span class="gel-signal"><i></i><i></i><i></i><i></i></span>
+          <span class="gel-battery"><span class="gel-battery-fill"></span></span>
+        </span>
+      </div>
+
+      <!-- GEL Header: white, hairline border, 54px, 12px gutter -->
+      <header class="gel-topbar" id="topbar">
         <div class="gel-header-main">
           <div class="gel-brandrow">
             <img class="gel-logo" src="assets/gel/wbc-logo.svg" alt="Westpac">
-            <div>
-              <span class="gel-brand">Westpac</span>
-              <span class="gel-brand-sub">Credit Dragon</span>
-            </div>
+            <span class="gel-wordmark">Westpac</span>
           </div>
-          <span class="gel-coin-pill"><span class="gel-coin"></span><span id="header-coins">0</span></span>
+          <div class="gel-header-end">
+            <span class="gel-coin-pill"><span class="gel-coin"></span><span id="header-coins">0</span></span>
+            <button class="gel-header-btn" type="button" data-icon="help" aria-label="Help"></button>
+            <button class="gel-header-btn" type="button" data-icon="account" aria-label="Profile"></button>
+          </div>
         </div>
       </header>
 
       <main class="gel-screen" id="screen" aria-live="polite"></main>
 
       <nav class="gel-tabbar" id="tabbar">
-        <button class="gel-tab active" data-tab="bills"><span class="gel-ico tab-ico" data-icon="receipt"></span>Bills</button>
+        <button class="gel-tab active" data-tab="score"><span class="gel-ico tab-ico" data-icon="shield"></span>Score</button>
+        <button class="gel-tab" data-tab="insights"><span class="gel-ico tab-ico" data-icon="chat"></span>Insights</button>
         <button class="gel-tab" data-tab="goals"><span class="gel-ico tab-ico" data-icon="target"></span>Goals</button>
         <button class="gel-tab" data-tab="dragon"><span class="gel-ico tab-ico" data-icon="paw"></span>Dragon</button>
         <button class="gel-tab" data-tab="shop"><span class="gel-ico tab-ico" data-icon="shopping-bag"></span>Shop</button>
       </nav>
 
       <div class="gel-toast" id="toast" role="status"></div>
+      <div class="gel-ar" id="ar-root" hidden></div>
       <div id="modal-root"></div>
     </div>
   </div>

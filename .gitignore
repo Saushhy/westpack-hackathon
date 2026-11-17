@@ -5,3 +5,10 @@ Thumbs.db
 *.log.*
 web/node_modules/
 web/src/.cache/
+
+# Xcode
+ios/build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist

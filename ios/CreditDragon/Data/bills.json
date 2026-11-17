@@ -1,0 +1,54 @@
+[
+  {
+    "id": "b1",
+    "service": "Mobile Phone",
+    "provider": "Vodafone",
+    "current_plan": "Vodafone $65 Plan (40GB)",
+    "current_monthly": 65.00,
+    "suggested_provider": "Boost Mobile",
+    "suggested_plan": "Boost $35 Plan (45GB)",
+    "suggested_monthly": 35.00,
+    "monthly_saving": 30.00,
+    "yearly_saving": 360.00,
+    "category": "phone"
+  },
+  {
+    "id": "b2",
+    "service": "Streaming - Stan",
+    "provider": "Stan",
+    "current_plan": "Stan Basic",
+    "current_monthly": 12.00,
+    "suggested_provider": "Cancel",
+    "suggested_plan": "Cancel Stan (keep Netflix & Disney+)",
+    "suggested_monthly": 0.00,
+    "monthly_saving": 12.00,
+    "yearly_saving": 144.00,
+    "category": "entertainment"
+  },
+  {
+    "id": "b3",
+    "service": "Energy",
+    "provider": "AGL",
+    "current_plan": "AGL Residential Flex",
+    "current_monthly": 145.00,
+    "suggested_provider": "Energy Australia",
+    "suggested_plan": "EA Basic Home (govt discount applied)",
+    "suggested_monthly": 120.00,
+    "monthly_saving": 25.00,
+    "yearly_saving": 300.00,
+    "category": "utilities"
+  },
+  {
+    "id": "b4",
+    "service": "Streaming - Spotify",
+    "provider": "Spotify",
+    "current_plan": "Spotify Premium Individual",
+    "current_monthly": 12.99,
+    "suggested_provider": "Spotify",
+    "suggested_plan": "Spotify Student Plan",
+    "suggested_monthly": 6.99,
+    "monthly_saving": 6.00,
+    "yearly_saving": 72.00,
+    "category": "entertainment"
+  }
+]

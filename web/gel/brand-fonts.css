@@ -1,0 +1,18 @@
+/*
+  Westpac brand font (Westpac Bold v2.007).
+
+  Vendored by tools/vendor-gel.mjs from https://www.westpac.com.au/fonts/
+  GEL's own shared/brand-fonts.css declares this face; the .woff2/.woff are not
+  committed to the public GEL repo, but Westpac serves them publicly. Mirrors
+  GEL's declaration exactly (single Bold file, weight range 100-900).
+*/
+
+@font-face {
+  src:
+    url('assets/fonts/Westpac-Bold-v2.007.woff2') format('woff2'),
+    url('assets/fonts/Westpac-Bold-v2.007.woff') format('woff');
+  font-family: 'Westpac';
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}

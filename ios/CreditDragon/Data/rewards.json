@@ -1,0 +1,298 @@
+{
+  "version": 1,
+  "currency": "coins",
+  "credit_factors": [
+    {
+      "id": "repayment_history",
+      "label": "Repayment history",
+      "impact": "biggest",
+      "direction": "up",
+      "what": "Paying cards, loans and BNPL on time. This matters more than anything else."
+    },
+    {
+      "id": "credit_enquiries",
+      "label": "Credit enquiries",
+      "impact": "small",
+      "direction": "down",
+      "what": "Every application stays on your file for 12 months. Fewer is better."
+    },
+    {
+      "id": "limits_debt",
+      "label": "Limits and debt",
+      "impact": "moderate",
+      "direction": "down",
+      "what": "High limits and big balances read as risk to a lender."
+    },
+    {
+      "id": "defaults",
+      "label": "Defaults",
+      "impact": "severe",
+      "direction": "down",
+      "what": "Unpaid debts sent to collection stay on file for years."
+    }
+  ],
+  "starting_state": {
+    "xp_total": 320,
+    "coins": 200,
+    "streak_weeks": 3,
+    "checkins": [
+      "2026-11-11",
+      "2026-11-12",
+      "2026-11-13",
+      "2026-11-14",
+      "2026-11-15",
+      "2026-11-16"
+    ]
+  },
+  "actions": [
+    {
+      "id": "daily_checkin",
+      "label": "Daily check-in",
+      "xp": 10,
+      "coins": 10,
+      "cap": { "type": "none" },
+      "why_rewards_you": "One a day, worth very little. It cannot be farmed."
+    },
+    {
+      "id": "checkin_week",
+      "label": "Seven days in a row",
+      "xp": 120,
+      "coins": 60,
+      "cap": { "type": "none" },
+      "why_rewards_you": "A full week of checking your file is what turns awareness into habit."
+    },
+    {
+      "id": "question_answered",
+      "label": "Answered a question",
+      "xp": 25,
+      "coins": 10,
+      "cap": { "type": "per_month", "limit": 5 },
+      "why_rewards_you": "Answering helps the AI personalise your plan. Low value so it cannot be farmed."
+    },
+    {
+      "id": "goal_completed",
+      "label": "Completed a plan goal",
+      "xp": 100,
+      "coins": 60,
+      "cap": { "type": "per_goal" },
+      "why_rewards_you": "A goal only completes when the data says it happened."
+    },
+    {
+      "id": "on_time_repayment",
+      "label": "On-time repayment",
+      "xp": 150,
+      "coins": 100,
+      "cap": { "type": "per_month", "limit": 1 },
+      "why_rewards_you": "Repayment history is the biggest factor in your score."
+    },
+    {
+      "id": "no_new_bnpl_month",
+      "label": "No new BNPL this month",
+      "xp": 250,
+      "coins": 150,
+      "cap": { "type": "per_month", "limit": 1 },
+      "why_rewards_you": "Fewer enquiries and less debt protects your file."
+    },
+    {
+      "id": "reminder_set",
+      "label": "Set a repayment reminder",
+      "xp": 100,
+      "coins": 60,
+      "cap": { "type": "per_bill" },
+      "why_rewards_you": "A reminder is the step that makes an on-time payment happen."
+    },
+    {
+      "id": "protected_balance",
+      "label": "Protected a debit at risk",
+      "xp": 60,
+      "coins": 40,
+      "cap": { "type": "per_bill" },
+      "why_rewards_you": "Stopping a dishonour keeps your account in good standing."
+    },
+    {
+      "id": "insight_tracked",
+      "label": "Tracked a money pattern",
+      "xp": 40,
+      "coins": 20,
+      "cap": { "type": "per_bill" },
+      "why_rewards_you": "Tracking lets us watch the pattern and confirm what really happens."
+    },
+    {
+      "id": "saving_verified",
+      "label": "Verified a saving",
+      "xp": 120,
+      "coins": 80,
+      "cap": { "type": "per_bill" },
+      "why_rewards_you": "Only awarded when the old debit stops appearing in your transactions."
+    },
+    {
+      "id": "savings_streak_4wk",
+      "label": "4-week savings streak",
+      "xp": 200,
+      "coins": 120,
+      "cap": { "type": "per_month", "limit": 1 },
+      "why_rewards_you": "Consistency is what actually moves a score."
+    },
+    {
+      "id": "shop_purchase",
+      "label": "Shop purchase",
+      "xp": 0,
+      "coins": null,
+      "cap": { "type": "none" },
+      "why_rewards_you": "Spending coins never earns XP. Rewards only come from money habits."
+    }
+  ],
+  "levels": [
+    { "level": 1, "xp_required": 0 },
+    { "level": 2, "xp_required": 100 },
+    { "level": 3, "xp_required": 250 },
+    { "level": 4, "xp_required": 450 },
+    { "level": 5, "xp_required": 700 },
+    { "level": 6, "xp_required": 1000 },
+    { "level": 7, "xp_required": 1350 },
+    { "level": 8, "xp_required": 1750 },
+    { "level": 9, "xp_required": 2200 },
+    { "level": 10, "xp_required": 2700 }
+  ],
+  "stages": [
+    { "id": "egg", "name": "Dragon Egg", "xp_required": 0, "emoji": "🥚", "image": "assets/dragon/egg.png" },
+    { "id": "baby", "name": "Baby Dragon", "xp_required": 250, "emoji": "🐣", "image": "assets/dragon/baby.png" },
+    { "id": "teen", "name": "Teen Dragon", "xp_required": 800, "emoji": "🐲", "image": "assets/dragon/teen.png" },
+    { "id": "adult", "name": "Adult Dragon", "xp_required": 1500, "emoji": "🐉", "image": "assets/dragon/adult.png" }
+  ],
+  "goals": [
+    {
+      "id": "goal_checkin",
+      "title": "Your dragon checks your file daily",
+      "description": "It re-reads your transactions every day. Seven days in a row fills this.",
+      "xp": 100,
+      "coins": 60,
+      "source": "checkin",
+      "target": 7,
+      "unit": "days",
+      "watching": "Your daily check-ins",
+      "next_check": "Tomorrow"
+    },
+    {
+      "id": "goal_bnpl_on_time",
+      "title": "Pay every Afterpay and Zip on time",
+      "description": "Each instalment on or before its due date, verified against your transactions.",
+      "xp": 100,
+      "coins": 60,
+      "source": "bnpl_on_time",
+      "target": 4,
+      "unit": "instalments",
+      "watching": "Afterpay and Zip debits",
+      "next_check": "18 Nov"
+    },
+    {
+      "id": "goal_no_new_bnpl",
+      "title": "Go a month without new BNPL",
+      "description": "Thirty days without opening a new plan. Your last one was 27 days ago.",
+      "xp": 100,
+      "coins": 60,
+      "source": "no_new_bnpl",
+      "target": 30,
+      "unit": "days",
+      "watching": "New BNPL facilities",
+      "next_check": "20 Nov"
+    }
+  ],
+  "shop": [
+    {
+      "id": "item_feast",
+      "name": "Dragon Feast",
+      "slot": "food",
+      "slot_label": "Food",
+      "repeatable": true,
+      "cost": 60,
+      "emoji": "🍗",
+      "image": "assets/shop/feast.png",
+      "description": "Buy it and feed it. Your dragon hops and asks for more."
+    },
+    {
+      "id": "item_cap",
+      "name": "Peak Cap",
+      "slot": "hat",
+      "slot_label": "Hat",
+      "cost": 120,
+      "emoji": "🧢",
+      "image": "assets/shop/cap.png",
+      "description": "Sits on the head of whatever stage your dragon is at."
+    },
+    {
+      "id": "item_sunnies",
+      "name": "Sunset Sunnies",
+      "slot": "face",
+      "slot_label": "Face",
+      "cost": 150,
+      "emoji": "🕶️",
+      "image": "assets/shop/sunnies.png",
+      "description": "Shades for a dragon in good financial health."
+    },
+    {
+      "id": "item_tophat",
+      "name": "Top Hat",
+      "slot": "hat",
+      "slot_label": "Hat",
+      "cost": 180,
+      "emoji": "🎩",
+      "image": "assets/shop/tophat.png",
+      "description": "For a dragon that pays on time."
+    },
+    {
+      "id": "item_scarf",
+      "name": "Westpac Scarf",
+      "slot": "neck",
+      "slot_label": "Neck",
+      "cost": 220,
+      "emoji": "🧣",
+      "image": "assets/shop/scarf.png",
+      "description": "Wraps its neck in Westpac navy and red."
+    },
+    {
+      "id": "item_cave",
+      "name": "Starry Cave",
+      "slot": "home",
+      "slot_label": "Home",
+      "cost": 300,
+      "emoji": "🌌",
+      "scene": "stars",
+      "image": "assets/shop/cave.png",
+      "description": "Changes the sky behind your dragon to a night cave."
+    },
+    {
+      "id": "item_crown",
+      "name": "Gold Crown",
+      "slot": "hat",
+      "slot_label": "Hat",
+      "cost": 320,
+      "emoji": "👑",
+      "unlock_level": 5,
+      "image": "assets/shop/crown.png",
+      "description": "Unlocks at Level 5. For dragons with good repayment history."
+    },
+    {
+      "id": "item_lair",
+      "name": "Lava Lair",
+      "slot": "home",
+      "slot_label": "Home",
+      "cost": 450,
+      "emoji": "🌋",
+      "scene": "lava",
+      "image": "assets/shop/lair.png",
+      "description": "A cosy lair. Turns the scene behind your dragon volcanic."
+    },
+    {
+      "id": "item_perk",
+      "name": "0.25% bonus savings rate",
+      "slot": "perk",
+      "slot_label": "Perk",
+      "cost": 1200,
+      "emoji": "💎",
+      "image": "assets/shop/perk.png",
+      "locked": true,
+      "description": "Pitch concept: coins unlock real Westpac perks."
+    }
+  ]
+}

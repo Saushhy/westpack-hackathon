@@ -1,0 +1,465 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A10001 /* CreditDragonApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10001; };
+		A10002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10002; };
+		A10003 /* WestpacTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10003; };
+		A10004 /* Transaction.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10004; };
+		A10005 /* Question.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10005; };
+		A10006 /* Bill.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10006; };
+		A10007 /* Dragon.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10007; };
+		A10008 /* CreditPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10008; };
+		A10009 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10009; };
+		A10010 /* DataLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10010; };
+		A10011 /* ScanningView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10011; };
+		A10012 /* QuestionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10012; };
+		A10013 /* CreditPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10013; };
+		A10014 /* BillNegotiatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10014; };
+		A10015 /* DragonHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10015; };
+		A10016 /* DragonShopView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10016; };
+		A10017 /* ARDragonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10017; };
+		A10018 /* WestpacLogo.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10018; };
+		A10019 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10019; };
+		A10020 /* transactions.json in Resources */ = {isa = PBXBuildFile; fileRef = B10020; };
+		A10021 /* questions.json in Resources */ = {isa = PBXBuildFile; fileRef = B10021; };
+		A10022 /* bills.json in Resources */ = {isa = PBXBuildFile; fileRef = B10022; };
+		A10023 /* insights.json in Resources */ = {isa = PBXBuildFile; fileRef = B10023; };
+		A10026 /* rewards.json in Resources */ = {isa = PBXBuildFile; fileRef = B10026; };
+		A10028 /* westpac_dragon.usdz in Resources */ = {isa = PBXBuildFile; fileRef = B10028; };
+		A10027 /* Rewards.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10027; };
+		A10029 /* DragonModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10029; };
+		A10025 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10025; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		B10001 /* CreditDragonApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreditDragonApp.swift; sourceTree = "<group>"; };
+		B10002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		B10003 /* WestpacTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WestpacTheme.swift; sourceTree = "<group>"; };
+		B10004 /* Transaction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Transaction.swift; sourceTree = "<group>"; };
+		B10005 /* Question.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Question.swift; sourceTree = "<group>"; };
+		B10006 /* Bill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Bill.swift; sourceTree = "<group>"; };
+		B10007 /* Dragon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dragon.swift; sourceTree = "<group>"; };
+		B10008 /* CreditPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreditPlan.swift; sourceTree = "<group>"; };
+		B10009 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		B10010 /* DataLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataLoader.swift; sourceTree = "<group>"; };
+		B10011 /* ScanningView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanningView.swift; sourceTree = "<group>"; };
+		B10012 /* QuestionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuestionsView.swift; sourceTree = "<group>"; };
+		B10013 /* CreditPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreditPlanView.swift; sourceTree = "<group>"; };
+		B10014 /* BillNegotiatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BillNegotiatorView.swift; sourceTree = "<group>"; };
+		B10015 /* DragonHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DragonHomeView.swift; sourceTree = "<group>"; };
+		B10016 /* DragonShopView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DragonShopView.swift; sourceTree = "<group>"; };
+		B10017 /* ARDragonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ARDragonView.swift; sourceTree = "<group>"; };
+		B10018 /* WestpacLogo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WestpacLogo.swift; sourceTree = "<group>"; };
+		B10019 /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
+		B10025 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+		B10020 /* transactions.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = transactions.json; sourceTree = "<group>"; };
+		B10021 /* questions.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = questions.json; sourceTree = "<group>"; };
+		B10022 /* bills.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = bills.json; sourceTree = "<group>"; };
+		B10023 /* insights.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = insights.json; sourceTree = "<group>"; };
+		B10026 /* rewards.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = rewards.json; sourceTree = "<group>"; };
+		B10028 /* westpac_dragon.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = westpac_dragon.usdz; sourceTree = "<group>"; };
+		B10027 /* Rewards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Rewards.swift; sourceTree = "<group>"; };
+		B10029 /* DragonModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DragonModel.swift; sourceTree = "<group>"; };
+		PROD00 /* CreditDragon.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CreditDragon.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		FWK001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		ROOT00 = {
+			isa = PBXGroup;
+			children = (
+				GRP001 /* CreditDragon */,
+				GRP_BP /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		GRP_BP /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				PROD00 /* CreditDragon.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		GRP001 /* CreditDragon */ = {
+			isa = PBXGroup;
+			children = (
+				GRP_AP /* App */,
+				GRP_TH /* Theme */,
+				GRP_MD /* Models */,
+				GRP_DT /* Data */,
+				GRP_VW /* Views */,
+				GRP_RS /* Resources */,
+			);
+			path = CreditDragon;
+			sourceTree = "<group>";
+		};
+		GRP_AP /* App */ = {
+			isa = PBXGroup;
+			children = (
+				B10001,
+				B10002,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		GRP_TH /* Theme */ = {
+			isa = PBXGroup;
+			children = (
+				B10003,
+				B10018,
+			);
+			path = Theme;
+			sourceTree = "<group>";
+		};
+		GRP_MD /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				B10004,
+				B10005,
+				B10006,
+				B10007,
+				B10008,
+				B10009,
+				B10027,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		GRP_DT /* Data */ = {
+			isa = PBXGroup;
+			children = (
+				B10010,
+				B10020,
+				B10021,
+				B10022,
+				B10023,
+				B10026,
+				B10028,
+			);
+			path = Data;
+			sourceTree = "<group>";
+		};
+		GRP_VW /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				GRP_ON /* Onboarding */,
+				GRP_QU /* Questions */,
+				GRP_CP /* CreditPlan */,
+				GRP_BN /* BillNegotiator */,
+				GRP_DR /* Dragon */,
+				GRP_AR /* AR */,
+				GRP_SH /* Shared */,
+				B10025 /* MainTabView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		GRP_ON /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				B10019,
+				B10011,
+			);
+			path = Onboarding;
+			sourceTree = "<group>";
+		};
+		GRP_QU /* Questions */ = {
+			isa = PBXGroup;
+			children = (
+				B10012,
+			);
+			path = Questions;
+			sourceTree = "<group>";
+		};
+		GRP_CP /* CreditPlan */ = {
+			isa = PBXGroup;
+			children = (
+				B10013,
+			);
+			path = CreditPlan;
+			sourceTree = "<group>";
+		};
+		GRP_BN /* BillNegotiator */ = {
+			isa = PBXGroup;
+			children = (
+				B10014,
+			);
+			path = BillNegotiator;
+			sourceTree = "<group>";
+		};
+		GRP_DR /* Dragon */ = {
+			isa = PBXGroup;
+			children = (
+				B10015,
+				B10016,
+			);
+			path = Dragon;
+			sourceTree = "<group>";
+		};
+		GRP_AR /* AR */ = {
+			isa = PBXGroup;
+			children = (
+				B10017,
+				B10029,
+			);
+			path = AR;
+			sourceTree = "<group>";
+		};
+		GRP_SH /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		GRP_RS /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		TGT001 /* CreditDragon */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CFG_TL /* Build configuration list for PBXNativeTarget "CreditDragon" */;
+			buildPhases = (
+				SRC001 /* Sources */,
+				FWK001 /* Frameworks */,
+				RES001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CreditDragon;
+			productName = CreditDragon;
+			productReference = PROD00 /* CreditDragon.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		PRJ001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					TGT001 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+				};
+			};
+			buildConfigurationList = CFG_PL /* Build configuration list for PBXProject "CreditDragon" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = ROOT00;
+			productRefGroup = GRP_BP /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				TGT001 /* CreditDragon */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		RES001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10020 /* transactions.json in Resources */,
+				A10021 /* questions.json in Resources */,
+				A10022 /* bills.json in Resources */,
+				A10023 /* insights.json in Resources */,
+				A10026 /* rewards.json in Resources */,
+				A10028 /* westpac_dragon.usdz in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		SRC001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10001,
+				A10002,
+				A10003,
+				A10004,
+				A10005,
+				A10006,
+				A10007,
+				A10008,
+				A10009,
+				A10010,
+				A10011,
+				A10012,
+				A10013,
+				A10014,
+				A10015,
+				A10016,
+				A10017,
+				A10018,
+				A10019,
+				A10025,
+				A10027,
+				A10029,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		CFG_D1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		CFG_R1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		CFG_D2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Credit Dragon needs camera access to show your dragon in AR";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.creditdragon.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		CFG_R2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Credit Dragon needs camera access to show your dragon in AR";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.creditdragon.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		CFG_PL /* Build configuration list for PBXProject "CreditDragon" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CFG_D1 /* Debug */,
+				CFG_R1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CFG_TL /* Build configuration list for PBXNativeTarget "CreditDragon" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CFG_D2 /* Debug */,
+				CFG_R2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+	};
+	rootObject = PRJ001 /* Project object */;
+}

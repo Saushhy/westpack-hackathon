@@ -1,81 +1,133 @@
-# Design tokens — Westpac GEL mapping
+# Design tokens — how the prototype runs the real GEL
 
-The web prototype looks "Westpac" because it uses **Westpac's actual GEL token values**,
-vendored from their public design system (not eyeballed hex codes).
+The web prototype does **not** approximate Westpac's look. It compiles the **actual GEL
+stylesheet** from `WestpacGEL/GEL-next` and uses GEL's own token names and component
+geometry. There is no React dependency and no build server — GEL's design system is plain
+CSS (Tailwind v4), so we can run it directly.
 
-- Source: `WestpacGEL/GEL-next` → `packages/style-config/src/tokens/css/wbc/style.css`
-- Vendored (with attribution) at `web/gel/tokens.css`.
-- The app sets `<html data-brand="wbc">` so GEL's semantic `--color-*` tokens are in scope.
-- Our Tailwind theme (`web/src/input.css`) maps GEL primitives to clean utility names.
+## Pipeline
 
-## Colour mapping
+```
+WestpacGEL/GEL-next
+  packages/style-config/src/css/shared/*.css      (borders, colours, layout, typography…)
+  packages/style-config/src/css/themes/theme-wbc.css
+            │
+            │  npm run vendor:gel      → web/gel/src/css/**   (verbatim copy)
+            ▼
+web/src/input.css
+  @import "tailwindcss"
+  @import GEL shared/*.css + theme-wbc.css + brand-fonts.css
+  + .gel-* component classes expressed in GEL token values
+            │
+            │  npm run build:css       → web/styles.css        (committed, offline-ready)
+            ▼
+web/index.html   (the app)          web/gel-reference.html   (GEL spec side-by-side)
+```
 
-| Utility | GEL token | Hex | Used for |
-|---|---|---|---|
-| `primary` | `wbc-primary-500` | `#DA1710` | Buttons, links, active states, save badges |
-| `primary-hover` | `wbc-primary-400` | `#EE221B` | Button hover |
-| `primary-active` | `wbc-primary-200` | `#F46E69` | Button press |
-| `primary-faint` | `wbc-primary-50` | `#FFF0F0` | Subtle red tint |
-| `hero` | `wbc-hero-500` | `#1F1C4F` | Header bar, headings |
-| `hero-faint` | `wbc-hero-50` | `#F1F0FA` | Subtle navy tint |
-| `ink` | `wbc-muted-950` | `#161619` | Body text |
-| `muted` | `wbc-muted-500` | `#706F7C` | Secondary text |
-| `line` | `wbc-muted-200` | `#DEDEE1` | Card / input borders |
-| `page` | `wbc-muted-100` | `#F5F5F6` | Page background |
-| `faint` | `wbc-muted-50` | `#F9F9FA` | Hover / faint fill |
-| `success` / `success-mild` / `success-faint` | `success-500/300/50` | `#008000` / `#47A447` / `#F2F9F2` | Switched / approved states |
-| `warning` / `warning-faint` | `warning-500/50` | `#C53B00` / `#FCF5F2` | Risk notes |
-| `info` / `info-faint` | `info-500/50` | `#0074C4` / `#F2F8FC` | "Why" callouts |
-| `coin` | `wbc-dance-500` *(data-f-solid)* | `#F57A0F` | Coin counter / coin bar |
-| `xp` | `wbc-primary-500` *(data-a-solid)* | `#DA1710` | XP progress bar |
+To re-pull GEL at any time: `cd web && npm run vendor:gel`.
 
-> `data-a-solid` and `data-f-solid` are GEL's **reserved chart colours** — using them for the
-> XP and coin bars is exactly their intended use (data visualisation).
+## GEL theme tokens (used by name, not by hardcoded hex)
 
-## Radius (GEL radii are tight — not pill-shaped)
+The app sets `<html data-brand="wbc">`, which is what activates GEL's Westpac token block,
+so every component reads the same variables GEL's own components read.
 
-| Tailwind | GEL token | px |
+| Token | Hex | Used for |
 |---|---|---|
-| `rounded-sm` | `border-rounded-sm` | 3 |
-| `rounded-md` | `border-rounded-md` | 4 |
-| `rounded-lg` | `border-rounded-lg` | 5 |
-| `rounded-xl` | `border-rounded-xl` | 6 |
-| `rounded-2xl` | `border-rounded-2xl` | 8 |
-| `rounded-3xl` | `border-rounded-3xl` | 12 |
-| `rounded-4xl` | `border-rounded-4xl` | 16 |
+| `--surface-primary` | `#DA1710` | Primary buttons, active tab, links |
+| `--surface-hover-primary` | `#EE221B` | Button hover |
+| `--surface-active-primary` | `#F46E69` | Button press |
+| `--surface-hero` | `#1F1C4F` | Panel header, progress-bar fill, icons |
+| `--surface-hero-faint` | `#F1F0FA` | Icon tiles |
+| `--text-heading` | `#1F1C4F` | Titles, headings |
+| `--text-body` | `#161619` | Body copy |
+| `--text-muted` | `#706F7C` | Secondary copy |
+| `--border-muted-soft` | `#DEDEE1` | Every card / row border |
+| `--border-hero` | `#1F1C4F` | Panel outline (GEL Panel) |
+| `--background-white` | `#FFFFFF` | Header, cards, tab bar |
+| `--background-faint` | `#F9F9FA` | Screen background |
+| `--surface-success(-faint)` | `#008000` / `#F2F9F2` | Success alerts, saved badges |
+| `--surface-warning(-faint)` | `#C53B00` / `#FCF5F2` | Risk notes |
+| `--surface-info(-faint)` | `#0074C4` / `#F2F8FC` | "Why" callouts |
 
-Cards use `rounded-2xl` (8px). The single biggest "looks like Westpac" detail is **avoiding
-20px pill cards** — GEL is squarish.
+**Prototype-only extension:** GEL has no game palette (coins/dragons are not banking UI).
+The two non-GEL colours live in `:root` in `web/src/input.css` as `--game-coin` /
+`--game-coin-soft`, kept deliberately separate from GEL tokens.
+
+## Spacing — GEL's base is 6px, not 4px
+
+`packages/style-config/src/css/shared/layout.css` sets `--spacing: 0.375rem`. That means GEL's
+scale is `p-1` 6px, `p-2` 12px, `p-3` 18px, `p-4` 24px, `p-7` 42px, `pt-9` 54px. This is why a
+GEL button is 42px tall (`h-7`) and the mobile header is 54px (`h-9`) — and why default
+Tailwind values look "off" next to GEL.
+
+## Component geometry (copied from component source, not guessed)
+
+| Component | GEL source | Values applied |
+|---|---|---|
+| Button | `button/button.styles.ts` (`size: large`) | `h-7` 42px, `rounded-lg` 5px, `px-2.5` 15px, `typography-body-9` 16px, filled + `border-primary` |
+| FlexiCell (row) | `flexi-cell/flexi-cell.styles.ts` | `rounded-2xl` 8px, `border-border-muted-soft`, `p-2` 12px, `gap-2` 12px, `mb-2` 12px, **no shadow** |
+| Panel (hero) | `panel/panel.styles.ts` | `rounded-2xl`, `border-border-hero`, header `bg-surface-hero text-text-mono px-2 py-[0.625rem]` |
+| Alert (box) | `alert/alert.styles.ts` | `border-y`, `typography-body-10`, faint surface + *-mild border |
+| Badge (default, soft) | `badge/badge.styles.ts` | `h-[1.25rem]` 20px, `rounded-sm` 3px, `px-1`, `text-[0.75rem]`, hairline border |
+| ProgressBar | `progress-bar/progress-bar.styles.ts` | `h-4` 24px (skinny 10px), `rounded-full`, white track + `border-muted-soft`, `p-[0.0625rem]`, fill `bg-surface-hero`, label `typography-body-10` bold |
+| Modal | `modal/components/modal-dialog` | `rounded-3xl` 12px, title `typography-body-7` 24px bold `px-5 pt-6 pb-4`, close `top-0 right-0 p-3`, backdrop `bg-black/65` |
+| BottomSheet | `bottom-sheet/bottom-sheet-dialog` | `rounded-t-3xl`, title `p-7 pt-9 pb-4`, body `px-7 pb-7` |
+| Header | `header/header.styles.ts` | white, `border-b border-border-muted-soft`, mobile `h-9` 54px / `px-2` 12px, scroll shadow `0 1px 5px rgba(0,0,0,.3)` |
 
 ## Typography
 
-GEL's brand font is proprietary and not in the public repo, so we use the system stack:
+The **real Westpac brand font** is used — `Westpac Bold v2.007`, the same file GEL's
+`shared/brand-fonts.css` references. Westpac serves it publicly at
+`https://www.westpac.com.au/fonts/Westpac-Bold-v2.007.woff2`; `npm run vendor:gel` downloads it
+into `web/assets/fonts/`, and `web/gel/brand-fonts.css` declares the face for `--font-brand`.
 
-`-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif`
+| Use | GEL | Size / line-height |
+|---|---|---|
+| Screen + modal titles | `typography-body-7` + `--font-brand` | 24px / 1.2 |
+| Section headings | `typography-body-8` | 18px / 1.4 |
+| Body, buttons | `typography-body-9` | 16px / 1.4 |
+| Secondary, alerts, badges | `typography-body-10` | 14px / 1.4 |
+| Big numbers | `typography-body-5` + brand | 36px / 1.1 |
 
-Headings use `hero` navy; body uses `ink`; hints use `muted`.
+Body copy uses GEL's declared sans stack (`--font-family-sans`), which is correct: Westpac
+only ships a Bold brand face, so body text is system UI.
 
-## For Naomi (Figma) & Shawn (SwiftUI)
+> **Licence note:** `Westpac-Bold-v2.007` is proprietary. It is committed here so the
+> presentation renders exactly like the real app, for a Westpac competition entry. Delete
+> `web/assets/fonts/` and the `brand-fonts.css` import to fall back to GEL's system stack.
 
-These exact tokens exist natively in GEL's iOS palette at
-`packages/style-config/src/tokens/ios/wbc/wbc-colors.swift` (e.g. `backgroundHero`,
-`surfacePrimary`, `textHeading`, `borderMutedSoft`). Use the same values so the Figma,
-SwiftUI app and this web prototype all match pixel-for-pixel.
+## Radii (GEL is squarish — never pills)
+
+`rounded-sm` 3px · `rounded-md` 4px · `rounded-lg` 5px · `rounded-xl` 6px ·
+`rounded-2xl` 8px · `rounded-3xl` 12px · `rounded-4xl` 16px. Rows/cards use 8px, buttons 5px,
+badges 3px, modals 12px.
 
 ## Brand assets (vendored from GEL)
-
-The prototype uses the **real** Westpac assets, pulled from `WestpacGEL/GEL-next`:
 
 | Asset | Source in GEL | Local path |
 |---|---|---|
 | Westpac logo (red "W") | `packages/ui/assets/logos-symbols/light/WBCLogo-Lm.svg` | `web/assets/gel/wbc-logo.svg` |
 | Icons (outlined) | `packages/ui/assets/icons/outlined/*.svg` | `web/assets/gel/icons/*.svg` |
+| Westpac Bold font | `brand-fonts.css` → westpac.com.au | `web/assets/fonts/` |
 
-Icons used — bills: `phone`, `desktop`, `video`, `headset`, `barbell`, `house`; tabs:
-`receipt`, `target`, `paw`, `shopping-bag`. Icons are applied as **CSS masks** so they
-inherit `currentColor` (navy/red) instead of a fixed colour.
+Icons used — bills: `phone`, `desktop`, `video`, `headset`, `barbell`, `house`; tabs: `receipt`,
+`target`, `paw`, `shopping-bag`; chrome: `help`, `account`, `close`. GEL ships icons with a
+placeholder `fill` (mostly `#0000FF`, some `#1F1C4F`), so `npm run build:icons` rewrites every
+fill to `currentColor` and inlines them as SVG — that is how they inherit the app's colour.
 
-The Westpac **brand font** (`Westpac-Bold-v2.007`, referenced by GEL's `brand-fonts.css`)
-is proprietary and not in the public repo, so the prototype uses GEL's own declared
-fallback stack (`--font-family-sans`): `-apple-system, BlinkMacSystemFont, "Segoe UI",
-Helvetica, Arial, sans-serif, …`. Naomi/Shawn can use the real font in Figma/SwiftUI.
+## Verify it
+
+```bash
+cd web
+npm run audit     # 96 assertions against GEL values, computed in a real browser
+```
+
+Then open `web/gel-reference.html` — real GEL component markup — and compare it with
+`web/index.html`.
+
+## For Naomi (Figma) & Shawn (SwiftUI)
+
+The same tokens exist natively for iOS at
+`packages/style-config/src/tokens/ios/wbc/wbc-colors.swift` (`backgroundHero`, `surfacePrimary`,
+`textHeading`, `borderMutedSoft`, …). Use those names/values in Figma and SwiftUI so all three
+surfaces match.
