@@ -1295,7 +1295,7 @@
   }
 
   .gel-ar-bubble {
-    position: absolute; left: 16px; right: 16px; bottom: 78px; z-index: 4;
+    position: absolute; left: 16px; right: 16px; bottom: 86px; z-index: 4;
     background: rgba(255, 255, 255, 0.97); border-radius: var(--rounded-3xl);
     padding: 10px 12px; font-size: var(--typography-body-size-10); line-height: 1.4;
     color: var(--text-body); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.24);
@@ -1304,11 +1304,33 @@
   }
   .gel-ar-bubble.show { opacity: 1; transform: none; }
 
+  /* one floating bar instead of four equal boxes */
   .gel-ar-controls {
     position: absolute; left: 12px; right: 12px; bottom: 12px; z-index: 5;
-    display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 6px;
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: var(--rounded-3xl);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.24);
   }
-  .gel-ar-controls .gel-btn-ghost,
-  .gel-ar-controls .gel-btn-primary { height: 38px; background-color: rgba(255, 255, 255, 0.95); }
-  .gel-ar-controls .gel-btn-ghost { border-color: var(--border-muted-soft); }
+  .gel-ar-say {
+    flex: 1 1 auto; min-width: 0; border: 0; background: none; padding: 0 2px;
+    font-family: inherit; font-size: var(--typography-body-size-10); font-weight: 700;
+    color: var(--text-heading); text-align: left; cursor: pointer;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .gel-ar-zoom { display: flex; gap: 6px; flex: none; }
+  .gel-ar-icon {
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 1px solid var(--border-muted-soft); background: var(--background-white);
+    color: var(--text-heading); font-family: inherit; font-size: 18px; line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+  .gel-ar-icon:active { background: var(--surface-muted-faint); }
+  .gel-ar-done {
+    flex: none; height: 34px; padding: 0 16px; border: 0; border-radius: 999px;
+    background: var(--surface-primary); color: var(--text-mono);
+    font-family: inherit; font-size: var(--typography-body-size-10); font-weight: 700;
+    cursor: pointer;
+  }
 }

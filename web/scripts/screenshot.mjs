@@ -115,7 +115,7 @@ await shot("10-dragon-dressed");
 await page.locator('button:has-text("See it in your room")').click();
 await page.waitForTimeout(1500);
 await shot("11-ar");
-await page.locator(".gel-ar-controls .gel-btn-primary").click();
+await page.locator(".gel-ar-done").click();
 await page.waitForTimeout(200);
 
 // ---------- the other three personas, generated from Carlos's data ----------

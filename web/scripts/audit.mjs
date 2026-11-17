@@ -704,7 +704,7 @@ await page.waitForTimeout(900);
   const moved = await page.evaluate(() => document.querySelector("#ar-hold").style.top);
   check("Dragging moves the dragon on the table", "changed", moved, moved !== ar.left && moved !== "58%");
 
-  await page.locator(".gel-ar-controls .gel-btn-primary").click();
+  await page.locator(".gel-ar-done").click();
   await page.waitForTimeout(300);
   check("Done closes AR", "0", String(await page.locator("#ar-root:not([hidden])").count()), (await page.locator("#ar-root:not([hidden])").count()) === 0);
 }

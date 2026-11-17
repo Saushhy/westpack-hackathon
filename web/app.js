@@ -1584,10 +1584,12 @@ function arStageMarkup() {
       <div class="gel-ar-bubble" id="ar-bubble"></div>
     </div>
     <div class="gel-ar-controls">
-      <button class="gel-btn-ghost gel-btn-sm" type="button" onclick="arSay()">Say something</button>
-      <button class="gel-btn-ghost gel-btn-sm" type="button" onclick="arZoom(-1)">Smaller</button>
-      <button class="gel-btn-ghost gel-btn-sm" type="button" onclick="arZoom(1)">Bigger</button>
-      <button class="gel-btn-primary gel-btn-sm" type="button" onclick="closeAR()">Done</button>
+      <button class="gel-ar-say" type="button" onclick="arSay()">Say something</button>
+      <div class="gel-ar-zoom">
+        <button class="gel-ar-icon" type="button" aria-label="Make it smaller" onclick="arZoom(-1)">&minus;</button>
+        <button class="gel-ar-icon" type="button" aria-label="Make it bigger" onclick="arZoom(1)">+</button>
+      </div>
+      <button class="gel-ar-done" type="button" onclick="closeAR()">Done</button>
     </div>`;
 }
 
