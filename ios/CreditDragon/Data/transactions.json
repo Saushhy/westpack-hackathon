@@ -1,0 +1,22 @@
+[
+  {"id":"t1","date":"2026-10-01","description":"Afterpay Payment","merchant":"Afterpay","category":"Shopping","amount":45.00,"type":"debit","flags":["bnpl"]},
+  {"id":"t2","date":"2026-10-03","description":"Spotify Premium","merchant":"Spotify","category":"Entertainment","amount":12.99,"type":"debit","flags":["subscription","recurring"]},
+  {"id":"t3","date":"2026-10-05","description":"Netflix Monthly","merchant":"Netflix","category":"Entertainment","amount":22.99,"type":"debit","flags":["subscription","recurring"]},
+  {"id":"t4","date":"2026-10-07","description":"Stan Basic","merchant":"Stan","category":"Entertainment","amount":12.00,"type":"debit","flags":["subscription","recurring"]},
+  {"id":"t5","date":"2026-10-08","description":"Disney+ Monthly","merchant":"Disney+","category":"Entertainment","amount":13.99,"type":"debit","flags":["subscription","recurring"]},
+  {"id":"t6","date":"2026-10-10","description":"Afterpay Payment","merchant":"Afterpay","category":"Shopping","amount":38.50,"type":"debit","flags":["bnpl"]},
+  {"id":"t7","date":"2026-10-12","description":"Westpac Visa Repayment","merchant":"Westpac","category":"Repayment","amount":150.00,"type":"debit","flags":["late_payment"]},
+  {"id":"t8","date":"2026-10-14","description":"Anytime Fitness DD","merchant":"Anytime Fitness","category":"Health","amount":65.00,"type":"debit","flags":["dishonoured","recurring"]},
+  {"id":"t9","date":"2026-10-15","description":"Salary - Coles","merchant":"Coles","category":"Income","amount":1250.00,"type":"credit","flags":[]},
+  {"id":"t10","date":"2026-10-17","description":"Afterpay Payment","merchant":"Afterpay","category":"Shopping","amount":62.00,"type":"debit","flags":["bnpl"]},
+  {"id":"t11","date":"2026-10-20","description":"Vodafone Plan","merchant":"Vodafone","category":"Phone","amount":65.00,"type":"debit","flags":["subscription","recurring"]},
+  {"id":"t12","date":"2026-10-22","description":"AGL Energy","merchant":"AGL","category":"Utilities","amount":145.00,"type":"debit","flags":["recurring"]},
+  {"id":"t13","date":"2026-10-25","description":"Afterpay Payment","merchant":"Afterpay","category":"Shopping","amount":55.00,"type":"debit","flags":["bnpl"]},
+  {"id":"t14","date":"2026-10-29","description":"Salary - Coles","merchant":"Coles","category":"Income","amount":1250.00,"type":"credit","flags":[]},
+  {"id":"t15","date":"2026-09-05","description":"Netflix Monthly","merchant":"Netflix","category":"Entertainment","amount":22.99,"type":"debit","flags":["subscription","recurring"]},
+  {"id":"t16","date":"2026-09-08","description":"Afterpay Payment","merchant":"Afterpay","category":"Shopping","amount":30.00,"type":"debit","flags":["bnpl"]},
+  {"id":"t17","date":"2026-09-15","description":"Salary - Coles","merchant":"Coles","category":"Income","amount":1180.00,"type":"credit","flags":[]},
+  {"id":"t18","date":"2026-09-20","description":"Afterpay Payment","merchant":"Afterpay","category":"Shopping","amount":42.00,"type":"debit","flags":["bnpl"]},
+  {"id":"t19","date":"2026-08-12","description":"Zip Pay Payment","merchant":"Zip","category":"Shopping","amount":88.00,"type":"debit","flags":["bnpl"]},
+  {"id":"t20","date":"2026-08-25","description":"Westpac Visa Repayment","merchant":"Westpac","category":"Repayment","amount":200.00,"type":"credit","flags":[]}
+]

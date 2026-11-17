@@ -1,0 +1,26 @@
+[
+  {
+    "id": "g1",
+    "title": "Pay credit card on time",
+    "description": "Set up autopay or pay your Westpac Visa before the due date every month",
+    "xp_reward": 100,
+    "coin_reward": 25,
+    "category": "repayment"
+  },
+  {
+    "id": "g2",
+    "title": "No new BNPL this month",
+    "description": "Avoid new Afterpay or Zip purchases for 30 days to reduce credit commitments",
+    "xp_reward": 75,
+    "coin_reward": 20,
+    "category": "spending"
+  },
+  {
+    "id": "g3",
+    "title": "Switch to cheaper bills",
+    "description": "Save $73/month by switching your phone plan and cutting unused streaming",
+    "xp_reward": 80,
+    "coin_reward": 30,
+    "category": "bills"
+  }
+]

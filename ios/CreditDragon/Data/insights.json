@@ -1,0 +1,37 @@
+[
+  {
+    "id": "i1",
+    "title": "Late credit card repayment",
+    "detail": "Your Westpac Visa repayment on 12 Oct was 3 days late. Late repayments are the biggest factor credit bureaus consider.",
+    "severity": "danger",
+    "related_transaction_ids": ["t7"]
+  },
+  {
+    "id": "i2",
+    "title": "High BNPL usage",
+    "detail": "You made 4 Afterpay payments totalling $200.50 in October. Credit bureaus now report BNPL accounts and missed payments.",
+    "severity": "warning",
+    "related_transaction_ids": ["t1", "t6", "t10", "t13"]
+  },
+  {
+    "id": "i3",
+    "title": "Dishonoured direct debit",
+    "detail": "Your Anytime Fitness payment bounced on 14 Oct due to insufficient funds. This can signal financial stress.",
+    "severity": "danger",
+    "related_transaction_ids": ["t8"]
+  },
+  {
+    "id": "i4",
+    "title": "Overlapping subscriptions",
+    "detail": "You have 4 streaming services costing $61.97/month. Consolidating could free up cash for debt repayment.",
+    "severity": "warning",
+    "related_transaction_ids": ["t2", "t3", "t4", "t5"]
+  },
+  {
+    "id": "i5",
+    "title": "Regular income detected",
+    "detail": "Fortnightly salary of ~$1,250 from Coles. This is a strong foundation for setting up autopay on the right dates.",
+    "severity": "good",
+    "related_transaction_ids": ["t9", "t14"]
+  }
+]

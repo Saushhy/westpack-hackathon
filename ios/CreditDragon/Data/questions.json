@@ -1,0 +1,62 @@
+[
+  {
+    "id": "q1",
+    "question": "You made 4 Afterpay payments in October totalling $200.50. Were these planned purchases?",
+    "why_asking": "Multiple buy-now-pay-later payments increase your credit commitments. Bureaus see BNPL as credit, and missed payments get reported.",
+    "related_transaction_ids": ["t1", "t6", "t10", "t13"],
+    "answer_options": [
+      {"label": "Yes, all planned", "action": null},
+      {"label": "Some were impulse buys", "action": "set_bnpl_alert"},
+      {"label": "I want to reduce BNPL", "action": "set_bnpl_goal"}
+    ],
+    "impact": "Reducing BNPL usage means fewer credit commitments reported to bureaus"
+  },
+  {
+    "id": "q2",
+    "question": "Your Westpac Visa repayment on 12 Oct was 3 days late. Would a reminder or autopay help?",
+    "why_asking": "Late repayments are the #1 factor in your credit score. Even a few days late can be recorded if it happens repeatedly.",
+    "related_transaction_ids": ["t7"],
+    "answer_options": [
+      {"label": "Set up autopay", "action": "enable_autopay"},
+      {"label": "Remind me 3 days before", "action": "set_reminder"},
+      {"label": "It was a one-off, skip", "action": null}
+    ],
+    "impact": "On-time repayments are the strongest positive signal for your credit score"
+  },
+  {
+    "id": "q3",
+    "question": "You're paying for Netflix ($22.99), Stan ($12), Disney+ ($13.99) and Spotify ($12.99). Do you actively use all four?",
+    "why_asking": "That's $61.97/month on streaming. Cutting unused ones frees cash for debt repayment — which directly helps your credit health.",
+    "related_transaction_ids": ["t3", "t4", "t5", "t2"],
+    "answer_options": [
+      {"label": "I use them all", "action": null},
+      {"label": "I could drop one or two", "action": "show_bill_negotiator"},
+      {"label": "Help me compare them", "action": "show_bill_negotiator"}
+    ],
+    "impact": "Saving $25+/month that goes toward on-time repayments"
+  },
+  {
+    "id": "q4",
+    "question": "Your Anytime Fitness direct debit ($65) bounced last month. Want to move the debit date to after payday?",
+    "why_asking": "A dishonoured direct debit means insufficient funds. Too many of these signal financial stress to credit bureaus.",
+    "related_transaction_ids": ["t8"],
+    "answer_options": [
+      {"label": "Yes, move to the 16th", "action": "reschedule_dd"},
+      {"label": "I'll handle it myself", "action": null},
+      {"label": "I want to cancel the gym", "action": "show_bill_negotiator"}
+    ],
+    "impact": "No more dishonoured payments = cleaner credit record"
+  },
+  {
+    "id": "q5",
+    "question": "Your Vodafone plan is $65/month. There are similar plans from $35/month. Want to see options?",
+    "why_asking": "Saving $30/month means $360/year that could go toward paying down your credit card faster.",
+    "related_transaction_ids": ["t11"],
+    "answer_options": [
+      {"label": "Show me cheaper plans", "action": "show_bill_negotiator"},
+      {"label": "I'm happy with Vodafone", "action": null},
+      {"label": "I'm locked in a contract", "action": null}
+    ],
+    "impact": "Lower bills = more cash to stay on top of repayments"
+  }
+]
