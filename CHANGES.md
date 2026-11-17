@@ -72,6 +72,10 @@ embedded, 915 kB, all inside the file so it works offline.
   rows.
 - **Your plan**: the "1 of 3 done" subtitle and the explanatory note are gone. The cards and
   their self-filling bars carry it on their own.
+- **The bureau band** ("Average", "Very Good") now sits inside the score panel, opposite the
+  "Credit score" label, instead of under the page title. It describes the number, so it lives
+  with the number. Carlos writes Elena's as "Below Average / Thin File"; only the part before
+  the slash is shown, because the pill has to stay one line.
 
 ### The Review sheet, rebuilt
 

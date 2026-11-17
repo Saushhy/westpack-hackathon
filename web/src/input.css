@@ -310,6 +310,16 @@
   }
   .gel-panel-body { padding: 18px; }           /* p-3 */
 
+  /* the bureau band, sitting opposite "Credit score" so it belongs to the
+     number rather than to the page */
+  .gel-band {
+    font-size: 12px; font-weight: 700; line-height: 1;
+    padding: 5px 9px; border-radius: 999px;
+    background: rgba(255, 255, 255, 0.18);
+    color: var(--text-mono);
+    white-space: nowrap;
+  }
+
   /* ================= Buttons (GEL Button) =============================== */
   .gel-btn-primary,
   .gel-btn-ghost {

@@ -163,7 +163,8 @@ await page.waitForTimeout(900);
 {
   const s = await page.evaluate(() => ({
     title: document.querySelector(".gel-title")?.textContent.trim() || "",
-    band: document.querySelector(".gel-screen-head .gel-muted")?.textContent.trim() || "",
+    band: document.querySelector(".gel-panel-head .gel-band")?.textContent.trim() || "",
+    headMuted: !!document.querySelector(".gel-screen-head .gel-muted"),
     num: document.querySelector(".gel-score-num")?.textContent.trim() || "",
     hero: document.querySelector(".gel-badge--hero")?.textContent.trim() || "",
     goalTitle: document.querySelector(".gel-goal-title")?.textContent.trim() || "",
@@ -178,7 +179,8 @@ await page.waitForTimeout(900);
 
   check("Score shows 612", "612", s.num, s.num.startsWith("612"));
   check("Title reads 'Your score, Mia'", "Your score, Mia", s.title, s.title === "Your score, Mia");
-  check("Band shown under the title", "Average", s.band, s.band === "Average");
+  check("Band sits in the score panel header", "Average", s.band, s.band === "Average");
+  check("Band is not repeated under the title", "absent", s.body.includes("Your score, Mia") && s.headMuted ? "present" : "absent", !s.headMuted);
   check("Score source = Equifax", "Equifax", s.hero, /Equifax/.test(s.hero));
   check("Goal card is labelled 'Your goal'", "Your goal", s.goalLabel.join("|"), s.goalLabel.includes("Your goal"));
   check("Goal reads 'Car loan in 12 months'", "Car loan in 12 months", s.goalTitle, s.goalTitle === "Car loan in 12 months");

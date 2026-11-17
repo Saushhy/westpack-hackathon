@@ -397,7 +397,9 @@ for (const [name, meta] of Object.entries(PERSONAS)) {
         scale: "equifax_au",
         max: score.scale_max,
         source: "Equifax",
-        band: score.current_band,
+        /* Carlos writes "Below Average / Thin File". The pill needs the short
+           form; the nuance lives in that person's insights. */
+        band: String(score.current_band || "").split("/")[0].trim(),
         refreshed_at: "2026-11-03",
         consent: true,
         demo_sample: true,

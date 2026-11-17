@@ -3825,7 +3825,7 @@ window.PERSONAS = {
         "scale": "equifax_au",
         "max": 1200,
         "source": "Equifax",
-        "band": "Below Average / Thin File",
+        "band": "Below Average",
         "refreshed_at": "2026-11-03",
         "consent": true,
         "demo_sample": true,

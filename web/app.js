@@ -969,7 +969,6 @@ function renderScore() {
     <div class="gel-screen-head">
       <div>
         <h1 class="gel-title">${bills.persona ? "Your score, " + bills.persona : "Your score"}</h1>
-        <p class="gel-muted">${score.band || ""}</p>
       </div>
       <span class="gel-badge gel-badge--hero">${score.source || "Equifax"}</span>
     </div>
@@ -977,6 +976,7 @@ function renderScore() {
     <section class="gel-panel gel-score-hero">
       <div class="gel-panel-head">
         <span class="gel-panel-title">Credit score</span>
+        ${score.band ? `<span class="gel-band">${score.band}</span>` : ""}
       </div>
       <div class="gel-panel-body">
         <div class="gel-score-num">${score.value != null ? fmtWhole(score.value) : ""}<span class="gel-score-max">/${score.max != null ? fmtWhole(score.max) : ""}</span></div>
