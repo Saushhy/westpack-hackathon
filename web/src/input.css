@@ -335,10 +335,22 @@
   }
   /* a finished goal reads green at a glance, without reading the word */
   .gel-bar-fill.is-done { background: var(--surface-success); }
+
+  /* the reward, as two icons rather than two sentences */
+  .gel-reward { display: inline-flex; align-items: center; gap: 12px; }
+  .gel-reward-part {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+  .gel-reward-part .gel-ico { width: 15px; height: 15px; color: var(--text-hero); }
+  .gel-reward-part .gel-coin { margin-right: 1px; }
   .gel-sheet-head--goal .gel-sheet-title {
     white-space: normal; display: -webkit-box; -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
   }
+  /* no subtitle in the goal sheet, so the head does not need the height that
+     reserved space for one */
+  .gel-sheet-head--goal { padding: 14px 54px 12px 24px; align-items: flex-start; }
 
   /* ================= Buttons (GEL Button) =============================== */
   .gel-btn-primary,

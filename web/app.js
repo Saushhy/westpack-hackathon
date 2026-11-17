@@ -922,27 +922,31 @@ function renderGoals() {
     ${cards}`;
 }
 
-/* Why the goal exists, what it watches, and what it pays. */
+/* What the goal watches, when it is checked, and what it pays. */
 function openGoal(id) {
   const g = rewards.goals.find((x) => x.id === id);
   if (!g) return;
   const complete = goalDone(g);
-  const value = Math.min(goalValue(g), g.target);
-  const stageName = goalStatus(g);
 
   const head = `
     <div class="gel-sheet-head gel-sheet-head--goal">
       <span class="gel-adorn">${ico("target")}</span>
       <div class="gel-sheet-head-body">
         <h2 class="gel-sheet-title" id="sheet-title">${g.title}</h2>
-        <p class="gel-sheet-sub">${stageName} · ${value} of ${g.target} ${g.unit}</p>
       </div>
     </div>`;
+
+  /* Three questions, three answers. The state and the count are already on the
+     card behind this sheet, so they are not repeated here. */
+  const reward = `<span class="gel-reward">
+      <span class="gel-reward-part">${ico("paw")}+${g.xp} XP</span>
+      <span class="gel-reward-part">${coin()}+${g.coins}</span>
+    </span>`;
 
   const rows = [
     ["Watching", g.watching || "Your transactions"],
     ["Next check", complete ? "Done" : g.next_check],
-    ["Reward", "+" + g.xp + " XP · +" + g.coins + " coins"]
+    ["Reward", reward]
   ]
     .map(([k, v]) => `<div class="gel-kv"><span class="gel-kv-k">${k}</span><span class="gel-kv-v">${v}</span></div>`)
     .join("");
