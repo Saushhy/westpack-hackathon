@@ -911,9 +911,10 @@
   }
 
   /* the scene centres the dragon with flex, so nothing depends on a transform
-     and the hop cannot drift sideways */
+     and the hop cannot drift sideways. The small left offset is deliberate: at
+     a dead centre the pose reads slightly right-heavy. */
   .gel-dragon-wrap {
-    position: relative;
+    position: relative; left: -40px;
     width: 180px; height: 180px;
     display: flex; align-items: flex-end; justify-content: center;
   }
