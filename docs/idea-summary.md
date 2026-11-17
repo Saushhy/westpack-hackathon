@@ -10,10 +10,12 @@ Credit Dragon is an AI feature inside the Westpac app that helps young people un
 
 ## The problem
 
-Many students and first-job earners don't know what affects their credit profile. Buy-now-pay-later (BNPL) payments, a late card repayment, a dishonoured direct debit or several credit applications in a short time can quietly hurt a credit file. That matters later when they apply for a rental, a car loan or a mortgage. Budgeting apps give generic advice and people drop them because they are boring.
+Many students and first-job earners don't know what affects their credit profile. Equifax Australia says its credit score draws on credit enquiries and applications, repayment history, adverse events and credit account information. Habits like late repayments and frequent credit applications can therefore matter when someone later applies for a rental, a car loan or a mortgage. Budgeting apps give generic advice and people drop them because they are boring.
 
-[INSERT real stat 1 with source, e.g. Equifax / ASIC Moneysmart / ACCC]
-[INSERT real stat 2 with source on BNPL or financial stress]
+Financial stress is common among BNPL users:
+
+- In ASIC's 2021-22 survey, **19% of buy now, pay later users reported at least two signs of financial stress**, compared with 8% of credit card holders in the same survey. ASIC counts indicators such as difficulty paying utilities or rent, going without meals, and seeking help. The figures describe survey responses and don't show what caused the stress. (Source: ASIC submission to Treasury, pp. 14-15, Figure 5: https://treasury.gov.au/sites/default/files/2023-02/c2022-338372-asic.pdf#page=15)
+- About one in five BNPL consumers ASIC surveyed said they had missed or paid other bills late so they could make their BNPL payments on time in the preceding 12 months. (Source: ASIC Report 672, p. 16, 2020: https://download.asic.gov.au/media/5852803/rep672-published-16-november-2020-2.pdf#page=16)
 
 ## How it works
 
@@ -26,7 +28,7 @@ Many students and first-job earners don't know what affects their credit profile
 
 ## Why we think it is a good idea
 
-- **It is honest about credit.** Spending less does not directly raise a credit score. Bureaus mainly look at repayment history, credit enquiries, credit limits and debt levels, and defaults. Credit Dragon frees up cash so customers can make every repayment on time, pay down debt and avoid new credit. These are the behaviours it rewards most.
+- **It is honest about credit.** Spending less does not directly raise a credit score. Equifax lists repayment history, credit enquiries and applications, adverse events and credit account information among its score factors. Credit Dragon frees up cash so customers can make repayments on time, pay down debt and avoid new credit. These are the habits it rewards most. The on-screen number in our demo is an illustrative goal-progress score, not a bureau score, and we don't claim any specific transaction appears in a credit report. (Source: Equifax score explainer, https://equifax.com.au/personal/node/252)
 - **It is feasible for Westpac.** It uses data Westpac already holds: transactions, card and loan repayments, direct debits and recurring bills. Other banks' data would only come in through Open Banking (CDR) with the customer's consent, and the credit score is shown only if the customer opts in.
 - **It is safe and explainable.** It is opt-in. Every question explains why it is asked, and nothing happens without the customer's approval.
 - **It has a business case.** Healthier customers mean lower defaults and more engagement. A friendly mascot builds loyalty with younger customers. Coins could later unlock real perks, such as bonus savings interest or a small rate discount.
