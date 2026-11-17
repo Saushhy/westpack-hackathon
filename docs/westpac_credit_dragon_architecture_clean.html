@@ -1,0 +1,606 @@
+<!doctype html>
+<html lang="en" data-brand="wbc" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Westpac Credit Dragon · Enterprise Architecture & Regulatory Flow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+  :root {
+    --bg: #f6f6f4;
+    --fg: #16191f;
+    --muted: #5f6b7a;
+    --line: #d5d9de;
+    --card: #ffffff;
+    --wbc-red: #da1710;
+    --wbc-navy: #1f1c4f;
+    --font-body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+    --font-mono: "IBM Plex Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141618; --fg: #eef0f2; --muted: #a2a9b3; --line: #2e3339; --card: #1c1f23;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141618; --fg: #eef0f2; --muted: #a2a9b3; --line: #2e3339; --card: #1c1f23;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.5;
+    padding-block: 2.25rem 4rem;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .page { max-width: 96rem; margin: 0 auto; }
+  
+  /* Masthead with Westpac Brand Identity */
+  .header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding-bottom: 1.25rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid var(--wbc-red);
+  }
+  .brand-lockup {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .wbc-logo {
+    background: var(--wbc-red);
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 1.35rem;
+    letter-spacing: -0.03em;
+    padding: 0.45rem 0.85rem;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .eyebrow { margin: 0 0 .25rem; font-family: var(--font-mono); font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--wbc-red); font-weight: 600; }
+  h1 { margin: 0; font-size: clamp(1.6rem, 3vw, 2.2rem); line-height: 1.15; font-weight: 700; letter-spacing: -.01em; color: var(--wbc-navy); }
+  .badges { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .badge {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.3rem 0.65rem;
+    border-radius: 4px;
+    border: 1px solid var(--line);
+    background: var(--card);
+    color: var(--wbc-navy);
+  }
+  .badge.red { background: #fef2f2; border-color: #fecaca; color: var(--wbc-red); }
+  .lede { margin: 0 0 1.75rem; max-width: 65rem; color: var(--muted); font-size: 0.98rem; }
+
+  figure { margin: 0 0 2.5rem; }
+  .canvas {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px -2px rgba(31, 28, 79, 0.06);
+  }
+  .canvas svg { display: block; width: 100%; min-width: 1440px; height: auto; }
+  figcaption { margin-top: .85rem; font-size: .88rem; color: var(--muted); max-width: 72rem; line-height: 1.55; }
+
+  /* Diagram ink (fixed on white paper canvas) */
+  svg text { font-family: var(--font-body); fill: #16191f; }
+  .t-frame { font-size: 16px; font-weight: 700; fill: #16191f; }
+  .t-box { font-size: 13.5px; font-weight: 700; fill: #1f1c4f; }
+  .t-lab { font-size: 11px; font-weight: 600; text-anchor: middle; fill: #16191f; }
+  .t-lab.l { text-anchor: start; }
+  .t-sub { font-size: 10px; font-weight: 400; fill: #5f6b7a; text-anchor: middle; }
+  .t-sub.l { text-anchor: start; }
+  .t-stage { font-size: 9.5px; font-weight: 700; letter-spacing: .1em; fill: #da1710; }
+  .t-note { font-size: 10px; font-weight: 500; fill: #1f1c4f; text-anchor: middle; }
+  .t-flow { font-size: 11px; font-weight: 600; text-anchor: middle; paint-order: stroke; stroke: #ffffff; stroke-width: 6px; stroke-linejoin: round; }
+  .t-legend { font-size: 12.5px; font-weight: 600; text-anchor: middle; fill: #1f1c4f; }
+  .t-mono { font-family: var(--font-mono); font-size: 10.5px; font-weight: 600; text-anchor: middle; }
+  
+  .ic-red { color: #da1710; }
+  .ic-navy { color: #1f1c4f; }
+  .ic-green { color: #0e9f8a; }
+  .ic-white { color: #ffffff; }
+  .ic-ink { color: #16191f; }
+
+  /* Flow stroke palettes */
+  .f-attest { stroke: #7c3aed; }
+  .f-ledger { stroke: #ea580c; }
+  .f-ai     { stroke: #0284c7; }
+  .f-cache  { stroke: #059669; }
+  .f-hitl   { stroke: #da1710; }
+
+  .t-flow.c-attest { fill: #6d28d9; }
+  .t-flow.c-ledger { fill: #c2410c; }
+  .t-flow.c-ai     { fill: #0369a1; }
+  .t-flow.c-cache  { fill: #047857; }
+  .t-flow.c-hitl   { fill: #b91c1c; }
+
+  /* Stage reference */
+  h2 { font-size: 1.2rem; margin: 0 0 1rem; color: var(--wbc-navy); font-weight: 700; }
+  .stages { display: grid; gap: .85rem; margin: 0; padding: 0; list-style: none; }
+  .stage {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: .5rem 1.75rem;
+    padding: 1.15rem 1.35rem;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--wbc-red);
+    border-radius: 4px;
+  }
+  @media (min-width: 760px) { .stage { grid-template-columns: minmax(0, 18rem) minmax(0, 1fr); } }
+  .stage .num { font-family: var(--font-mono); font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--wbc-red); font-weight: 600; }
+  .stage h3 { margin: .15rem 0 .4rem; font-size: 1.05rem; color: var(--wbc-navy); }
+  .stage .action { margin: 0; font-size: .9rem; color: var(--muted); }
+  .stage ul { margin: 0; padding-left: 1.15rem; font-size: .92rem; }
+  .stage li + li { margin-top: .38rem; }
+  code { font-family: var(--font-mono); font-size: .84em; background: #f1f5f9; padding: 0.1rem 0.35rem; border-radius: 3px; color: var(--wbc-navy); }
+</style>
+</head>
+<body>
+
+<main class="page">
+  <header class="header-bar">
+    <div class="brand-lockup">
+      <div class="wbc-logo" aria-label="Westpac Logo">W</div>
+      <div>
+        <p class="eyebrow">Enterprise Reference Architecture · Westpac Innovation &amp; Coding Competition 2026</p>
+        <h1>Credit Dragon · Production &amp; Regulatory Data Flow</h1>
+      </div>
+    </div>
+    <div class="badges">
+      <span class="badge red">Westpac GEL Design System</span>
+      <span class="badge">APRA CPS 234</span>
+      <span class="badge">Privacy Act Part IIIA</span>
+      <span class="badge">ASIC RG 209 (HITL)</span>
+      <span class="badge">AWS Sydney (ap-southeast-2)</span>
+    </div>
+  </header>
+
+  <p class="lede">Five colour-coded technical flows across the Westpac mobile client, the zero-trust APRA CPS 234 privacy boundary, the deterministic heuristic &amp; median benchmark engine, the Zero Data Retention (ZDR) AI reasoning sandbox, and external Australian credit bureau services.</p>
+
+  <figure>
+    <div class="canvas">
+<svg viewBox="0 0 2400 1260" role="img" aria-label="Westpac Credit Dragon Architecture Diagram with 5 distinct colour-coded flows, 4 internal stage containers, and an external bureau integration container.">
+  <defs>
+    <!-- Arrowhead Markers -->
+    <marker id="m-dark" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0 1L11 6L0 11z" fill="#16191f"/></marker>
+    <marker id="m-attest" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0 1L11 6L0 11z" fill="#7c3aed"/></marker>
+    <marker id="m-ledger" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0 1L11 6L0 11z" fill="#ea580c"/></marker>
+    <marker id="m-ai" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0 1L11 6L0 11z" fill="#0284c7"/></marker>
+    <marker id="m-cache" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0 1L11 6L0 11z" fill="#059669"/></marker>
+    <marker id="m-hitl" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0 1L11 6L0 11z" fill="#da1710"/></marker>
+
+    <!-- Vector Icons -->
+    <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+    <symbol id="i-bank" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 4l9 5.5M4 9.5h16M5 9.5v8M9.5 9.5v8M14.5 9.5v8M19 9.5v8M3 17.5h18M3 21h18"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M10.5 18.5h3"/></symbol>
+    <symbol id="i-dragon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c1.5 0 3-.3 4.3-.9L21 22l-1.5-4.7c1.5-1.5 2.5-3.5 2.5-5.3 0-5.5-4.5-10-10-10z"/><circle cx="9" cy="10" r="1.5"/><circle cx="15" cy="10" r="1.5"/><path d="M8 15s1.5 2 4 2 4-2 4-2"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 3v6c0 5-3.4 9-8 11-4.6-2-8-6-8-11V5z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></symbol>
+    <symbol id="i-db" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></symbol>
+    <symbol id="i-cpu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></symbol>
+    <symbol id="i-ai" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/><circle cx="12" cy="12" r="3.5"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h8l5 5v15H6z"/><path d="M14 2v5h5M9 12h7M9 16h7"/></symbol>
+    <symbol id="i-cloud" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18.5h10.5a4 4 0 0 0 .5-8 6 6 0 0 0-11.6 1.6A3.3 3.3 0 0 0 7 18.5z"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+    <symbol id="i-filter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></symbol>
+    <symbol id="i-cards" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></symbol>
+    <symbol id="i-sparkle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z"/></symbol>
+    <symbol id="i-target" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+  </defs>
+
+  <!-- White Paper Background -->
+  <rect x="0" y="0" width="2400" height="1260" fill="#ffffff"/>
+
+  <!-- Outer Platform Frame: AWS Sydney Region -->
+  <rect x="40" y="30" width="2320" height="1100" fill="none" stroke="#1f1c4f" stroke-width="2.5"/>
+  <rect x="40" y="30" width="56" height="56" fill="#1f1c4f"/>
+  <use href="#i-cloud" x="52" y="42" width="32" height="32" class="ic-white"/>
+  <text x="112" y="64" class="t-frame">AWS Sydney Region (ap-southeast-2) · Sovereign Cloud Infrastructure</text>
+
+  <!-- Westpac Security Boundary Band -->
+  <rect x="90" y="110" width="1980" height="650" fill="none" stroke="#da1710" stroke-width="2.5"/>
+  <rect x="90" y="110" width="48" height="48" fill="#da1710"/>
+  <use href="#i-bank" x="100" y="120" width="28" height="28" class="ic-white"/>
+  <text x="154" y="140" class="t-frame">Westpac Enterprise Security Boundary (Core Banking VPC &amp; Private Subnets)</text>
+
+  <!-- ========================================================================= -->
+  <!-- TOP CORRIDOR FLOWS (y = 180 and y = 225, cleanly above containers y=260)  -->
+  <!-- ========================================================================= -->
+  
+  <!-- Flow 4 (Green): Fast Hydration from DynamoDB (x=1850) back to App (x=280) -->
+  <path d="M 1850 260 V 180 H 280 V 256" fill="none" class="f-cache" stroke-width="2.5" marker-end="url(#m-cache)"/>
+  <rect x="1045" y="162" width="36" height="36" rx="4" fill="#059669"/>
+  <use href="#i-sparkle" x="1051" y="168" width="24" height="24" class="ic-white"/>
+  <text x="1063" y="152" class="t-flow c-cache">4. Fast Hydration: Cached questions.json, insights.json &amp; debt reallocation plan hydrated to Westpac GEL UI (&lt;50ms)</text>
+
+  <!-- Flow 1b (Purple): Consent & Attest Status from Perimeter (x=720) to App (x=360) -->
+  <path d="M 720 260 V 225 H 360 V 256" fill="none" class="f-attest" stroke-width="2.5" stroke-dasharray="3 6" stroke-linecap="round" marker-end="url(#m-attest)"/>
+  <rect x="460" y="207" width="36" height="36" rx="4" fill="#7c3aed"/>
+  <use href="#i-shield" x="466" y="213" width="24" height="24" class="ic-white"/>
+  <text x="640" y="217" class="t-flow c-attest">App Attest Verified · Anchor Goal &amp; Part IIIA Consent Active</text>
+
+
+  <!-- ========================================================================= -->
+  <!-- BOTTOM CORRIDOR FLOW (y = 705, cleanly below containers y=640)            -->
+  <!-- ========================================================================= -->
+
+  <!-- Flow 5 (Red): Human-in-the-Loop Approval from App (x=370) to Execution/DynamoDB (x=1850) -->
+  <path d="M 370 640 V 705 H 1850 V 644" fill="none" class="f-hitl" stroke-width="2.5" marker-end="url(#m-hitl)"/>
+  <rect x="1045" y="687" width="36" height="36" rx="4" fill="#da1710"/>
+  <use href="#i-check" x="1051" y="693" width="24" height="24" class="ic-white"/>
+  <text x="1063" y="677" class="t-flow c-hitl">5. Human-in-the-Loop Execution: Customer approves unbranded plan switch, payday debit shift, or buffer sweep (ASIC RG 209)</text>
+
+
+  <!-- ========================================================================= -->
+  <!-- CONTAINER 1: Customer App · Westpac GEL UI (x=130 to 470, y=260 to 640)   -->
+  <!-- ========================================================================= -->
+  <rect x="130" y="260" width="340" height="380" fill="#ffffff" stroke="#da1710" stroke-width="2"/>
+  <rect x="130" y="260" width="44" height="44" fill="#da1710"/>
+  <use href="#i-phone" x="138" y="268" width="28" height="28" class="ic-white"/>
+  <text x="186" y="287" class="t-box">Customer App · Westpac GEL UI</text>
+
+  <!-- Stage 1 Sub-section -->
+  <text x="150" y="325" class="t-stage">STAGE 1 · GOAL SELECTION &amp; ATTEST</text>
+  
+  <!-- Node 1: Anchor Goal (center x=185) -->
+  <use href="#i-target" x="165" y="340" width="40" height="40" class="ic-red"/>
+  <text x="185" y="396" class="t-lab">Anchor Goal</text>
+  <text x="185" y="410" class="t-sub">Home / Car / Clean</text>
+
+  <line x1="215" y1="360" x2="265" y2="360" stroke="#16191f" stroke-width="2" marker-end="url(#m-dark)"/>
+
+  <!-- Node 2: App Attest (center x=295) -->
+  <use href="#i-lock" x="275" y="340" width="40" height="40" class="ic-navy"/>
+  <text x="295" y="396" class="t-lab">App Attest</text>
+  <text x="295" y="410" class="t-sub">Signed Hardware ID</text>
+
+  <line x1="325" y1="360" x2="375" y2="360" stroke="#16191f" stroke-width="2" marker-end="url(#m-dark)"/>
+
+  <!-- Node 3: AR Dragon (center x=405) -->
+  <use href="#i-dragon" x="385" y="340" width="40" height="40" class="ic-red"/>
+  <text x="405" y="396" class="t-lab">AR Dragon</text>
+  <text x="405" y="410" class="t-sub">RealityKit (.usdz)</text>
+
+  <!-- Divider -->
+  <line x1="150" y1="435" x2="450" y2="435" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <!-- Stage 5 Sub-section -->
+  <text x="150" y="458" class="t-stage">STAGE 5 · HUMAN-IN-THE-LOOP ACTIONS</text>
+
+  <!-- Node 4: Context Cards (center x=215) -->
+  <use href="#i-cards" x="195" y="475" width="40" height="40" class="ic-navy"/>
+  <text x="215" y="532" class="t-lab">Context Cards</text>
+  <text x="215" y="546" class="t-sub">"Why am I asking?"</text>
+
+  <line x1="250" y1="495" x2="330" y2="495" stroke="#16191f" stroke-width="2" marker-end="url(#m-dark)"/>
+
+  <!-- Node 5: Approve Action (center x=370) -->
+  <use href="#i-check" x="350" y="475" width="40" height="40" class="ic-red"/>
+  <text x="370" y="532" class="t-lab">Approve Switch</text>
+  <text x="370" y="546" class="t-sub">Realign &amp; Buffer</text>
+
+  <!-- Bottom summary pill inside Container 1 -->
+  <rect x="148" y="585" width="304" height="36" rx="4" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="300" y="607" class="t-note">Unbranded median savings ($44/mo) ➔ Flex Card</text>
+
+
+  <!-- ========================================================================= -->
+  <!-- INTER-CONTAINER BRIDGE 1 -> 2 (x = 470 to 610)                            -->
+  <!-- ========================================================================= -->
+  <line x1="470" y1="360" x2="606" y2="360" class="f-attest" stroke-width="2.5" stroke-dasharray="10 6" marker-end="url(#m-attest)"/>
+  <rect x="520" y="340" width="40" height="40" rx="4" fill="#7c3aed"/>
+  <use href="#i-lock" x="526" y="346" width="28" height="28" class="ic-white"/>
+  <text x="540" y="328" class="t-flow c-attest">TLS 1.3</text>
+  <text x="540" y="398" class="t-flow c-attest">App Attest API</text>
+
+
+  <!-- ========================================================================= -->
+  <!-- CONTAINER 2: Perimeter & PII Shield (x=610 to 950, y=260 to 640)          -->
+  <!-- ========================================================================= -->
+  <rect x="610" y="260" width="340" height="380" fill="#ffffff" stroke="#da1710" stroke-width="2"/>
+  <rect x="610" y="260" width="44" height="44" fill="#da1710"/>
+  <use href="#i-shield" x="618" y="268" width="28" height="28" class="ic-white"/>
+  <text x="666" y="287" class="t-box">Perimeter &amp; PII Shield (APRA CPS 234)</text>
+
+  <text x="630" y="325" class="t-stage">STAGE 2 · INGESTION &amp; TOKENIZATION</text>
+
+  <!-- Left column nodes (center x=665) -->
+  <use href="#i-cloud" x="645" y="355" width="40" height="40" class="ic-navy"/>
+  <text x="665" y="410" class="t-lab">AWS WAF</text>
+  <text x="665" y="424" class="t-sub">Anti-DDoS</text>
+
+  <use href="#i-shield" x="645" y="465" width="40" height="40" class="ic-red"/>
+  <text x="665" y="520" class="t-lab">Consent Gate</text>
+  <text x="665" y="534" class="t-sub">Part IIIA Opt-in</text>
+
+  <!-- Bracket routing from left column to 3 right rows -->
+  <line x1="695" y1="375" x2="720" y2="375" stroke="#8a94a0" stroke-width="1.5"/>
+  <line x1="695" y1="485" x2="720" y2="485" stroke="#8a94a0" stroke-width="1.5"/>
+  <line x1="720" y1="360" x2="720" y2="510" stroke="#8a94a0" stroke-width="1.5"/>
+  <line x1="720" y1="360" x2="742" y2="360" stroke="#16191f" stroke-width="2" marker-end="url(#m-dark)"/>
+  <line x1="720" y1="435" x2="742" y2="435" stroke="#16191f" stroke-width="2" marker-end="url(#m-dark)"/>
+  <line x1="720" y1="510" x2="742" y2="510" stroke="#16191f" stroke-width="2" marker-end="url(#m-dark)"/>
+
+  <!-- Right column 3 rows (icon x=750, text x=798) -->
+  <use href="#i-filter" x="750" y="340" width="36" height="36" class="ic-red"/>
+  <text x="796" y="355" class="t-lab l">PII Scrubber Lambda</text>
+  <text x="796" y="370" class="t-sub l">Strips names, BSB &amp; acct #</text>
+
+  <use href="#i-lock" x="750" y="415" width="36" height="36" class="ic-navy"/>
+  <text x="796" y="430" class="t-lab l">UUID Tokenizer</text>
+  <text x="796" y="445" class="t-sub l">Synthetic session IDs</text>
+
+  <use href="#i-doc" x="750" y="490" width="36" height="36" class="ic-navy"/>
+  <text x="796" y="505" class="t-lab l">Sanitized Tx Stream</text>
+  <text x="796" y="520" class="t-sub l">Zero raw PII exported</text>
+
+  <!-- Bottom summary pill inside Container 2 -->
+  <rect x="628" y="585" width="304" height="36" rx="4" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="780" y="607" class="t-note">Bans demographic bias: age, visa, nationality</text>
+
+
+  <!-- ========================================================================= -->
+  <!-- INTER-CONTAINER BRIDGE 2 -> 3 (x = 950 to 1090)                           -->
+  <!-- ========================================================================= -->
+  <line x1="950" y1="435" x2="1086" y2="435" class="f-ledger" stroke-width="2.5" stroke-dasharray="14 6 3 6" marker-end="url(#m-ledger)"/>
+  <rect x="1000" y="415" width="40" height="40" rx="4" fill="#ea580c"/>
+  <use href="#i-db" x="1006" y="421" width="28" height="28" class="ic-white"/>
+  <text x="1020" y="402" class="t-flow c-ledger">RDS Replica</text>
+  <text x="1020" y="473" class="t-flow c-ledger">90-Day Ledger</text>
+  <text x="1020" y="488" class="t-flow c-ledger">Scrubbed Tx</text>
+
+
+  <!-- ========================================================================= -->
+  <!-- CONTAINER 3: Heuristics, Medians & Bill-Shield (x=1090 to 1470, y=260-640)-->
+  <!-- ========================================================================= -->
+  <rect x="1090" y="260" width="380" height="380" fill="#ffffff" stroke="#da1710" stroke-width="2"/>
+  <rect x="1090" y="260" width="44" height="44" fill="#da1710"/>
+  <use href="#i-cpu" x="1098" y="268" width="28" height="28" class="ic-white"/>
+  <text x="1146" y="287" class="t-box">Heuristics, Medians &amp; Bill-Shield</text>
+
+  <text x="1110" y="325" class="t-stage">STAGE 3 · DETERMINISTIC PRE-PROCESSOR</text>
+  <text x="1280" y="352" class="t-sub">Computes exact financial aggregates in &lt;5ms before LLM call</text>
+
+  <!-- 3 well-spaced horizontal nodes inside Container 3 -->
+  <!-- Node A: Python Engine (center x=1150) -->
+  <use href="#i-cpu" x="1130" y="385" width="40" height="40" class="ic-navy"/>
+  <text x="1150" y="442" class="t-lab">Python Engine</text>
+  <text x="1150" y="456" class="t-sub">BNPL &amp; late flags</text>
+
+  <line x1="1182" y1="405" x2="1222" y2="405" stroke="#16191f" stroke-width="2" marker-end="url(#m-dark)"/>
+
+  <!-- Node B: Median Index (center x=1260) -->
+  <use href="#i-chart" x="1240" y="385" width="40" height="40" class="ic-red"/>
+  <text x="1260" y="442" class="t-lab">Median Index</text>
+  <text x="1260" y="456" class="t-sub">AU national medians</text>
+
+  <line x1="1292" y1="405" x2="1332" y2="405" stroke="#16191f" stroke-width="2" marker-end="url(#m-dark)"/>
+
+  <!-- Node C: Payday Bill-Shield (center x=1375) -->
+  <use href="#i-calendar" x="1355" y="385" width="40" height="40" class="ic-green"/>
+  <text x="1375" y="442" class="t-lab">Bill-Shield</text>
+  <text x="1375" y="456" class="t-sub">Payday alignment</text>
+
+  <!-- Verified Heuristic Output Badge -->
+  <rect x="1155" y="485" width="250" height="32" rx="4" fill="#fef2f2" stroke="#da1710" stroke-width="1.5"/>
+  <text x="1280" y="505" class="t-mono" fill="#da1710">VERIFIED HEURISTIC FACTS (0% ERROR)</text>
+  <text x="1280" y="535" class="t-sub">Flags $89 telco vs $45 median · Detects Thu debit collision</text>
+
+  <!-- Bottom summary pill inside Container 3 -->
+  <rect x="1108" y="585" width="344" height="36" rx="4" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="1280" y="607" class="t-note">Punctuality Buffer Sweep: $22/fn protects card due date</text>
+
+
+  <!-- ========================================================================= -->
+  <!-- INTER-CONTAINER BRIDGE 3 -> 4 (x = 1470 to 1610)                          -->
+  <!-- ========================================================================= -->
+  <line x1="1470" y1="435" x2="1606" y2="435" class="f-ai" stroke-width="2.5" marker-end="url(#m-ai)"/>
+  <rect x="1520" y="415" width="40" height="40" rx="4" fill="#0284c7"/>
+  <use href="#i-ai" x="1526" y="421" width="28" height="28" class="ic-white"/>
+  <text x="1540" y="402" class="t-flow c-ai">VPC Prompt</text>
+  <text x="1540" y="473" class="t-flow c-ai">ZDR Enforced</text>
+  <text x="1540" y="488" class="t-flow c-ai">Unbranded Tier</text>
+
+
+  <!-- ========================================================================= -->
+  <!-- CONTAINER 4: Regulated AI Sandbox (x=1610 to 1990, y=260 to 640)          -->
+  <!-- ========================================================================= -->
+  <rect x="1610" y="260" width="380" height="380" fill="#ffffff" stroke="#da1710" stroke-width="2"/>
+  <rect x="1610" y="260" width="44" height="44" fill="#da1710"/>
+  <use href="#i-ai" x="1618" y="268" width="28" height="28" class="ic-white"/>
+  <text x="1666" y="287" class="t-box">Regulated AI Sandbox (ZDR Enforced)</text>
+
+  <text x="1630" y="325" class="t-stage">STAGE 4 · REASONING &amp; DEBT REALLOCATION</text>
+
+  <!-- Top Row inside Container 4: LLM Engine (center x=1700) -->
+  <use href="#i-sparkle" x="1680" y="350" width="40" height="40" class="ic-red"/>
+  <text x="1740" y="366" class="t-lab l">Gemini 2.5 Flash / Bedrock</text>
+  <text x="1740" y="382" class="t-sub l">Equifax CCR &amp; Anchor Goal RAG</text>
+
+  <!-- Vertical connection between Portkey Gateway (bottom left) and LLM (top left) -->
+  <line x1="1700" y1="470" x2="1700" y2="402" class="f-ai" stroke-width="2.5" marker-end="url(#m-ai)"/>
+  <text x="1655" y="440" class="t-sub">Guardrails</text>
+
+  <!-- Bottom Left inside Container 4: Portkey AI Gateway (center x=1700) -->
+  <use href="#i-shield" x="1680" y="480" width="40" height="40" class="ic-green"/>
+  <text x="1700" y="536" class="t-lab">Portkey Gateway</text>
+  <text x="1700" y="550" class="t-sub">CloudWatch Audit Log</text>
+
+  <!-- Horizontal arrow from Portkey/Validator to DynamoDB (x=1730 to 1825) -->
+  <line x1="1730" y1="500" x2="1822" y2="500" class="f-ai" stroke-width="2.5" marker-end="url(#m-ai)"/>
+  <text x="1776" y="490" class="t-flow c-ai">JSON Schema</text>
+
+  <!-- Bottom Right inside Container 4: Amazon DynamoDB (center x=1860) -->
+  <use href="#i-db" x="1835" y="480" width="40" height="40" class="ic-navy"/>
+  <text x="1855" y="536" class="t-lab">Amazon DynamoDB</text>
+  <text x="1855" y="550" class="t-sub">questions &amp; insights</text>
+
+  <!-- Bottom summary pill inside Container 4 -->
+  <rect x="1628" y="585" width="344" height="36" rx="4" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="1800" y="607" class="t-note">Competitor Neutral: Zero third-party brand promotion</text>
+
+
+  <!-- ========================================================================= -->
+  <!-- RIGHT-SIDE BRIDGE TO EQUIFAX BUREAU (x = 1990 to 2190)                    -->
+  <!-- ========================================================================= -->
+  <line x1="1990" y1="370" x2="2180" y2="370" class="f-ai" stroke-width="2.5" marker-end="url(#m-ai)"/>
+  <text x="2085" y="356" class="t-flow c-ai">CCR Rules &amp; Scoring</text>
+  <use href="#i-bank" x="2195" y="348" width="44" height="44" class="ic-navy"/>
+  <text x="2217" y="408" class="t-lab">Equifax AU</text>
+  <text x="2217" y="422" class="t-sub">Credit Bureau</text>
+
+
+  <!-- ========================================================================= -->
+  <!-- VERTICAL BRIDGES TO EXTERNAL SERVICES (y = 640 to 850)                    -->
+  <!-- Located at x = 1260 and x = 1680 so they never cross the HITL text at 1063-->
+  <!-- ========================================================================= -->
+  <path d="M 1260 640 V 846" fill="none" class="f-ai" stroke-width="2.5" stroke-dasharray="4 6" stroke-linecap="round" marker-start="url(#m-ai)" marker-end="url(#m-ai)"/>
+  <text x="1260" y="775" class="t-flow c-ai">ACCC / ABS Medians &amp; PayTo Mandates</text>
+  <text x="1260" y="791" class="t-flow c-ai">(Unbranded Market Rate Tiers)</text>
+
+  <path d="M 1700 640 V 846" fill="none" class="f-ai" stroke-width="2.5" stroke-dasharray="9 6" marker-start="url(#m-ai)" marker-end="url(#m-ai)"/>
+  <text x="1700" y="775" class="t-flow c-ai">Equifax CCR Criteria &amp; CDR Feeds</text>
+  <text x="1700" y="791" class="t-flow c-ai">(24-Mo Repayment History &amp; Limits)</text>
+
+
+  <!-- ========================================================================= -->
+  <!-- EXTERNAL INTEGRATIONS CONTAINER (x=1090 to 1990, y=850 to 1050)           -->
+  <!-- ========================================================================= -->
+  <rect x="1090" y="850" width="900" height="200" fill="#ffffff" stroke="#da1710" stroke-width="2" stroke-dasharray="8 6"/>
+  
+  <!-- Vendor 1 (center x=1210) -->
+  <use href="#i-cloud" x="1190" y="880" width="40" height="40" class="ic-navy"/>
+  <text x="1210" y="938" class="t-lab">Equifax CCR Bureau</text>
+  <text x="1210" y="953" class="t-sub">24-month repayment history</text>
+  <text x="1210" y="967" class="t-sub">credit inquiries &amp; defaults</text>
+
+  <!-- Vendor 2 (center x=1430) -->
+  <use href="#i-cloud" x="1410" y="880" width="40" height="40" class="ic-navy"/>
+  <text x="1430" y="938" class="t-lab">PayTo &amp; Open Banking (CDR)</text>
+  <text x="1430" y="953" class="t-sub">Payday debit realignment</text>
+  <text x="1430" y="967" class="t-sub">external bank &amp; BNPL feeds</text>
+
+  <!-- Vendor 3 (center x=1650) -->
+  <use href="#i-cloud" x="1630" y="880" width="40" height="40" class="ic-navy"/>
+  <text x="1650" y="938" class="t-lab">National Median Index</text>
+  <text x="1650" y="953" class="t-sub">ACCC / ABS telco &amp; utility</text>
+  <text x="1650" y="967" class="t-sub">unbranded benchmark tiers</text>
+
+  <!-- Vendor 4 (center x=1870) -->
+  <use href="#i-cloud" x="1850" y="880" width="40" height="40" class="ic-navy"/>
+  <text x="1870" y="938" class="t-lab">APRA &amp; ASIC Compliance</text>
+  <text x="1870" y="953" class="t-sub">CPS 234 security isolation</text>
+  <text x="1870" y="967" class="t-sub">RG 209 immutable audit logs</text>
+
+  <text x="1540" y="1025" class="t-box" text-anchor="middle">External Australian Banking, Credit Bureau, National Benchmark &amp; Regulatory Services</text>
+
+
+  <!-- ========================================================================= -->
+  <!-- LEGEND BAR (y = 1175 to 1215)                                             -->
+  <!-- ========================================================================= -->
+  <line x1="170" y1="1185" x2="310" y2="1185" class="f-attest" stroke-width="3" stroke-dasharray="10 6" marker-end="url(#m-attest)"/>
+  <text x="240" y="1215" class="t-legend">1. Goal &amp; Attest Flow</text>
+
+  <line x1="650" y1="1185" x2="790" y2="1185" class="f-ledger" stroke-width="3" stroke-dasharray="14 6 3 6" marker-end="url(#m-ledger)"/>
+  <text x="720" y="1215" class="t-legend">2. Ledger Ingestion Flow</text>
+
+  <line x1="1130" y1="1185" x2="1270" y2="1185" class="f-ai" stroke-width="3" marker-end="url(#m-ai)"/>
+  <text x="1200" y="1215" class="t-legend">3. Regulated AI Reasoning</text>
+
+  <line x1="1610" y1="1185" x2="1750" y2="1185" class="f-cache" stroke-width="3" marker-end="url(#m-cache)"/>
+  <text x="1680" y="1215" class="t-legend">4. Fast Hydration Flow (&lt;50ms)</text>
+
+  <line x1="2050" y1="1185" x2="2190" y2="1185" class="f-hitl" stroke-width="3" marker-end="url(#m-hitl)"/>
+  <text x="2120" y="1215" class="t-legend">5. Human-in-the-Loop Approval</text>
+</svg>
+    </div>
+    <figcaption><strong>Architectural Flow Summary:</strong> (1) Customer selects an Anchor Goal inside the Westpac GEL client and signs the request via Apple App Attest. (2) Inside the AWS Sydney VPC perimeter, APRA CPS 234 Lambdas strip all PII (names, BSBs, account numbers) and demographic markers into synthetic UUIDs. (3) The deterministic Python pre-processor evaluates 90 days of transactions against national median benchmarks (<code>benchmarks.json</code>) and detects pre-payday direct debit collisions (Payday Bill-Shield). (4) The Zero Data Retention LLM generates contextual questions and debt reallocation pathways without naming competitor brands, caching validated JSON in DynamoDB (&lt;50ms). (5) All financial interventions require explicit customer approval under ASIC RG 209, awarding XP and Coins to evolve the RealityKit AR Dragon.</figcaption>
+  </figure>
+
+  <h2>Stage Reference &amp; Regulatory Specification</h2>
+  <ol class="stages">
+    <li class="stage">
+      <div>
+        <span class="num">Stage 1 · Client Layer</span>
+        <h3>Anchor Goal Selection &amp; Cryptographic App Attest</h3>
+        <p class="action">Customer sets their financial quest (Home Loan, Car Finance, Clean CCR Slate) in the Westpac app. Requests are hardware-signed to guarantee client authenticity.</p>
+      </div>
+      <ul>
+        <li>Built natively using <strong>Westpac GEL Design System</strong> tokens (<code>#DA1710</code> Westpac Red, <code>#1F1C4F</code> Westpac Navy) for seamless integration inside the Westpac Mobile Banking App.</li>
+        <li>Customer selects an active <strong>Anchor Goal</strong> (<code>goals.json</code>), which calibrates downstream credit simulations (e.g., prioritizing on-time CCR streaks for Mia, or APRA 3% credit card limit reduction for David).</li>
+        <li>Apple's Secure Enclave generates an <code>Apple App Attest</code> cryptographic assertion over <code>TLS 1.3</code>, blocking spoofed clients or automated bots from querying the AI gateway.</li>
+        <li>Captures explicit customer opt-in under <strong>Australian Privacy Act 1988 (Part IIIA)</strong> before accessing transaction or credit heuristics.</li>
+      </ul>
+    </li>
+    <li class="stage">
+      <div>
+        <span class="num">Stage 2 · Perimeter &amp; Privacy</span>
+        <h3>Zero-Trust Perimeter &amp; PII Isolation Shield (APRA CPS 234)</h3>
+        <p class="action">Inbound requests traverse AWS WAF into an isolated privacy subnet where all personal identifiers and social demographics are stripped prior to AI processing.</p>
+      </div>
+      <ul>
+        <li>Hosted strictly within the <strong>AWS Sydney Region (<code>ap-southeast-2</code>)</strong> to uphold Australian financial data sovereignty requirements.</li>
+        <li>Complies with <strong>APRA Prudential Standard CPS 234 (Information Security)</strong>: an AWS Lambda PII Scrubber replaces customer names, BSBs, and account numbers with synthetic session UUIDs (e.g., <code>usr_99481a</code>).</li>
+        <li><strong>Demographic Neutrality Guardrail:</strong> Age, visa status, nationality, and passport data are stripped at the perimeter, ensuring 100% compliance with the Australian Credit Reporting Privacy Code.</li>
+      </ul>
+    </li>
+    <li class="stage">
+      <div>
+        <span class="num">Stage 3 · Core Banking &amp; Heuristics</span>
+        <h3>Deterministic Pre-Processor, National Medians &amp; Payday Bill-Shield</h3>
+        <p class="action">A deterministic Python engine analyzes 90 days of core ledger transactions in under 5ms, comparing recurring bills against national medians and detecting payday timing collisions.</p>
+      </div>
+      <ul>
+        <li>Ingests read-only transaction history from Amazon RDS (plus external accounts and BNPL lines if connected via accredited <strong>Consumer Data Right / Open Banking</strong> feeds).</li>
+        <li><strong>Unbranded Median Benchmark Engine (<code>benchmarks.json</code>):</strong> Compares recurring bills against national consumer medians (ACCC / ABS data). For example, flags Mia's $89/mo mobile plan against the $45/mo Australian median to surface a $44/mo ($528/yr) saving opportunity.</li>
+        <li><strong>Payday Bill-Shield:</strong> Identifies direct debits scheduled within 48 hours *prior* to fortnightly salary credits (e.g., Mia's Thursday gym debit bouncing 24h before her Friday payday, costing $19 in combined dishonour fees) and prepares a PayTo friday realignment.</li>
+        <li><strong>Punctuality Buffer Sweep:</strong> Models an automated $22/fortnight micro-sweep from bill savings into a dedicated Westpac Life protection stash so minimum card repayments never bounce.</li>
+      </ul>
+    </li>
+    <li class="stage">
+      <div>
+        <span class="num">Stage 4 · Regulated AI Sandbox</span>
+        <h3>Zero Data Retention Reasoning &amp; Debt Reallocation Vector</h3>
+        <p class="action">An enterprise LLM inside Westpac's private VPC synthesizes the pre-processed facts into empathetic questions and actionable debt reallocation plans.</p>
+      </div>
+      <ul>
+        <li>Invokes enterprise <strong>Gemini 2.5 Flash / Amazon Bedrock</strong> via the Portkey AI Gateway with <strong>Zero Data Retention (ZDR)</strong> enforced—customer data is never retained or used to train public models.</li>
+        <li><strong>Competitor Brand Suppression:</strong> System prompt guardrails prohibit naming external competitors; savings recommendations are framed neutrally as an <em>"Optimized Market-Rate Tier-1 Plan"</em>.</li>
+        <li><strong>Debt Reallocation Vector:</strong> Explicitly links bill savings to credit score mechanics: <em>"Spending less does not directly raise your Equifax score, but routing your $44/mo telco saving into your Westpac Flex Card clears revolving debt 4 months faster and projects a +35 pt CCR improvement."</em></li>
+        <li>Validates output against a strict JSON schema (<code>questions.json</code> and <code>insights.json</code>) requiring exact <code>related_transaction_ids</code> citations, a <code>"why_asking"</code> trace, and a <code>"Skip question"</code> option, then caches to <strong>Amazon DynamoDB</strong> for sub-50ms mobile hydration.</li>
+      </ul>
+    </li>
+    <li class="stage">
+      <div>
+        <span class="num">Stage 5 · Execution &amp; Gamification</span>
+        <h3>Human-in-the-Loop Approval (ASIC RG 209) &amp; AR Dragon Evolution</h3>
+        <p class="action">The customer answers context cards and manually approves bill switches or debit shifts, earning XP and Coins that evolve their 3D Westpac Dragon in Augmented Reality.</p>
+      </div>
+      <ul>
+        <li>Complies with <strong>ASIC Regulatory Guide 209 &amp; 248</strong> and Australia's Voluntary AI Safety Standard: the AI never executes autonomous debits or unilateral plan switches. Every action requires an explicit customer <strong>"Approve"</strong> tap.</li>
+        <li>Approving a bill switch, activating the Punctuality Buffer Sweep, or maintaining an on-time card repayment streak awards XP and Coins defined in Santiago's <code>rewards.json</code> engine.</li>
+        <li>The iOS app's native <strong>ARKit + RealityKit</strong> engine renders the Westpac Dragon on the user's table, playing level-up particle animations (Egg ➔ Baby ➔ Teen ➔ Adult) and unlocking Westpac Life bonus savings interest perks.</li>
+      </ul>
+    </li>
+  </ol>
+</main>
+</body>
+</html>
