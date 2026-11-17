@@ -8,7 +8,17 @@ import simd
 /// Two things therefore have to be corrected at load time — see `upAxisCorrection`
 /// and `targetSize`.
 enum DragonModel {
-    static let resourceName = "westpac_dragon"
+    /// Only the two grown stages have sculpted models. Hatched reuses the L1
+    /// dragon at a smaller size; the egg has none and falls back to a sphere,
+    /// which reads as an egg anyway.
+    static func resourceName(for stage: DragonStage) -> String? {
+        switch stage {
+        case .egg: return nil
+        case .baby: return "westpac_dragon_l1"
+        case .teen: return "westpac_dragon_l1"
+        case .adult: return "westpac_dragon_l2"
+        }
+    }
 
     /// Longest dimension the dragon should occupy on a table, per evolution stage.
     /// Scaling by the *longest* extent rather than height keeps the model a sane
@@ -32,7 +42,8 @@ enum DragonModel {
     /// Returns nil when the asset is missing or fails to load, so callers can
     /// fall back to primitive geometry rather than crash mid-demo.
     static func makeEntity(for stage: DragonStage, rotation: simd_quatf = upAxisCorrection) -> Entity? {
-        guard let model = try? Entity.load(named: resourceName) else { return nil }
+        guard let name = resourceName(for: stage),
+              let model = try? Entity.load(named: name) else { return nil }
 
         model.orientation = rotation
 

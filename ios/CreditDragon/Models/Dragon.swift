@@ -7,8 +7,14 @@ enum DragonStage: String, Codable, CaseIterable {
         RewardsData.shared.stages.first { $0.id == rawValue }
     }
 
+    /// Product naming, not the contract's: Egg → Hatched → Dragon L1 → Dragon L2.
     var displayName: String {
-        spec?.name ?? rawValue.capitalized
+        switch self {
+        case .egg: return "Egg"
+        case .baby: return "Hatched"
+        case .teen: return "Dragon L1"
+        case .adult: return "Dragon L2"
+        }
     }
 
     var emoji: String {
@@ -43,19 +49,26 @@ struct ShopItem: Identifiable, Codable {
 }
 
 class DragonState: ObservableObject {
-    @Published var name: String = "Sparky"
+    @Published var name: String = "Westpac Dragon"
     @Published var xp: Int
     @Published var coins: Int
     @Published var stage: DragonStage
     @Published var streakWeeks: Int
     @Published var ownedItems: [String] = []
 
+    /// The demo opens fully grown so AR shows Dragon L2. Drop this back to
+    /// `start.xpTotal` to restore the evolution arc from Hatched.
+    static let opensAtAdult = true
+
     init() {
         let start = RewardsData.shared.startingState
-        xp = start.xpTotal
+        let openingXP = Self.opensAtAdult
+            ? max(start.xpTotal, DragonStage.adult.xpThreshold)
+            : start.xpTotal
+        xp = openingXP
         coins = start.coins
         streakWeeks = start.streakWeeks
-        stage = DragonStage.forXP(start.xpTotal)
+        stage = DragonStage.forXP(openingXP)
     }
 
     /// From `rewards.json`: 0/100/250/450/700/1000/1350/1750/2200/2700.

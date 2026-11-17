@@ -41,13 +41,19 @@ struct DragonHomeView: View {
                             colors: [.wbcSurfaceHeroFaint, .clear],
                             center: .center,
                             startRadius: 10,
-                            endRadius: 80
+                            endRadius: 90
                         )
                     )
-                    .frame(width: 168, height: 168)
+                    .frame(width: 190, height: 190)
 
-                Text(dragonEmoji)
-                    .font(.system(size: 100))
+                // The egg has no sculpted model, so it keeps the emoji.
+                if DragonModel.resourceName(for: dragon.stage) != nil {
+                    DragonPreviewView(stage: dragon.stage)
+                        .frame(width: 190, height: 190)
+                } else {
+                    Text(dragonEmoji)
+                        .font(.system(size: 100))
+                }
             }
 
             Text(dragon.name)
@@ -94,7 +100,7 @@ struct DragonHomeView: View {
                     .font(WestpacFont.body(WestpacType.s10))
                     .foregroundColor(.wbcTextMuted)
                 Spacer()
-                Text(dragon.stage.nextStage?.displayName ?? "Adult")
+                Text(dragon.stage.nextStage?.displayName ?? dragon.stage.displayName)
                     .font(WestpacFont.body(WestpacType.s10))
                     .foregroundColor(.wbcTextMuted)
             }

@@ -25,6 +25,14 @@ struct ARDragonView: View {
                 if arAvailable && !dragonPlaced {
                     placementPrompt
                 }
+                if dragonPlaced && arAvailable {
+                    Text("Tap your dragon to make it hop")
+                        .font(WestpacFont.body(WestpacType.s10))
+                        .foregroundColor(.white.opacity(0.9))
+                        .shadow(color: .black.opacity(0.5), radius: 4)
+                        .padding(.bottom, WestpacSpace.x1)
+                }
+
                 if dragonPlaced || !arAvailable {
                     replayButton
                 }
@@ -179,6 +187,21 @@ struct ARViewContainer: UIViewRepresentable {
         let tapGesture = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap(_:)))
         arView.addGestureRecognizer(tapGesture)
 
+        // Apple's own "move your phone around" guidance. Without it there is no
+        // feedback while ARKit is still looking for a plane.
+        let coaching = ARCoachingOverlayView()
+        coaching.session = arView.session
+        coaching.goal = .horizontalPlane
+        coaching.activatesAutomatically = true
+        coaching.translatesAutoresizingMaskIntoConstraints = false
+        arView.addSubview(coaching)
+        NSLayoutConstraint.activate([
+            coaching.leadingAnchor.constraint(equalTo: arView.leadingAnchor),
+            coaching.trailingAnchor.constraint(equalTo: arView.trailingAnchor),
+            coaching.topAnchor.constraint(equalTo: arView.topAnchor),
+            coaching.bottomAnchor.constraint(equalTo: arView.bottomAnchor),
+        ])
+
         context.coordinator.arView = arView
         return arView
     }
@@ -195,19 +218,36 @@ struct ARViewContainer: UIViewRepresentable {
         let stage: DragonStage
         var dragonAnchor: AnchorEntity?
 
+        /// The model has no skeleton, so every bit of life comes from moving the
+        /// whole entity. Idle pauses while a hop plays so the two don't fight.
+        private var dragon: Entity?
+        private var idling = false
+
         init(dragonPlaced: Binding<Bool>, stage: DragonStage) {
             self.dragonPlaced = dragonPlaced
             self.stage = stage
         }
 
         @objc func handleTap(_ sender: UITapGestureRecognizer) {
-            guard let arView = arView, !dragonPlaced.wrappedValue else { return }
+            guard let arView = arView else { return }
+
+            // Once it's down, a tap makes it hop rather than placing a second one.
+            if dragonPlaced.wrappedValue {
+                hop()
+                return
+            }
 
             let location = sender.location(in: arView)
-            let results = arView.raycast(from: location, allowing: .estimatedPlane, alignment: .horizontal)
 
-            if let first = results.first {
-                placeDragon(at: first.worldTransform, in: arView)
+            // Prefer a real horizontal surface, then an estimated one at any
+            // alignment. Without the fallback a tap on a poorly-lit or low-texture
+            // table simply does nothing, which reads as "the dragon is broken".
+            let hit = arView.raycast(from: location, allowing: .existingPlaneGeometry, alignment: .horizontal).first
+                ?? arView.raycast(from: location, allowing: .estimatedPlane, alignment: .horizontal).first
+                ?? arView.raycast(from: location, allowing: .estimatedPlane, alignment: .any).first
+
+            if let hit {
+                placeDragon(at: hit.worldTransform, in: arView)
             }
         }
 
@@ -215,26 +255,85 @@ struct ARViewContainer: UIViewRepresentable {
             let anchor = AnchorEntity(world: transform)
             let entity = DragonModel.makeEntity(for: stage) ?? Self.primitiveDragon(for: stage)
 
-            // Hover animation
-            let startPos = entity.position
-            entity.position.y = startPos.y + 0.05
-            entity.move(
-                to: Transform(
-                    scale: entity.scale,
-                    rotation: entity.orientation,
-                    translation: SIMD3(startPos.x, startPos.y + 0.12, startPos.z)
-                ),
-                relativeTo: anchor,
-                duration: 1.5,
-                timingFunction: .easeInOut
-            )
-
+            // Parent and add to the scene BEFORE animating. Moving an unparented
+            // entity relativeTo the anchor sets a world-space transform, which
+            // addChild then reinterprets as a local offset — landing the dragon
+            // at roughly twice the hit distance, usually out of frame.
             anchor.addChild(entity)
+
+            // A dragon lit only by estimated environment texturing reads very dark
+            // indoors, so give it its own key light.
+            let light = DirectionalLight()
+            light.light.intensity = 2500
+            light.look(at: .zero, from: [0.4, 1.2, 0.6], relativeTo: anchor)
+            anchor.addChild(light)
+
             arView.scene.addAnchor(anchor)
             dragonAnchor = anchor
 
+            // Settle onto the surface: start just above it, drop to feet-on-plane.
+            entity.position = [0, 0.06, 0]
+            var landed = entity.transform
+            landed.translation = .zero
+            entity.move(to: landed, relativeTo: anchor, duration: 0.6, timingFunction: .easeOut)
+
+            dragon = entity
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+                self?.startIdle()
+            }
+
             DispatchQueue.main.async {
                 self.dragonPlaced.wrappedValue = true
+            }
+        }
+
+        // MARK: - Transform animation
+
+        private static let bobHeight: Float = 0.018
+        private static let bobDuration: TimeInterval = 1.5
+
+        func startIdle() {
+            guard !idling else { return }
+            idling = true
+            bob(up: true)
+        }
+
+        /// Gentle float, alternating each half-cycle. Reads as breathing at a
+        /// distance and is the main thing that stops it looking pasted on.
+        private func bob(up: Bool) {
+            guard idling, let dragon, dragon.scene != nil else { return }
+
+            var target = dragon.transform
+            target.translation.y = up ? Self.bobHeight : 0
+            dragon.move(to: target,
+                        relativeTo: dragon.parent,
+                        duration: Self.bobDuration,
+                        timingFunction: .easeInOut)
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + Self.bobDuration) { [weak self] in
+                self?.bob(up: !up)
+            }
+        }
+
+        /// Tap the placed dragon: a quick jump with a quarter turn, then idle again.
+        func hop() {
+            guard let dragon, dragon.scene != nil else { return }
+            idling = false
+
+            var jump = dragon.transform
+            jump.translation.y = 0.09
+            jump.rotation = simd_quatf(angle: .pi / 2, axis: [0, 1, 0]) * dragon.transform.rotation
+            dragon.move(to: jump, relativeTo: dragon.parent, duration: 0.28, timingFunction: .easeOut)
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) { [weak self] in
+                guard let self, let dragon = self.dragon else { return }
+                var down = dragon.transform
+                down.translation.y = 0
+                dragon.move(to: down, relativeTo: dragon.parent, duration: 0.22, timingFunction: .easeIn)
+
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) { [weak self] in
+                    self?.startIdle()
+                }
             }
         }
 
