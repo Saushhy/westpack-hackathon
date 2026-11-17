@@ -2,7 +2,7 @@
   "persona": "Mia",
   "currency": "AUD",
   "as_of": "2026-11-17",
-  "data_notice": "Sample data for a hackathon demo. The dragon reads Westpac's own transaction data, finds the habits that move an Australian credit score, and rewards acting on them. It never recommends switching providers.",
+  "data_notice": "Sample data for a hackathon demo. The dragon reads Westpac's own transaction data, finds the habits that move an Australian credit score, and rewards acting on them. It can suggest considering a cheaper plan against a brand-free Australian average, but never names a provider.",
   "score": {
     "value": 612,
     "scale": "equifax_au",
@@ -16,6 +16,11 @@
       "range": [635, 650],
       "horizon_months": 3,
       "assumption": "you keep repayments on time and make no new BNPL applications."
+    },
+    "bill_check": {
+      "upside_points": 20,
+      "basis": "AI estimate from mia_insights.json (bills goal), not a promise",
+      "assumption": "you take the cheaper plan, put the saving on your card and keep every repayment on time."
     }
   },
   "credit_file": {
@@ -97,7 +102,15 @@
       "bill_id": "bill_gym",
       "risk": "high",
       "reason": "A $34 debit lands Thursday. Payday is Friday.",
-      "action": "Set a protected balance so it clears."
+      "action": "Move $40 into a savings buffer so it clears."
+    },
+    "debt_target": {
+      "name": "Westpac Flex Card",
+      "balance": 1800,
+      "repayment_monthly": 150,
+      "sample_balance": true,
+      "note": "Repayment and rate are from Mia's data. The balance is a sample for this demo.",
+      "rate_pa": 19.99
     }
   },
   "payday": {
@@ -106,8 +119,8 @@
   },
   "totals": {
     "recurring_monthly": 216.97,
-    "potential_cash_freed_monthly": 63,
-    "potential_cash_freed_annual": 756,
+    "potential_cash_freed_monthly": 42,
+    "potential_cash_freed_annual": 504,
     "fees_avoided": 19
   },
   "bills": [
@@ -198,7 +211,7 @@
       "detected_from": ["tx_013", "tx_028", "tx_044", "tx_063", "tx_068", "tx_079", "tx_094"],
       "confidence": "high",
       "action_type": "protect",
-      "advice": "Set a protected balance before Thursday.",
+      "advice": "Move $40 into a savings buffer before Thursday.",
       "verification": { "checked_at": "2026-11-17", "source": "Westpac transaction history" },
       "savings_monthly": 0,
       "savings_annual": 0,
@@ -217,7 +230,7 @@
       "id": "bill_phone",
       "category": "mobile",
       "factor": "cash",
-      "evidence_tier": "gov_benchmark",
+      "evidence_tier": "market_average",
       "savings_status": "potential",
       "icon": "phone",
       "logo": "assets/brands/vodafone.png",
@@ -232,35 +245,36 @@
       "detected_from": ["tx_015", "tx_049", "tx_085"],
       "confidence": "high",
       "action_type": "track",
-      "advice": "We don't pick a provider. Check the market yourself.",
+      "advice": "Consider a cheaper plan with another provider. We don't name one: compare the market yourself.",
       "benchmark": {
-        "low": 35,
-        "high": 45,
-        "source": "ACCC price monitoring",
-        "source_url": "https://www.accc.gov.au/consumers",
-        "checked_at": "2026-11-17",
-        "note": "Most 40 to 50GB plans sit at $35 to $45 a month."
+        "key": "mobile",
+        "average_monthly": 47,
+        "lines": 1,
+        "label": "Average Australian phone bill",
+        "source": "Canstar, average phone bill 2026",
+        "source_url": "https://www.canstar.com.au/mobile-phone/average-mobile-phone-bill/",
+        "checked_at": "2026-11-17"
       },
-      "verification": { "checked_at": "2026-11-17", "source": "ACCC price monitoring" },
-      "savings_monthly": 54,
-      "savings_annual": 648,
+      "verification": { "checked_at": "2026-11-17", "source": "Canstar, average phone bill 2026" },
+      "savings_monthly": 42,
+      "savings_annual": 504,
       "why": "Cash, not credit. Cheaper phone means repayments are safer.",
       "requires_approval": false,
       "xp": 40,
       "coins": 20,
-      "finding": "You pay more than most for data.",
+      "finding": "You pay $42 a month more than the average.",
       "evidence": [
         { "k": "Charged", "v": "5 Sep, 5 Oct, 5 Nov" },
-        { "k": "Average", "v": "$89.00 a month" },
-        { "k": "Market", "v": "$35 to $45" }
+        { "k": "You pay", "v": "$89.00 a month" },
+        { "k": "Australian average", "v": "$47.00 a month" }
       ]
     },
     {
       "id": "bill_internet",
       "category": "internet",
       "factor": "cash",
-      "evidence_tier": "provider_price",
-      "savings_status": "potential",
+      "evidence_tier": "westpac_transactions",
+      "savings_status": "none",
       "icon": "desktop",
       "logo": "assets/brands/aussiebroadband.png",
       "label": "Home internet",
@@ -276,16 +290,16 @@
       "action_type": "track",
       "advice": "Ask your housemates before you change it.",
       "verification": { "checked_at": "2026-11-17", "source": "Westpac transaction history" },
-      "savings_monthly": 9,
-      "savings_annual": 108,
+      "savings_monthly": 0,
+      "savings_annual": 0,
       "why": "Cash, not credit. Less spent means less pressure.",
       "requires_approval": false,
       "xp": 40,
       "coins": 20,
-      "finding": "Your provider has a cheaper tier.",
+      "finding": "Your share of a plan split with housemates.",
       "evidence": [
         { "k": "Charged", "v": "13 Sep, 13 Oct, 13 Nov" },
-        { "k": "Average", "v": "$68.00 a month" }
+        { "k": "Your share", "v": "$68.00 a month" }
       ]
     },
     {
