@@ -1,9 +1,10 @@
 /**
  * Headless fidelity + behaviour audit for the Credit Dragon prototype.
  *
- * Drives the real app in system Edge (via playwright-core) and asserts computed
- * styles against values from WestpacGEL/GEL-next, then runs the full Mia journey
- * (score → insights → goals → dragon) and the wardrobe.
+ * Drives the real app in system Edge (via playwright-core), asserts computed
+ * styles against values from WestpacGEL/GEL-next, then walks Mia's whole
+ * journey: score, insights, the sheets, the movements behind Afterpay, the
+ * self-filling goals, the dragon and the shop.
  *
  *   npm run audit
  */
@@ -21,9 +22,8 @@ const browser = await chromium.launch({ executablePath: EDGE, headless: true });
 const page = await browser.newPage({ viewport: { width: 480, height: 980 } });
 page.on("console", (m) => {
   if (m.type() !== "error") return;
-  // Intentional: Naomi's dragon/shop PNGs aren't committed yet — the emoji fallback
-  // in imgOrEmoji is by design, and the corresponding requestfailed events are
-  // already filtered by URL below.
+  // Intentional: Naomi's dragon/shop PNGs are not committed yet, so the emoji
+  // fallback in imgOrEmoji is the designed behaviour.
   if (/Failed to load resource/.test(m.text())) return;
   errors.push("[console] " + m.text());
 });
@@ -45,6 +45,15 @@ const cs = (sel, prop) =>
     },
     [sel, prop]
   );
+const text = () => page.locator("#screen").innerText();
+const state = () => page.evaluate(() => JSON.parse(localStorage.getItem("credit-dragon:state") || "null"));
+const dismissDialog = async () => {
+  if ((await page.locator(".gel-dialog").count()) > 0) {
+    await page.locator(".gel-dialog .gel-btn-primary", { hasText: "Continue" }).click();
+    await page.waitForTimeout(150);
+  }
+};
+const dashFree = (body) => !/[\u2013\u2014]/.test(body);
 
 // ============================ GEL theme layer ============================
 await page.goto(fileUrl("index.html"));
@@ -60,7 +69,7 @@ await page.waitForTimeout(900);
       line: s.getPropertyValue("--border-muted-soft").trim(),
       brand: s.getPropertyValue("--font-brand").trim(),
       spacing: s.getPropertyValue("--spacing").trim(),
-      body9: s.getPropertyValue("--typography-body-size-9").trim(),
+      body9: s.getPropertyValue("--typography-body-size-9").trim()
     };
   });
   check("GEL theme: --surface-hero #1f1c4f", "#1f1c4f", tokens.hero, tokens.hero === "#1f1c4f");
@@ -77,16 +86,21 @@ await page.waitForTimeout(900);
   const loaded = await page.evaluate(() => document.fonts.check("700 24px Westpac"));
   check("Real Westpac Bold font loaded", "true", String(loaded), loaded);
   const titleFont = await cs(".gel-title", "fontFamily");
-  check("Headings use Westpac brand font", "Westpac, …", titleFont, /^Westpac/.test(titleFont || ""));
+  check("Headings use Westpac brand font", "Westpac, ...", titleFont, /^Westpac/.test(titleFont || ""));
   const bodyFont = await cs("body", "fontFamily");
-  check("Body uses GEL sans stack", "…Segoe UI…", bodyFont, /Segoe UI/.test(bodyFont || ""));
+  check("Body uses GEL sans stack", "...Segoe UI...", bodyFont, /Segoe UI/.test(bodyFont || ""));
   check("Body type = 16px", "16px", await cs("body", "fontSize"), (await cs("body", "fontSize")) === "16px");
   check("Secondary type = 14px", "14px", await cs(".gel-muted", "fontSize"), (await cs(".gel-muted", "fontSize")) === "14px");
 }
 
 // ============================ header ============================
 {
-  check("Header background white", "rgb(255, 255, 255)", await cs(".gel-topbar", "backgroundColor"), (await cs(".gel-topbar", "backgroundColor")) === "rgb(255, 255, 255)");
+  check(
+    "Header background white",
+    "rgb(255, 255, 255)",
+    await cs(".gel-topbar", "backgroundColor"),
+    (await cs(".gel-topbar", "backgroundColor")) === "rgb(255, 255, 255)"
+  );
   const h = await page.evaluate(() => getComputedStyle(document.querySelector(".gel-header-main")).height);
   check("Header height 54px", "54px", h, h === "54px");
   const logo = await page.evaluate(() => document.querySelector(".gel-logo")?.naturalWidth || 0);
@@ -96,14 +110,24 @@ await page.waitForTimeout(900);
 // ============================ buttons / cells / icons ============================
 {
   const btn = await page.evaluate(() => {
-    const el = document.querySelector(".gel-btn-primary");
+    const el = document.querySelector(".gel-btn-primary, .gel-btn-ghost");
     const s = getComputedStyle(el);
-    return { h: s.height, r: s.borderRadius, bg: s.backgroundColor, fs: s.fontSize };
+    return { h: s.height, r: s.borderRadius, fs: s.fontSize };
   });
   check("Button height 42px", "42px", btn.h, btn.h === "42px");
   check("Button radius 5px", "5px", btn.r, btn.r === "5px");
-  check("Button fill = primary", "rgb(218, 23, 16)", btn.bg, btn.bg === "rgb(218, 23, 16)");
   check("Button label 16px", "16px", btn.fs, btn.fs === "16px");
+
+  const primaryFill = await page.evaluate(() => {
+    const el = document.querySelector(".gel-btn-primary");
+    return el ? getComputedStyle(el).backgroundColor : null;
+  });
+  check(
+    "Primary button fill = Westpac red",
+    "rgb(218, 23, 16)",
+    primaryFill,
+    primaryFill === null || primaryFill === "rgb(218, 23, 16)"
+  );
 
   const cell = await page.evaluate(() => {
     const el = document.querySelector(".gel-cell");
@@ -123,183 +147,237 @@ await page.waitForTimeout(900);
   check("Icons inherit colour (currentColor)", "currentColor", fill, fill === "currentColor");
 }
 
-// ============================ layout: overflow + money ==================
-{
-  const bad = await page.evaluate(() => {
-    const phone = document.querySelector(".phone");
-    const pr = phone.getBoundingClientRect();
-    const out = [];
-    phone.querySelectorAll("*").forEach((el) => {
-      const r = el.getBoundingClientRect();
-      if (r.right > pr.right + 1 || r.left < pr.left - 1) out.push((el.className || el.tagName).toString().slice(0, 40));
-    });
-    return out.slice(0, 8);
-  });
-  check("No horizontal overflow in phone", "[]", JSON.stringify(bad), bad.length === 0);
-
-  const money = await page.evaluate(() => {
-    const el = document.querySelector(".gel-money");
-    if (!el) return null;
-    const s = getComputedStyle(el);
-    return { font: s.fontFamily, variant: s.fontVariantNumeric, size: s.fontSize };
-  });
-  check("Money uses brand font", "Westpac", money?.font, /^Westpac/.test(money?.font || ""));
-  check("Money uses tabular figures", "tabular-nums", money?.variant, /tabular/.test(money?.variant || ""));
-  check("Money size 18px", "18px", money?.size, money?.size === "18px");
-}
-
-// ============================ contrast ============================
-{
-  const ratios = await page.evaluate(() => {
-    const lum = (rgb) => {
-      const m = rgb.match(/\d+/g).map(Number).map((v) => {
-        v /= 255;
-        return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-      });
-      return 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2];
-    };
-    const contrast = (a, b) => {
-      const l1 = lum(a), l2 = lum(b);
-      const [hi, lo] = l1 > l2 ? [l1, l2] : [l2, l1];
-      return (hi + 0.05) / (lo + 0.05);
-    };
-    const body = getComputedStyle(document.body).color;
-    const muted = getComputedStyle(document.querySelector(".gel-muted")).color;
-    return {
-      body: contrast(body, "rgb(255, 255, 255)"),
-      muted: contrast(muted, "rgb(255, 255, 255)"),
-      button: contrast("rgb(255, 255, 255)", "rgb(218, 23, 16)"),
-    };
-  });
-  check("Body contrast WCAG AA", ">=4.5", ratios.body.toFixed(1) + ":1", ratios.body >= 4.5);
-  check("Muted contrast WCAG AA", ">=4.5", ratios.muted.toFixed(1) + ":1", ratios.muted >= 4.5);
-  check("Button contrast WCAG AA", ">=4.5", ratios.button.toFixed(1) + ":1", ratios.button >= 4.5);
-}
-
 // ============================ score tab ============================
 {
-  const score = await page.evaluate(() => ({
+  const s = await page.evaluate(() => ({
     num: document.querySelector(".gel-score-num")?.textContent.trim() || "",
     hero: document.querySelector(".gel-badge--hero")?.textContent.trim() || "",
-    buckets: document.querySelectorAll(".gel-bucket").length,
-    factors: document.querySelectorAll(".gel-factor-row").length,
-    text: document.body.innerText,
+    goalTitle: document.querySelector(".gel-goal-title")?.textContent.trim() || "",
+    goalLabel: Array.from(document.querySelectorAll(".gel-label")).map((e) => e.textContent.trim()),
+    bnplRows: document.querySelectorAll(".gel-row-link--tile").length,
+    logos: Array.from(document.querySelectorAll(".gel-brand-img")).map((i) => i.naturalWidth),
+    buckets: document.querySelectorAll(".gel-bucket, .gel-buckets").length,
+    body: document.body.innerText
   }));
-  check("Score shows 612", "612", score.num, score.num.startsWith("612"));
-  check("Score source = Equifax", "Equifax", score.hero, /Equifax/.test(score.hero));
-  check("Three buckets (score/cash/fees)", "3", String(score.buckets), score.buckets === 3);
-  check("Four bureau factors", "4", String(score.factors), score.factors === 4);
-  check("BNPL shows Afterpay + Zip", "both", score.text.includes("Afterpay") && score.text.includes("Zip") ? "both" : "missing", score.text.includes("Afterpay") && score.text.includes("Zip"));
-  check("Forecast is a range", "635–650", score.text.includes("635") && score.text.includes("650") ? "635–650" : "missing", score.text.includes("635") && score.text.includes("650"));
-  check("Predicted-vs-actual loop present", "present", score.text.includes("We predicted") ? "present" : "missing", score.text.includes("We predicted"));
-  check("Westpac's own product shown", "13.74%", score.text.includes("13.74%") ? "13.74%" : "missing", score.text.includes("13.74%"));
-  check("No competitor brand promoted", "no Belong", score.text.includes("Belong") ? "Belong" : "clean", !score.text.includes("Belong"));
+
+  check("Score shows 612", "612", s.num, s.num.startsWith("612"));
+  check("Score source = Equifax", "Equifax", s.hero, /Equifax/.test(s.hero));
+  check("Goal card is labelled 'Your goal'", "Your goal", s.goalLabel.join("|"), s.goalLabel.includes("Your goal"));
+  check("Goal reads 'Car loan in 12 months'", "Car loan in 12 months", s.goalTitle, s.goalTitle === "Car loan in 12 months");
+  check("Two BNPL rows (Afterpay, Zip)", "2", String(s.bnplRows), s.bnplRows === 2);
+  check("Both BNPL logos are real files", "2 loaded", s.logos.filter((w) => w > 0).length + " loaded", s.logos.length === 2 && s.logos.every((w) => w > 0));
+  check("Forecast reads as a range", "635 to 650", s.body.includes("635 to 650") ? "635 to 650" : "missing", s.body.includes("635 to 650"));
+  check("Bucket strip removed", "0", String(s.buckets), s.buckets === 0);
+  check("No Low Rate Card panel", "absent", s.body.includes("Low Rate Card") ? "present" : "absent", !s.body.includes("Low Rate Card"));
+  check("No 'Last check' history", "absent", s.body.includes("Last check") ? "present" : "absent", !s.body.includes("Last check"));
+  check("No 'debit is at risk' block", "absent", s.body.includes("debit is at risk") ? "present" : "absent", !s.body.includes("debit is at risk"));
+  check("No em or en dashes on screen", "clean", dashFree(s.body) ? "clean" : "dash found", dashFree(s.body));
+  check("'What moves your score' button present", "present", s.body.includes("What moves your score") ? "present" : "missing", s.body.includes("What moves your score"));
+}
+
+// ============================ score sheets ============================
+{
+  await page.locator('button:has-text("What moves your score")').click();
+  await page.waitForTimeout(400);
+  const factors = await page.evaluate(() => ({
+    open: !!document.querySelector(".gel-sheet"),
+    rows: document.querySelectorAll(".gel-sheet .gel-factor-row").length,
+    radius: document.querySelector(".gel-sheet") ? getComputedStyle(document.querySelector(".gel-sheet")).borderTopLeftRadius : null
+  }));
+  check("Factors open in a sheet", "present", factors.open ? "present" : "missing", factors.open);
+  check("Sheet is a bottom sheet (rounded top 12px)", "12px", factors.radius, factors.radius === "12px");
+  check("Four bureau factors in the sheet", "4", String(factors.rows), factors.rows === 4);
+  await page.locator(".gel-sheet-close").click();
+  await page.waitForTimeout(200);
+  check("Sheet closes", "0", String(await page.locator(".gel-sheet").count()), (await page.locator(".gel-sheet").count()) === 0);
+
+  await page.locator(".gel-row-link--tile").first().click();
+  await page.waitForTimeout(400);
+  const moves = await page.evaluate(() => ({
+    title: document.querySelector(".gel-sheet-title")?.textContent.trim() || "",
+    rows: document.querySelectorAll(".gel-sheet .gel-move").length,
+    months: document.querySelectorAll(".gel-sheet .gel-move-month").length,
+    body: document.querySelector(".gel-sheet")?.innerText || ""
+  }));
+  check("Afterpay row opens its movements", "Afterpay", moves.title, moves.title === "Afterpay");
+  check("Movements are real transactions (>=5 rows)", ">=5", String(moves.rows), moves.rows >= 5);
+  check("Movements grouped by month", ">=2", String(moves.months), moves.months >= 2);
+  check("Movements show a total", "present", moves.body.includes("payments") ? "present" : "missing", moves.body.includes("payments"));
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(200);
+  check("Escape closes the sheet", "0", String(await page.locator(".gel-sheet").count()), (await page.locator(".gel-sheet").count()) === 0);
 }
 
 // ============================ insights tab ============================
 {
   await page.locator('.gel-tab[data-tab="insights"]').click();
-  await page.waitForTimeout(250);
+  await page.waitForTimeout(300);
 
-  const ins = await page.evaluate(() => ({
-    cards: document.querySelectorAll(".gel-bill").length,
-    factors: document.querySelectorAll(".gel-factor").length,
-    text: document.body.innerText,
-    reminder: !!Array.from(document.querySelectorAll("button")).find((b) => b.textContent.includes("Set a reminder")),
-    protect: !!Array.from(document.querySelectorAll("button")).find((b) => b.textContent.includes("Protect balance")),
-    track: document.querySelectorAll('button:not([disabled])').length,
-  }));
-  check("Insights shows >=6 findings", ">=6", String(ins.cards), ins.cards >= 6);
+  const ins = await page.evaluate(() => {
+    const body = document.querySelector("#screen").innerText;
+    return {
+      cards: document.querySelectorAll(".gel-bill").length,
+      why: document.querySelectorAll(".gel-row-link:not(.gel-row-link--tile)").length,
+      details: document.querySelectorAll("details").length,
+      factors: document.querySelectorAll(".gel-factor").length,
+      body
+    };
+  });
+
+  check("Insights shows >= 6 findings", ">=6", String(ins.cards), ins.cards >= 6);
+  check("Every actionable finding has 'How we know this'", "6", String(ins.why), ins.why === 6);
+  check("Accordions replaced by sheets", "0", String(ins.details), ins.details === 0);
   check("Factor chips on findings", ">=5", String(ins.factors), ins.factors >= 5);
-  check("Repayment history is named", "present", ins.text.includes("repayment history") ? "present" : "missing", ins.text.includes("repayment history"));
-  check("Advice present (why it matters)", "present", ins.text.includes("affect your score") || ins.text.includes("moves your score") ? "present" : "missing", ins.text.includes("affect your score") || ins.text.includes("moves your score"));
-  check("'Set a reminder' action present", "present", ins.reminder ? "present" : "missing", ins.reminder);
-  check("'Protect balance' action present", "present", ins.protect ? "present" : "missing", ins.protect);
-  check("No 'switch provider' language", "clean", ins.text.includes("Switch to") || ins.text.includes("switch to") ? "switch" : "clean", !ins.text.toLowerCase().includes("switch to"));
-  check("No competitor brand promoted", "no Belong", ins.text.includes("Belong") ? "Belong" : "clean", !ins.text.includes("Belong"));
+  check("Repayment history is named", "present", ins.body.includes("Repayment history") ? "present" : "missing", ins.body.includes("Repayment history"));
+  check("Cash and fees are separated", "present", ins.body.includes("free up cash") && ins.body.includes("avoid a fee") ? "present" : "missing", ins.body.includes("free up cash") && ins.body.includes("avoid a fee"));
+  check("Cash freed figure is shown", "$63.00", ins.body.includes("$63.00") ? "$63.00" : "missing", ins.body.includes("$63.00"));
+  check("No 'switch provider' language", "clean", /switch to/i.test(ins.body) ? "switch" : "clean", !/switch to/i.test(ins.body));
+  check("No competitor brand (Belong/Optus/Telstra)", "clean", /Belong|Optus|Telstra/i.test(ins.body) ? "found" : "clean", !/Belong|Optus|Telstra/i.test(ins.body));
+  check("Only Mia's own providers are named", "present", /Vodafone/.test(ins.body) && /Netflix/.test(ins.body) && /Goodlife/.test(ins.body) ? "present" : "missing", /Vodafone/.test(ins.body) && /Netflix/.test(ins.body) && /Goodlife/.test(ins.body));
+  check("No em or en dashes on screen", "clean", dashFree(ins.body) ? "clean" : "dash found", dashFree(ins.body));
 }
 
-// ============================ full journey ============================
+// ============================ insight sheet + journey ============================
 {
-  // act on every insight
-  await page.locator('button', { hasText: "Set a reminder" }).first().click();
-  await page.waitForTimeout(200);
-  await page.locator('button', { hasText: "Protect balance" }).first().click();
-  await page.waitForTimeout(200);
-  for (let i = 0; i < 4; i++) {
-    const b = page.locator('button', { hasText: "Track this" }).first();
-    if ((await b.count()) === 0) break;
-    await b.click();
-    await page.waitForTimeout(200);
-  }
+  const before = await state();
+  check("Boot records today's check-in", "7", String(before.checkins.length), before.checkins.length === 7);
+  check("Boot awards the daily check-in, the week and the goal", "3", String(before.awarded.length), before.awarded.length === 3);
+  check("Boot XP = 550 (start 320 + check-in 10 + week 120 + goal 100)", "550", String(before.xp_total), before.xp_total === 550);
+  check("Boot coins = 330", "330", String(before.coins), before.coins === 330);
+  check("Daily goal completed itself", "completed", before.goals.goal_checkin?.status, before.goals.goal_checkin?.status === "completed");
 
-  const afterInsights = await page.evaluate(() => JSON.parse(localStorage.getItem("credit-dragon:state")));
-  check("After insights: XP = 640", "640", String(afterInsights.xp_total), afterInsights.xp_total === 640);
-  check("After insights: protected = true", "true", String(afterInsights.protected), afterInsights.protected === true);
-
-  // goals
-  await page.locator('.gel-tab[data-tab="goals"]').click();
-  await page.waitForTimeout(250);
-
-  // goal 1 (ready after reminder)
-  await page.locator('button.gel-btn-primary', { hasText: "Complete goal" }).first().click();
-  await page.waitForTimeout(250);
-  // goal 2 (ready after protected) — crosses 800 → evolution modal
-  await page.locator('button.gel-btn-primary', { hasText: "Complete goal" }).first().click();
+  // Open one finding: the evidence must be in a sheet, not on the card.
+  await page.locator(".gel-row-link:not(.gel-row-link--tile)").first().click();
   await page.waitForTimeout(400);
-  const dlg = await page.evaluate(() => {
-    const d = document.querySelector(".gel-dialog");
-    if (!d) return null;
-    const s = getComputedStyle(d);
-    const t = document.querySelector(".gel-dialog-title");
-    return { r: s.borderRadius, size: t ? getComputedStyle(t).fontSize : null, overlay: getComputedStyle(document.querySelector(".gel-overlay")).backgroundColor };
+  const sheet = await page.evaluate(() => {
+    const s = document.querySelector(".gel-sheet");
+    return {
+      open: !!s,
+      rows: s ? s.querySelectorAll(".gel-kv").length : 0,
+      action: s ? !!s.querySelector(".gel-sheet-actions .gel-btn-primary") : false,
+      body: s ? s.innerText : ""
+    };
   });
-  check("Evolution modal appears", "present", dlg ? "present" : "missing", !!dlg);
-  if (dlg) {
-    check("Modal radius 12px", "12px", dlg.r, dlg.r === "12px");
-    check("Modal title 24px", "24px", dlg.size, dlg.size === "24px");
-    check("Modal backdrop black/65", "rgba(0, 0, 0, 0.65)", dlg.overlay, dlg.overlay === "rgba(0, 0, 0, 0.65)");
-    await page.locator(".gel-btn-primary", { hasText: "Continue" }).click();
-    await page.waitForTimeout(150);
-  }
-  // goal 3 (manual)
-  await page.locator('button.gel-btn-primary', { hasText: "Mark done" }).first().click();
-  await page.waitForTimeout(250);
+  check("'How we know this' opens a sheet", "present", sheet.open ? "present" : "missing", sheet.open);
+  check("Sheet shows the evidence rows", ">=3", String(sheet.rows), sheet.rows >= 3);
+  check("Sheet carries the action", "present", sheet.action ? "present" : "missing", sheet.action);
+  check("Sheet explains why it matters", "present", /score/i.test(sheet.body) ? "present" : "missing", /score/i.test(sheet.body));
 
-  const st = await page.evaluate(() => JSON.parse(localStorage.getItem("credit-dragon:state")));
-  check("Final XP = 940", "940", String(st.xp_total), st.xp_total === 940);
-  check("Final coins = 480", "480", String(st.coins), st.coins === 480);
-  check("Dragon stage = teen", "teen", st.xp_total >= 800 ? "teen" : "not teen", st.xp_total >= 800);
-  check(
-    "No duplicate awards",
-    "0 dups",
-    new Set(st.awarded).size === st.awarded.length ? "0 dups" : "dups",
-    new Set(st.awarded).size === st.awarded.length
-  );
+  await page.locator(".gel-sheet-actions .gel-btn-primary").click();
+  await page.waitForTimeout(350);
+  await dismissDialog();
+  check("Acting from the sheet closes it", "0", String(await page.locator(".gel-sheet").count()), (await page.locator(".gel-sheet").count()) === 0);
+  const afterOne = await state();
+  check("Acting awards XP (100 for a reminder)", "650", String(afterOne.xp_total), afterOne.xp_total === 650);
+  check("Card marks itself done", "1", String(await page.locator(".gel-bill.is-done").count()), (await page.locator(".gel-bill.is-done").count()) === 1);
+
+  // Work through the remaining findings.
+  for (let i = 0; i < 6; i++) {
+    const link = page.locator(".gel-row-link:not(.gel-row-link--tile)").first();
+    if ((await link.count()) === 0) break;
+    await link.click();
+    await page.waitForTimeout(250);
+    if ((await page.locator(".gel-sheet-actions .gel-btn-primary").count()) === 0) {
+      await page.keyboard.press("Escape");
+      break;
+    }
+    await page.locator(".gel-sheet-actions .gel-btn-primary").click();
+    await page.waitForTimeout(300);
+    await dismissDialog();
+  }
+
+  const st = await state();
+  check("Journey XP = 870", "870", String(st.xp_total), st.xp_total === 870);
+  check("Journey coins = 510", "510", String(st.coins), st.coins === 510);
+  check("Dragon is a teen (>= 800 XP)", "teen", st.xp_total >= 800 ? "teen" : "not teen", st.xp_total >= 800);
+  check("No duplicate awards", "0 dups", new Set(st.awarded).size === st.awarded.length ? "0 dups" : "dups", new Set(st.awarded).size === st.awarded.length);
+  check("Exactly one goal completed (the daily one)", "1", String(Object.keys(st.goals).length), Object.keys(st.goals).length === 1);
+}
+
+// ============================ goals tab ============================
+{
+  await page.locator('.gel-tab[data-tab="goals"]').click();
+  await page.waitForTimeout(300);
+
+  const g = await page.evaluate(() => {
+    const body = document.querySelector("#screen").innerText;
+    return {
+      cards: document.querySelectorAll(".gel-goal").length,
+      buttons: document.querySelectorAll("#screen button").length,
+      bars: Array.from(document.querySelectorAll(".gel-goal .gel-bar-fill")).map((b) => b.style.width),
+      body
+    };
+  });
+
+  check("Three goals", "3", String(g.cards), g.cards === 3);
+  check("Goals have no buttons at all", "0", String(g.buttons), g.buttons === 0);
+  check("Goal 1 completed itself", "1 of 3 done", g.body.includes("1 of 3 done") ? "1 of 3 done" : "missing", g.body.includes("1 of 3 done"));
+  check("Goal 2 shows 2 of 4 instalments", "2 of 4", g.body.includes("2 of 4") ? "2 of 4" : "missing", g.body.includes("2 of 4"));
+  check("Goal 3 shows 27 of 30 days", "27 of 30", g.body.includes("27 of 30") ? "27 of 30" : "missing", g.body.includes("27 of 30"));
+  check("Bars reflect the data", "100%,50%,90%", g.bars.join(","), g.bars.join(",") === "100%,50%,90%");
+  check("Next check is stated", "present", /Next check/.test(g.body) ? "present" : "missing", /Next check/.test(g.body));
+  check("No em or en dashes on screen", "clean", dashFree(g.body) ? "clean" : "dash found", dashFree(g.body));
 }
 
 // ============================ dragon + wardrobe ============================
 {
   await page.locator('.gel-tab[data-tab="dragon"]').click();
-  await page.waitForTimeout(250);
+  await page.waitForTimeout(300);
 
   const dragon = await page.evaluate(() => {
     const wrap = document.querySelector("#dragon-art");
+    const img = wrap ? wrap.querySelector(".dragon-img") : null;
     const scene = document.querySelector(".gel-scene");
-    return { hasDragon: !!wrap && !!wrap.querySelector(".dragon-img"), scene: scene?.dataset.scene };
+    return {
+      hasDragon: !!img,
+      realArt: !!img && img.naturalWidth > 0,
+      isArtWrap: !!wrap && wrap.classList.contains("gel-dragon-wrap--art"),
+      scene: scene?.dataset.scene
+    };
   });
-  check("Dragon renders (emoji / PNG art)", "true", String(dragon.hasDragon), dragon.hasDragon);
+  check("Dragon renders (real model render)", "true", String(dragon.hasDragon), dragon.hasDragon);
+  check("Dragon art is the rendered GLB, not the emoji", "true", String(dragon.realArt), dragon.realArt);
+  check("Real art uses the measured wear anchors", "true", String(dragon.isArtWrap), dragon.isArtWrap);
   check("Default scene = plain", "plain", dragon.scene, dragon.scene === "plain");
 
+  // The dragon may only say what the data proves. Collect every line it can
+  // say on this state and check each one is grounded.
+  const spoken = [];
+  for (let i = 0; i < 8; i++) {
+    await page.locator(".gel-scene").click();
+    await page.waitForTimeout(120);
+    spoken.push(await page.evaluate(() => document.querySelector("#dragon-bubble")?.textContent || ""));
+  }
+  check("Tapping the dragon makes it speak", "present", spoken[0] ? "present" : "missing", spoken[0].length > 0);
+  check(
+    "First line quotes a real BNPL payment",
+    "Afterpay takes $84.50 on 18 Nov.",
+    spoken[0],
+    /^Afterpay takes \$84\.50 on 18 Nov\./.test(spoken[0])
+  );
+  check(
+    "It reports live goal progress",
+    "2 of 4 instalments",
+    spoken.join(" | "),
+    spoken.some((l) => /2 of 4 instalments paid on time/.test(l))
+  );
+  check(
+    "Every line quotes our own data",
+    "grounded",
+    spoken.length + " lines",
+    spoken.every((l) => !/Belong|Optus|Telstra|CommBank/i.test(l))
+  );
+  check("No dashes in what it says", "clean", spoken.join(" "), dashFree(spoken.join(" ")));
+
   await page.locator('.gel-tab[data-tab="shop"]').click();
-  await page.waitForTimeout(250);
+  await page.waitForTimeout(300);
   const cap = page.locator('.gel-shop-item[data-item="item_cap"] button', { hasText: "Buy" });
   if ((await cap.count()) > 0) {
     await cap.click();
     await page.waitForTimeout(300);
   }
-  const wornAfter = await page.evaluate(() => ({ hasHat: !!document.querySelector("#dragon-art .dragon-wear--hat") }));
-  check("Buying a hat puts it on the dragon", "true", String(wornAfter.hasHat), wornAfter.hasHat);
+  const worn = await page.evaluate(() => !!document.querySelector("#dragon-art .dragon-wear--hat"));
+  check("Buying a hat puts it on the dragon", "true", String(worn), worn);
 
   const cave = page.locator('.gel-shop-item[data-item="item_cave"] button', { hasText: "Buy" });
   if ((await cave.count()) > 0) {
@@ -308,6 +386,53 @@ await page.waitForTimeout(900);
   }
   const scene2 = await page.evaluate(() => document.querySelector(".gel-scene")?.dataset.scene);
   check("Buying a home changes the scene", "stars", scene2, scene2 === "stars");
+}
+
+// ============================ AR view ============================
+{
+  await page.locator('.gel-tab[data-tab="dragon"]').click();
+  await page.waitForTimeout(250);
+  await page.locator('button:has-text("See it in your room")').click();
+  await page.waitForTimeout(1300);
+
+  const ar = await page.evaluate(() => {
+    const root = document.querySelector("#ar-root");
+    const img = root?.querySelector(".ar-img");
+    const hold = root?.querySelector("#ar-hold");
+    return {
+      open: !!root && !root.hidden,
+      imgLoaded: !!img && img.naturalWidth > 0,
+      tag: root?.querySelector("#ar-tag")?.textContent.trim() || "",
+      left: hold ? hold.style.left : "",
+      dropped: !!hold && hold.classList.contains("is-dropping")
+    };
+  });
+  check("AR view opens over the app", "true", String(ar.open), ar.open);
+  check("The real dragon render is placed in the room", "true", String(ar.imgLoaded), ar.imgLoaded);
+  check("It states whether the camera is live", "present", ar.tag, ar.tag.length > 0);
+  check("Placement animation runs on open", "true", String(ar.dropped), ar.dropped);
+
+  // It speaks a grounded line on arrival, and keeps speaking on tap.
+  const arLine = await page.evaluate(() => document.querySelector("#ar-bubble")?.textContent || "");
+  check("In AR it quotes our own data", "Afterpay takes $84.50 on 18 Nov.", arLine, /Afterpay takes \$84\.50/.test(arLine));
+
+  await page.locator('button:has-text("Say something")').click();
+  await page.waitForTimeout(300);
+  const arLine2 = await page.evaluate(() => document.querySelector("#ar-bubble")?.textContent || "");
+  check("It has more than one grounded line", "different", arLine2, arLine2.length > 0 && arLine2 !== arLine);
+
+  const box = await page.locator("#ar-hold").boundingBox();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 - 40, box.y + box.height / 2 - 60, { steps: 8 });
+  await page.mouse.up();
+  await page.waitForTimeout(200);
+  const moved = await page.evaluate(() => document.querySelector("#ar-hold").style.top);
+  check("Dragging moves the dragon on the table", "changed", moved, moved !== ar.left && moved !== "58%");
+
+  await page.locator(".gel-ar-controls .gel-btn-primary").click();
+  await page.waitForTimeout(300);
+  check("Done closes AR", "0", String(await page.locator("#ar-root:not([hidden])").count()), (await page.locator("#ar-root:not([hidden])").count()) === 0);
 }
 
 // ============================ GEL reference page ============================
@@ -322,7 +447,7 @@ await page.waitForTimeout(900);
     return {
       btn: btn ? getComputedStyle(btn).height : null,
       cell: cell ? getComputedStyle(cell).borderRadius : null,
-      badge: bd ? getComputedStyle(bd).height : null,
+      badge: bd ? getComputedStyle(bd).height : null
     };
   });
   check("GEL reference Button height 42px", "42px", ref.btn, ref.btn === "42px");

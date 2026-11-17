@@ -5,23 +5,23 @@
     {
       "id": "repayment_history",
       "label": "Repayment history",
-      "impact": "largest",
+      "impact": "biggest",
       "direction": "up",
-      "what": "Pay credit cards, loans and BNPL on time. This is the single biggest factor."
+      "what": "Paying cards, loans and BNPL on time. This matters more than anything else."
     },
     {
       "id": "credit_enquiries",
       "label": "Credit enquiries",
       "impact": "small",
       "direction": "down",
-      "what": "Every application sits on your file for 12 months. Fewer is better."
+      "what": "Every application stays on your file for 12 months. Fewer is better."
     },
     {
       "id": "limits_debt",
-      "label": "Limits & debt",
+      "label": "Limits and debt",
       "impact": "moderate",
       "direction": "down",
-      "what": "High limits and balances read as risk to a lender."
+      "what": "High limits and big balances read as risk to a lender."
     },
     {
       "id": "defaults",
@@ -33,17 +33,41 @@
   ],
   "starting_state": {
     "xp_total": 320,
-    "coins": 120,
-    "streak_weeks": 3
+    "coins": 200,
+    "streak_weeks": 3,
+    "checkins": [
+      "2026-11-11",
+      "2026-11-12",
+      "2026-11-13",
+      "2026-11-14",
+      "2026-11-15",
+      "2026-11-16"
+    ]
   },
   "actions": [
+    {
+      "id": "daily_checkin",
+      "label": "Daily check-in",
+      "xp": 10,
+      "coins": 10,
+      "cap": { "type": "none" },
+      "why_rewards_you": "One a day, worth very little. It cannot be farmed."
+    },
+    {
+      "id": "checkin_week",
+      "label": "Seven days in a row",
+      "xp": 120,
+      "coins": 60,
+      "cap": { "type": "none" },
+      "why_rewards_you": "A full week of checking your file is what turns awareness into habit."
+    },
     {
       "id": "question_answered",
       "label": "Answered a question",
       "xp": 25,
       "coins": 10,
       "cap": { "type": "per_month", "limit": 5 },
-      "why_rewards_you": "Engaging with your plan helps the AI personalise it. Kept low value so it can't be farmed by tapping randomly."
+      "why_rewards_you": "Answering helps the AI personalise your plan. Low value so it cannot be farmed."
     },
     {
       "id": "goal_completed",
@@ -51,7 +75,7 @@
       "xp": 100,
       "coins": 60,
       "cap": { "type": "per_goal" },
-      "why_rewards_you": "Completing a goal is a real, verifiable step toward better credit health."
+      "why_rewards_you": "A goal only completes when the data says it happened."
     },
     {
       "id": "on_time_repayment",
@@ -59,7 +83,7 @@
       "xp": 150,
       "coins": 100,
       "cap": { "type": "per_month", "limit": 1 },
-      "why_rewards_you": "Repayment history is the single biggest factor in your Australian credit score."
+      "why_rewards_you": "Repayment history is the biggest factor in your score."
     },
     {
       "id": "no_new_bnpl_month",
@@ -67,7 +91,7 @@
       "xp": 250,
       "coins": 150,
       "cap": { "type": "per_month", "limit": 1 },
-      "why_rewards_you": "Fewer credit enquiries and debts protects your credit profile."
+      "why_rewards_you": "Fewer enquiries and less debt protects your file."
     },
     {
       "id": "reminder_set",
@@ -75,7 +99,7 @@
       "xp": 100,
       "coins": 60,
       "cap": { "type": "per_bill" },
-      "why_rewards_you": "On-time repayments are the #1 thing that builds a credit score. A reminder is the step that makes them happen."
+      "why_rewards_you": "A reminder is the step that makes an on-time payment happen."
     },
     {
       "id": "protected_balance",
@@ -83,7 +107,7 @@
       "xp": 60,
       "coins": 40,
       "cap": { "type": "per_bill" },
-      "why_rewards_you": "Stopping a dishonour before it lands keeps your account in good standing."
+      "why_rewards_you": "Stopping a dishonour keeps your account in good standing."
     },
     {
       "id": "insight_tracked",
@@ -91,7 +115,7 @@
       "xp": 40,
       "coins": 20,
       "cap": { "type": "per_bill" },
-      "why_rewards_you": "Acknowledging a pattern lets us watch it and confirm any saving. Low value so it can't be farmed."
+      "why_rewards_you": "Tracking lets us watch the pattern and confirm what really happens."
     },
     {
       "id": "saving_verified",
@@ -99,7 +123,7 @@
       "xp": 120,
       "coins": 80,
       "cap": { "type": "per_bill" },
-      "why_rewards_you": "Awarded only once the old debit stops appearing in your transactions — a saving we can prove, not just promise."
+      "why_rewards_you": "Only awarded when the old debit stops appearing in your transactions."
     },
     {
       "id": "savings_streak_4wk",
@@ -107,7 +131,7 @@
       "xp": 200,
       "coins": 120,
       "cap": { "type": "per_month", "limit": 1 },
-      "why_rewards_you": "Consistency is what actually moves a credit score."
+      "why_rewards_you": "Consistency is what actually moves a score."
     },
     {
       "id": "shop_purchase",
@@ -115,7 +139,7 @@
       "xp": 0,
       "coins": null,
       "cap": { "type": "none" },
-      "why_rewards_you": "Spending coins on your dragon never earns XP — rewards only ever come from good money habits."
+      "why_rewards_you": "Spending coins never earns XP. Rewards only come from money habits."
     }
   ],
   "levels": [
@@ -138,31 +162,40 @@
   ],
   "goals": [
     {
-      "id": "goal_repay_on_time",
-      "title": "Pay your credit card on time",
-      "description": "Set a reminder so the due date never slips. Repayment history is the #1 factor.",
+      "id": "goal_checkin",
+      "title": "Your dragon checks your file daily",
+      "description": "It re-reads your transactions every day. Seven days in a row fills this.",
       "xp": 100,
       "coins": 60,
-      "progress_source": "reminder_set",
-      "progress_hint": "Set the card reminder first"
+      "source": "checkin",
+      "target": 7,
+      "unit": "days",
+      "watching": "Your daily check-ins",
+      "next_check": "Tomorrow"
     },
     {
-      "id": "goal_protect_debit",
-      "title": "Protect a debit at risk",
-      "description": "Stop the gym debit bouncing the day before payday.",
+      "id": "goal_bnpl_on_time",
+      "title": "Pay every Afterpay and Zip on time",
+      "description": "Each instalment on or before its due date, verified against your transactions.",
       "xp": 100,
       "coins": 60,
-      "progress_source": "protected_balance",
-      "progress_hint": "Set a protected balance first"
+      "source": "bnpl_on_time",
+      "target": 4,
+      "unit": "instalments",
+      "watching": "Afterpay and Zip debits",
+      "next_check": "18 Nov"
     },
     {
-      "id": "goal_no_bnpl",
-      "title": "No new Buy-Now-Pay-Later this month",
-      "description": "Pause Afterpay and Zip for 30 days to protect your credit profile.",
+      "id": "goal_no_new_bnpl",
+      "title": "Go a month without new BNPL",
+      "description": "Thirty days without opening a new plan. Your last one was 27 days ago.",
       "xp": 100,
       "coins": 60,
-      "progress_source": "manual",
-      "progress_hint": "Tap to mark done"
+      "source": "no_new_bnpl",
+      "target": 30,
+      "unit": "days",
+      "watching": "New BNPL facilities",
+      "next_check": "20 Nov"
     }
   ],
   "shop": [
@@ -237,7 +270,7 @@
       "emoji": "👑",
       "unlock_level": 5,
       "image": "assets/shop/crown.png",
-      "description": "Unlocks at Level 5. Strictly for dragons with good repayment history."
+      "description": "Unlocks at Level 5. For dragons with good repayment history."
     },
     {
       "id": "item_lair",

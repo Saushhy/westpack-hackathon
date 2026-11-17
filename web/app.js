@@ -13,6 +13,13 @@ const fmtWhole = (n) => Number(n).toLocaleString("en-AU");
 const fmtPct = (n) => Math.max(0, Math.min(100, n)).toFixed(0) + "%";
 const fmtDate = (iso) =>
   new Date(iso + "T00:00:00").toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
+/* Local calendar day, not UTC: a Brisbane evening must not roll back a date. */
+const localDay = (d) =>
+  d.getFullYear() +
+  "-" +
+  String(d.getMonth() + 1).padStart(2, "0") +
+  "-" +
+  String(d.getDate()).padStart(2, "0");
 
 /* ---------- derived lookups ---------- */
 function levelForXp(xp) {
@@ -41,6 +48,9 @@ function ico(name) {
   return '<span class="gel-ico">' + svg + "</span>";
 }
 
+/* The demo runs on one fixed day so every recording behaves the same. */
+const TODAY = bills.as_of;
+
 const BILL_ICON = {
   bill_card: "card",
   bill_bnpl: "shopping-bag",
@@ -52,10 +62,28 @@ const BILL_ICON = {
   bill_rent: "house"
 };
 
-/* GEL FlexiCell adornment: circular icon tile */
+/* Brands Mia already pays get their own logo on the tile. If the file is
+   missing we fall back to the GEL icon rather than invent art. */
+function brandFallback(img) {
+  const name = img.getAttribute("data-icon") || "receipt";
+  const tile = img.closest(".gel-adorn");
+  if (!tile) return;
+  tile.classList.remove("gel-adorn--brand");
+  tile.innerHTML = ico(name);
+}
+
+function brandTile(logo, iconName) {
+  if (!logo) return '<span class="gel-adorn">' + ico(iconName) + "</span>";
+  return (
+    '<span class="gel-adorn gel-adorn--brand">' +
+    '<img class="gel-brand-img" src="' + logo + '" alt="" loading="lazy" ' +
+    'data-icon="' + iconName + '" onerror="brandFallback(this)">' +
+    "</span>"
+  );
+}
+
 function adorn(bill) {
-  const name = BILL_ICON[bill.id] || "receipt";
-  return '<span class="gel-adorn">' + ico(name) + "</span>";
+  return brandTile(bill.logo, BILL_ICON[bill.id] || "receipt");
 }
 
 /* The three-bucket label a change feeds: credit score / cash freed / fees avoided. */
@@ -110,36 +138,31 @@ function initialState() {
     xp_total: rewards.starting_state.xp_total,
     coins: rewards.starting_state.coins,
     streak_weeks: rewards.starting_state.streak_weeks,
+    checkins: (rewards.starting_state.checkins || []).slice(),
     protected: false, // protected balance set for the at-risk debit
     bills: {},
     goals: {},
     /* wardrobe: equipped[slot] = shop item id (hat / face / neck / home) */
     shop: { owned: [], equipped: { hat: null, face: null, neck: null, home: null }, feeds: 0, fed_at: null },
-    /* the customer's own choices — the AI only recommends, they decide */
-    choices: defaultChoices(),
     awarded: [],
     ledger: []
   };
 }
 
-function defaultChoices() {
-  const out = {};
-  for (const rec of bills.recommendations || []) {
-    if (rec.kind === "keep_one") out[rec.id] = rec.default_keep;
-  }
-  return out;
-}
-
-/* Old saves from a previous build may lack the wardrobe/choices shape. */
+/* Old saves from a previous build may lack the wardrobe / check-in shape. */
 function normalise(s) {
   const base = initialState();
   if (s.protected === undefined) s.protected = false;
+  if (!Array.isArray(s.checkins)) s.checkins = base.checkins;
+  if (!Array.isArray(s.awarded)) s.awarded = [];
+  if (!Array.isArray(s.ledger)) s.ledger = [];
+  s.bills = s.bills || {};
+  s.goals = s.goals || {};
   s.shop = s.shop || {};
   s.shop.owned = s.shop.owned || [];
   s.shop.equipped = Object.assign({}, base.shop.equipped, s.shop.equipped || {});
   s.shop.feeds = s.shop.feeds || 0;
   s.shop.fed_at = s.shop.fed_at || null;
-  s.choices = Object.assign({}, base.choices, s.choices || {});
   return s;
 }
 
@@ -223,21 +246,8 @@ function award(actionId, sourceId, reason) {
 }
 
 /* ---------- handlers (exposed for inline onclick) ---------- */
-/* Insight actions (actOnInsight / runInsight / dismissInsight / setProtected)
-   live in the INSIGHTS section below, next to their renderers. */
-
-function completeGoal(id) {
-  const goal = rewards.goals.find((g) => g.id === id);
-  if (!goal || state.goals[id]?.status === "completed") return;
-  state.goals[id] = { status: "completed", completed_at: new Date().toISOString() };
-  const res = award("goal_completed", id, goal.title + " completed");
-  save();
-  render();
-  if (res && (res.xp || res.coins)) {
-    toast("+" + res.xp + " XP · +" + res.coins + " " + coin());
-    if (res.evolved) showEvolution(res.fromStage, res.toStage);
-  }
-}
+/* Insight, goal and sheet actions live next to their renderers below
+   (openInsight / runInsight / syncGoals / openSheet / setProtected). */
 
 /* ---------- shop + wardrobe ----------
    What you buy is not a receipt on a shelf: it is worn. Hats, shades, scarves and
@@ -257,7 +267,7 @@ function wearItem(id) {
   state.shop.equipped[item.slot] = id;
   save();
   render();
-  toast(item.emoji + " " + item.name + " on — see your dragon");
+  toast(item.emoji + " " + item.name + " on, see your dragon");
 }
 
 function takeOff(id) {
@@ -297,7 +307,7 @@ function buyItem(id) {
   });
   save();
   render();
-  toast(item.emoji + " " + item.name + " on — " + fmtWhole(item.cost) + " " + coin());
+  toast(item.emoji + " " + item.name + " on, " + fmtWhole(item.cost) + " " + coin());
 }
 
 function feedDragon(item) {
@@ -361,19 +371,60 @@ function showEvolution(from, to) {
 }
 
 /* ==========================================================================
-   INSIGHTS — the credit-health findings
+   SHEETS
    --------------------------------------------------------------------------
-   The dragon is a credit-score coach. Each card is a *finding* from Westpac's
-   own transaction data, mapped to what actually moves an Australian credit
-   score (repayment history, enquiries, limits, defaults), with advice and one
-   action. There is no "switch provider", and no brand the customer doesn't
-   already pay is ever recommended.
+   One slide-up sheet (GEL BottomSheet) for every detail view: how we know
+   this, what moves your score, the movements behind a BNPL plan. The screen
+   stays short, the detail opens over it, and the action is in the sheet.
    ========================================================================== */
 
-const insightActionForType = { remind: "reminder_set", track: "insight_tracked", protect: "protected_balance" };
+function sheetKeyHandler(e) {
+  if (e.key === "Escape") closeSheet();
+}
 
-const periodWord = (p) => (p === "fortnightly" ? "fortnight" : "month");
-const moneyUnit = (p) => '<span class="gel-money-unit">/' + (p === "fortnightly" ? "fortnight" : "mo") + "</span>";
+function openSheet(opts) {
+  const root = $("#modal-root");
+  if (!root) return;
+  root.innerHTML =
+    '<div class="gel-sheet-overlay" onclick="if (event.target === this) closeSheet()">' +
+    '<div class="gel-sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">' +
+    '<button class="gel-sheet-close" type="button" aria-label="Close" onclick="closeSheet()">' +
+    ico("close") +
+    "</button>" +
+    '<h2 class="gel-sheet-title" id="sheet-title">' +
+    opts.title +
+    "</h2>" +
+    '<div class="gel-sheet-body">' +
+    opts.body +
+    "</div>" +
+    (opts.actions ? '<div class="gel-sheet-actions">' + opts.actions + "</div>" : "") +
+    "</div></div>";
+  document.addEventListener("keydown", sheetKeyHandler);
+}
+
+function closeSheet() {
+  const root = $("#modal-root");
+  if (root) root.innerHTML = "";
+  document.removeEventListener("keydown", sheetKeyHandler);
+}
+
+/* ==========================================================================
+   INSIGHTS
+   --------------------------------------------------------------------------
+   Each card is a finding from Westpac's own transaction data, mapped to what
+   actually moves an Australian credit score (repayment history, enquiries,
+   limits, defaults). The card stays short. Tapping it opens the evidence and
+   the one action.
+   ========================================================================== */
+
+const insightActionForType = {
+  remind: "reminder_set",
+  track: "insight_tracked",
+  protect: "protected_balance"
+};
+
+const moneyUnit = (p) =>
+  '<span class="gel-money-unit">/' + (p === "fortnightly" ? "fortnight" : "mo") + "</span>";
 
 function billHead(bill, trailing) {
   return `
@@ -391,7 +442,7 @@ function evidenceRows(bill) {
   const rows = bill.evidence || [];
   if (!rows.length) return "";
   return (
-    '<div class="gel-kvs" style="margin-top:9px">' +
+    '<div class="gel-kvs">' +
     rows
       .map(
         (r) =>
@@ -402,16 +453,13 @@ function evidenceRows(bill) {
   );
 }
 
-/* Neutral source link — the customer checks the market / source themselves. */
+/* Neutral source link. The customer checks the source themselves. */
 function sourceLink(bill) {
   let url = "";
   let label = "";
   if (bill.benchmark && bill.benchmark.source_url) {
     url = bill.benchmark.source_url;
     label = "Check the market · " + (bill.benchmark.source || "neutral source");
-  } else if (bill.source_url) {
-    url = bill.source_url;
-    label = bill.source_label || "Check the source";
   } else if (bill.provider_url) {
     url = bill.provider_url;
     label = "View " + bill.provider + " details";
@@ -440,12 +488,16 @@ function actOnInsight(id) {
 function runInsight(id) {
   const res = actOnInsight(id);
   if (!res) return;
+  const goalResults = syncGoals();
   save();
   render();
-  if (res.xp || res.coins) {
-    toast("+" + res.xp + " XP · +" + res.coins + " " + coin());
-    if (res.evolved) showEvolution(res.fromStage, res.toStage);
-  }
+
+  const all = [res].concat(goalResults);
+  const xp = all.reduce((a, r) => a + r.xp, 0);
+  const coins = all.reduce((a, r) => a + r.coins, 0);
+  if (xp || coins) toast("+" + xp + " XP · +" + coins + " " + coin());
+  const evolved = all.find((r) => r.evolved);
+  if (evolved) showEvolution(evolved.fromStage, evolved.toStage);
 }
 
 function dismissInsight(id) {
@@ -454,35 +506,72 @@ function dismissInsight(id) {
   render();
 }
 
+const ACTION_COPY = {
+  remind: { label: "Set a reminder", icon: "notification" },
+  protect: { label: "Protect balance", icon: "shield" },
+  track: { label: "Track this", icon: "check" }
+};
+
 function doneCopy(bill) {
-  if (bill.action_type === "remind") return "Reminder set. On-time repayments are the #1 thing that builds your score.";
-  if (bill.action_type === "protect") return "Protected balance set for Thu 19 Nov. No dishonour fee this time.";
-  if (bill.action_type === "track") return "We're watching this. We'll confirm any saving when the debit changes.";
+  if (bill.action_type === "remind") return "Reminder set. Your next repayment should land on time.";
+  if (bill.action_type === "protect") return "Protected balance set for Thu 19 Nov.";
+  if (bill.action_type === "track") return "We're watching this and will report back.";
   return "Noted.";
 }
 
-function insightActionButton(bill) {
-  if (state.bills[bill.id]?.status === "done") return `<span class="gel-badge gel-badge--success">Done</span>`;
-  if (bill.action_type === "remind")
-    return `<button class="gel-btn-primary gel-btn-block" type="button" onclick="runInsight('${bill.id}')">${ico("notification")} Set a reminder</button>`;
-  if (bill.action_type === "protect")
-    return `<button class="gel-btn-primary gel-btn-block" type="button" onclick="runInsight('${bill.id}')">${ico("shield")} Protect balance</button>`;
-  if (bill.action_type === "track")
-    return `<button class="gel-btn-primary gel-btn-block" type="button" onclick="runInsight('${bill.id}')">${ico("check")} Track this</button>`;
-  return "";
+/* The sheet: evidence, why it matters, the one action. */
+function openInsight(id) {
+  const bill = bills.bills.find((b) => b.id === id);
+  if (!bill) return;
+  const copy = ACTION_COPY[bill.action_type] || ACTION_COPY.track;
+
+  const body = `
+    <div class="gel-evidence">${evidenceRows(bill)}</div>
+    <p class="gel-note" style="margin-top:14px">${bill.why}</p>
+    ${bill.advice ? `<p class="gel-note gel-note--warn" style="margin-top:6px">${bill.advice}</p>` : ""}
+    ${sourceLink(bill)}
+    <div class="gel-verified" style="margin-top:14px">
+      ${ico("check")}
+      ${bill.verification ? bill.verification.source + " · " + fmtDate(bill.verification.checked_at) : "From your transactions"}
+    </div>`;
+
+  const actions = `
+    <button class="gel-btn-primary gel-btn-block" type="button" onclick="actFromSheet('${bill.id}')">
+      ${ico(copy.icon)} ${copy.label}
+    </button>
+    <button class="gel-btn-text" type="button" onclick="dismissFromSheet('${bill.id}')">Dismiss</button>`;
+
+  openSheet({ title: bill.label, body, actions });
+}
+
+function actFromSheet(id) {
+  closeSheet();
+  runInsight(id);
+}
+
+function dismissFromSheet(id) {
+  closeSheet();
+  dismissInsight(id);
 }
 
 function insightCard(bill) {
   const st = state.bills[bill.id]?.status;
+
   if (st === "dismissed")
-    return `<article class="gel-cell gel-bill is-muted" data-bill="${bill.id}">${billHead(bill, `<span class="gel-badge gel-badge--faint">Dismissed</span>`)}</article>`;
+    return `<article class="gel-cell gel-bill is-muted" data-bill="${bill.id}">
+      ${billHead(bill, `<span class="gel-badge gel-badge--faint">Dismissed</span>`)}
+    </article>`;
+
   if (st === "done")
-    return `<article class="gel-cell gel-bill is-done" data-bill="${bill.id}">${billHead(bill, `<span class="gel-badge gel-badge--success">Done</span>`)}<div class="gel-hr"></div><p class="gel-note gel-note--good">${doneCopy(bill)}</p></article>`;
+    return `<article class="gel-cell gel-bill is-done" data-bill="${bill.id}">
+      ${billHead(bill, `<span class="gel-badge gel-badge--success">Done</span>`)}
+      <div class="gel-hr"></div>
+      <p class="gel-note gel-note--good">${doneCopy(bill)}</p>
+    </article>`;
 
   const amount = bill.current_amount
-    ? `<span class="gel-money">${fmtAUD(bill.current_amount)}</span>${moneyUnit(bill.billing_period)}`
+    ? `<span class="gel-money gel-money--sm">${fmtAUD(bill.current_amount)}</span>${moneyUnit(bill.billing_period)}`
     : "";
-  const action = insightActionButton(bill);
 
   return `
     <article class="gel-cell gel-bill" data-bill="${bill.id}">
@@ -491,14 +580,9 @@ function insightCard(bill) {
         ${factorChip(bill.factor)}
         <span class="gel-muted">${bill.finding || ""}</span>
       </div>
-      <details class="gel-why">
-        <summary>How we know this</summary>
-        ${evidenceRows(bill)}
-        <p class="gel-note">${bill.why}</p>
-        ${bill.advice ? `<p class="gel-note gel-note--warn">${bill.advice}</p>` : ""}
-        ${sourceLink(bill)}
-      </details>
-      ${action ? `<div class="gel-card-actions">${action}<button class="gel-btn-text" type="button" onclick="dismissInsight('${bill.id}')">Dismiss</button></div>` : ""}
+      <button class="gel-row-link" type="button" onclick="openInsight('${bill.id}')">
+        <span>How we know this</span>${ico("arrow-right")}
+      </button>
     </article>`;
 }
 
@@ -506,139 +590,374 @@ function billStatusCard(bill) {
   const label = bill.action_type === "keep" ? "Keeping" : "No change";
   return `
     <article class="gel-cell gel-bill is-muted" data-bill="${bill.id}">
-      ${billHead(bill, `<span class="gel-money gel-money--muted">${fmtAUD(bill.current_amount)}</span>${moneyUnit(bill.billing_period)}`)}
-      <p class="gel-note">${bill.why}</p>
-      <div class="gel-tagline"><span class="gel-badge gel-badge--faint">${label}</span>${sourceLink(bill)}</div>
+      ${billHead(bill, `<span class="gel-money gel-money--sm gel-money--muted">${fmtAUD(bill.current_amount)}</span>${moneyUnit(bill.billing_period)}`)}
+      <p class="gel-note" style="margin-top:8px">${bill.why}</p>
+      <div class="gel-tagline"><span class="gel-badge gel-badge--faint">${label}</span></div>
     </article>`;
-}
-
-/* Cash the customer could free up — potential only, never claimed as saved. */
-function recommendedSavings() {
-  return bills.bills.reduce(
-    (a, b) => (b.factor === "cash" && b.savings_status === "potential" ? a + b.savings_monthly : a),
-    0
-  );
-}
-
-function westpacProductsPanel() {
-  const prods = bills.westpac_products || [];
-  if (!prods.length) return "";
-  const rows = prods
-    .map(
-      (p) => `
-      <div class="gel-kv">
-        <span class="gel-kv-k">${p.name}</span>
-        <span class="gel-kv-v" style="color:var(--text-success)">${p.purchase_rate_pct} p.a.</span>
-      </div>
-      <p class="gel-note" style="margin:6px 0 0">${p.comparison} · ${p.note}</p>
-      <div class="gel-linkrow">
-        <a class="gel-link gel-link-sm" href="${p.overview_uri}" target="_blank" rel="noopener noreferrer">Check it yourself${ico("arrow-right")}</a>
-      </div>
-      <div class="gel-verified" style="margin-top:6px">${ico("check")} ${p.source} · checked ${fmtDate(p.checked_at)}</div>`
-    )
-    .join('<div class="gel-hr"></div>');
-  return `
-    <section class="gel-cell">
-      <div class="gel-row-between">
-        <span class="gel-label">Your own bank's products</span>
-        <span class="gel-badge gel-badge--hero">Westpac</span>
-      </div>
-      <div class="gel-hr"></div>
-      ${rows}
-    </section>`;
 }
 
 function insightsSummary() {
   const credit = bills.bills.filter((b) => b.factor === "credit" && isActionable(b)).length;
   const cash = bills.bills.filter((b) => b.factor === "cash" && isActionable(b)).length;
   const fees = bills.bills.filter((b) => b.factor === "fees" && isActionable(b)).length;
+  const cashFree = bills.bills.reduce(
+    (a, b) => (b.factor === "cash" && b.savings_status === "potential" ? a + b.savings_monthly : a),
+    0
+  );
+  const feesAvoided = (bills.totals && bills.totals.fees_avoided) || 0;
+
   return `
     <section class="gel-panel">
       <div class="gel-panel-head">
-        <span class="gel-panel-title">What we found in your transactions</span>
+        <span class="gel-panel-title">What we found</span>
+        <span class="gel-badge gel-badge--faint">Last 3 months</span>
       </div>
       <div class="gel-panel-body">
-        <p class="gel-muted" style="margin:0">
-          Every finding is mapped to what actually moves an Australian credit score —
-          repayment history, enquiries, limits and defaults. Things that only free up cash
-          are labelled <strong>Cash</strong>, not credit.
-        </p>
-        <div class="gel-buckets" style="margin-top:12px">
-          <div class="gel-bucket gel-bucket--score"><span class="gel-bucket-label">Credit</span><span class="gel-bucket-val">${credit}</span><span class="gel-bucket-sub">affect your score</span></div>
-          <div class="gel-bucket gel-bucket--cash"><span class="gel-bucket-label">Cash</span><span class="gel-bucket-val">${cash}</span><span class="gel-bucket-sub">frees up repayments</span></div>
-          <div class="gel-bucket gel-bucket--fees"><span class="gel-bucket-label">Fees</span><span class="gel-bucket-val">${fees}</span><span class="gel-bucket-sub">avoid a black mark</span></div>
+        <div class="gel-counts">
+          <div class="gel-count"><span class="gel-count-val">${credit}</span><span class="gel-count-label">affect your score</span></div>
+          <div class="gel-count"><span class="gel-count-val">${cash}</span><span class="gel-count-label">free up cash</span></div>
+          <div class="gel-count"><span class="gel-count-val">${fees}</span><span class="gel-count-label">avoid a fee</span></div>
         </div>
+        <div class="gel-hr"></div>
+        <div class="gel-kv">
+          <span class="gel-kv-k">Cash you could free</span>
+          <span class="gel-kv-v gel-money--good">${fmtAUD(cashFree)} a month</span>
+        </div>
+        <div class="gel-kv">
+          <span class="gel-kv-k">Fees you could avoid</span>
+          <span class="gel-kv-v">${fmtAUD(feesAvoided)} a month</span>
+        </div>
+        <p class="gel-note" style="margin-top:10px">Repayment history matters most. Everything else is smaller.</p>
       </div>
     </section>`;
 }
 
 function renderInsights() {
   const order = { remind: 0, protect: 1, track: 2, keep: 3, no_offer: 4 };
-  const actionable = bills.bills.filter(
-    (b) => isActionable(b) && state.bills[b.id]?.status !== "done" && state.bills[b.id]?.status !== "dismissed"
+  const open = bills.bills.filter(
+    (b) =>
+      isActionable(b) &&
+      state.bills[b.id]?.status !== "done" &&
+      state.bills[b.id]?.status !== "dismissed"
   ).length;
 
   const cards = bills.bills
     .slice()
     .sort((a, b) => order[a.action_type] - order[b.action_type])
-    .map((b) => (b.action_type === "keep" || b.action_type === "no_offer" ? billStatusCard(b) : insightCard(b)))
+    .map((b) =>
+      b.action_type === "keep" || b.action_type === "no_offer" ? billStatusCard(b) : insightCard(b)
+    )
     .join("");
 
   return `
     <div class="gel-screen-head">
       <div>
         <h1 class="gel-title">Insights</h1>
-        <p class="gel-muted">${actionable} ${actionable === 1 ? "pattern" : "patterns"} to act on</p>
+        <p class="gel-muted">${open} ${open === 1 ? "pattern" : "patterns"} to look at</p>
       </div>
-      <span class="gel-badge gel-badge--faint">Last 3 months</span>
     </div>
     ${insightsSummary()}
     ${cards}`;
 }
 
+/* ==========================================================================
+   MOVEMENTS
+   --------------------------------------------------------------------------
+   The rows behind a provider come straight from Carlos's transaction file, so
+   "Afterpay costs you $X" is always checkable against real payments.
+   ========================================================================== */
+
+const monthLabel = (ym) =>
+  new Date(ym + "-01T00:00:00").toLocaleDateString("en-AU", { month: "short", year: "numeric" });
+
+function movementsFor(match) {
+  const re = new RegExp(match, "i");
+  return ((window.DATA && window.DATA.transactions) || [])
+    .filter((t) => re.test(t.merchant || "") || re.test(t.description || ""))
+    .sort((a, b) => (a.date < b.date ? 1 : -1));
+}
+
+function openMovements(name, match) {
+  const rows = movementsFor(match);
+  if (!rows.length) return;
+
+  const total = rows.reduce((a, t) => (t.type === "debit" ? a + t.amount : a), 0);
+
+  const groups = {};
+  for (const t of rows) {
+    const ym = t.date.slice(0, 7);
+    (groups[ym] = groups[ym] || []).push(t);
+  }
+
+  const body =
+    `<div class="gel-kv">
+      <span class="gel-kv-k">${rows.length} payments</span>
+      <span class="gel-kv-v gel-money">${fmtAUD(total)}</span>
+    </div>` +
+    Object.keys(groups)
+      .sort()
+      .reverse()
+      .map((ym) => {
+        const list = groups[ym];
+        const sub = list.reduce((a, t) => a + t.amount, 0);
+        return `<div class="gel-move-month">
+          <div class="gel-row-between">
+            <span class="gel-label">${monthLabel(ym)}</span>
+            <span class="gel-muted">${fmtAUD(sub)}</span>
+          </div>
+          ${list
+            .map(
+              (t) => `<div class="gel-move">
+                <span class="gel-move-day">${t.date.slice(8)}</span>
+                <span class="gel-cell-body">
+                  <span class="gel-move-desc">${t.description}</span>
+                  <span class="gel-muted">${t.merchant}</span>
+                </span>
+                <span class="gel-money gel-money--sm">${fmtAUD(t.amount)}</span>
+              </div>`
+            )
+            .join("")}
+        </div>`;
+      })
+      .join("") +
+    '<p class="gel-note" style="margin-top:14px">Every line here is a Westpac transaction.</p>';
+
+  openSheet({
+    title: name,
+    body,
+    actions: '<button class="gel-btn-ghost" type="button" onclick="closeSheet()">Close</button>'
+  });
+}
+
+/* ==========================================================================
+   GOALS
+   --------------------------------------------------------------------------
+   Goals fill themselves. There is no "mark as done" button: each one reads a
+   real signal (your check-ins, your instalments, your new facilities) and
+   completes when the data says it happened.
+   ========================================================================== */
+
+function checkinsInWindow() {
+  const window7 = [];
+  const base = new Date(TODAY + "T00:00:00").getTime();
+  for (let i = 0; i < 7; i++) {
+    window7.push(localDay(new Date(base - i * 86400000)));
+  }
+  return (state.checkins || []).filter((d) => window7.includes(d)).length;
+}
+
+function bnplPaidOnTime() {
+  return (bills.credit_file?.bnpl?.providers || []).reduce((a, p) => a + (p.paid_on_time || 0), 0);
+}
+
+function daysSinceNewFacility() {
+  const last = bills.credit_file?.bnpl?.last_facility_date;
+  if (!last) return 0;
+  const ms = new Date(TODAY + "T00:00:00") - new Date(last + "T00:00:00");
+  return Math.max(0, Math.round(ms / 86400000));
+}
+
+function goalValue(g) {
+  if (g.source === "checkin") return checkinsInWindow();
+  if (g.source === "bnpl_on_time") return bnplPaidOnTime();
+  if (g.source === "no_new_bnpl") return daysSinceNewFacility();
+  return 0;
+}
+
+const goalPct = (g) => Math.min(100, (goalValue(g) / g.target) * 100);const goalDone = (g) => state.goals[g.id]?.status === "completed";
+
+/* Called after any award and once at boot: a goal completes itself, and the
+   XP follows it. Returns the award results so the caller can celebrate. */
+function syncGoals() {
+  const results = [];
+  for (const g of rewards.goals) {
+    if (goalDone(g)) continue;
+    if (goalValue(g) >= g.target) {
+      state.goals[g.id] = { status: "completed", completed_at: new Date().toISOString() };
+      const r = award("goal_completed", g.id, g.title);
+      if (r) results.push(r);
+    }
+  }
+  return results;
+}
+
 function renderGoals() {
+  const done = rewards.goals.filter(goalDone).length;
+
   const cards = rewards.goals
     .map((g) => {
-      const done = state.goals[g.id]?.status === "completed";
-      let progress = 0;
-      if (done) progress = 100;
-      else if (g.progress_source === "reminder_set") progress = state.bills["bill_card"]?.status === "done" ? 100 : 0;
-      else if (g.progress_source === "protected_balance") progress = state.protected ? 100 : 0;
-
-      const ready = !done && progress === 100;
-      const sub = done ? "Completed" : ready ? "Ready — mark done" : g.progress_hint || "Tap to mark done";
-
+      const complete = goalDone(g);
+      const value = Math.min(goalValue(g), g.target);
       return `
-        <article class="gel-cell" data-goal="${g.id}">
-          <div class="gel-pick-body">
-            <div class="gel-bill-title">${g.title}</div>
-            <p class="gel-muted" style="margin:0">${g.description}</p>
-          </div>
-          <div class="gel-bar gel-bar--skinny" style="margin-top:12px">
-            <div class="gel-bar-fill" style="width:${fmtPct(progress)}"></div>
-          </div>
-          <div class="gel-progress-note">
-            <span class="gel-muted">${sub}</span>
-            <span class="gel-badge ${done ? "gel-badge--success" : "gel-badge--faint"}">
-              ${done ? "Completed" : "+" + g.xp + " XP · " + g.coins + " coins"}
+        <article class="gel-cell gel-goal" data-goal="${g.id}">
+          <div class="gel-row-between">
+            <span class="gel-bill-title">${g.title}</span>
+            <span class="gel-badge ${complete ? "gel-badge--success" : "gel-badge--faint"}">
+              ${complete ? "Done" : value + " of " + g.target}
             </span>
           </div>
-          ${
-            done
-              ? ""
-              : `<div class="gel-card-actions">
-                   <button class="gel-btn-primary" type="button" onclick="completeGoal('${g.id}')">
-                     ${ready ? "Complete goal" : "Mark done"}
-                   </button>
-                 </div>`
-          }
+          <p class="gel-muted" style="margin:4px 0 0">${g.description}</p>
+          <div class="gel-bar gel-bar--skinny" style="margin-top:10px">
+            <div class="gel-bar-fill" style="width:${fmtPct(goalPct(g))}"></div>
+          </div>
+          <div class="gel-progress-note">
+            <span class="gel-muted">${complete ? "Completed" : "Next check " + g.next_check}</span>
+            <span class="gel-muted">+${g.xp} XP</span>
+          </div>
         </article>`;
     })
     .join("");
 
-  return `<div class="gel-screen-head"><h1 class="gel-title">Credit health plan</h1>${
-    `<span class="gel-badge gel-badge--faint">${rewards.goals.length} goals</span>`
-  }</div>${cards}`;
+  return `
+    <div class="gel-screen-head">
+      <div>
+        <h1 class="gel-title">Your plan</h1>
+        <p class="gel-muted">${done} of ${rewards.goals.length} done</p>
+      </div>
+    </div>
+    <p class="gel-note" style="margin-bottom:12px">These fill in on their own. We check your transactions, not a tick box.</p>
+    ${cards}`;
+}
+
+/* ==========================================================================
+   SCORE
+   --------------------------------------------------------------------------
+   Four things and one sheet: the score, the goal, the credit you can't see,
+   and what moves the score. No bucket strip, no bank products, no forecast
+   history. The detail lives in a sheet so the screen stays calm.
+   ========================================================================== */
+
+function bnplRow(p) {
+  return `
+    <button class="gel-row-link gel-row-link--tile" type="button"
+            onclick="openMovements('${p.name}', '${p.match}')">
+      <span class="gel-adorn gel-adorn--brand">
+        <img class="gel-brand-img" src="${p.logo}" alt="" loading="lazy"
+             data-icon="shopping-bag" onerror="brandFallback(this)">
+      </span>
+      <span class="gel-cell-body">
+        <span class="gel-move-name">${p.name}</span>
+        <span class="gel-muted">Next payment ${fmtAUD(p.amount_due)} on ${fmtDate(p.next_due)}</span>
+      </span>
+      ${ico("arrow-right")}
+    </button>`;
+}
+
+function openFactors() {
+  const body =
+    (rewards.credit_factors || [])
+      .map((f) => {
+        const up = f.direction === "up";
+        return `<div class="gel-factor-row" style="margin-bottom:16px">
+          <span class="gel-factor-arrow ${up ? "is-up" : "is-down"}">${up ? "↑" : "↓"}</span>
+          <div class="gel-factor-body">
+            <div class="gel-row-between">
+              <span class="gel-move-name">${f.label}</span>
+              <span class="gel-badge gel-badge--faint">${f.impact}</span>
+            </div>
+            <p class="gel-muted" style="margin:2px 0 0">${f.what}</p>
+          </div>
+        </div>`;
+      })
+      .join("") +
+    '<p class="gel-note">Direction only. Nobody can promise you points.</p>';
+
+  openSheet({
+    title: "What moves your score",
+    body,
+    actions: '<button class="gel-btn-ghost" type="button" onclick="closeSheet()">Close</button>'
+  });
+}
+
+function renderScore() {
+  const score = bills.score || {};
+  const cf = bills.credit_file || {};
+  const forecast = score.forecast || {};
+  const bnpl = cf.bnpl || {};
+  const providers = bnpl.providers || [];
+
+  return `
+    <div class="gel-screen-head">
+      <div>
+        <h1 class="gel-title">Your score</h1>
+        <p class="gel-muted">${score.consent ? "Shared with your consent" : ""}</p>
+      </div>
+      <span class="gel-badge gel-badge--hero">${score.source || "Equifax"}</span>
+    </div>
+
+    <section class="gel-panel gel-score-hero">
+      <div class="gel-panel-head">
+        <span class="gel-panel-title">Credit score</span>
+      </div>
+      <div class="gel-panel-body">
+        <div class="gel-score-num">${score.value != null ? fmtWhole(score.value) : ""}<span class="gel-score-max">/${score.max != null ? fmtWhole(score.max) : ""}</span></div>
+        <p class="gel-muted" style="margin:4px 0 0">Updated ${score.refreshed_at ? fmtDate(score.refreshed_at) : ""}</p>
+        ${score.demo_sample ? '<p class="gel-note gel-note--warn" style="margin:6px 0 0">Sample score for this demo.</p>' : ""}
+        <div class="gel-hr"></div>
+        <div class="gel-forecast">
+          <div class="gel-row-between">
+            <span class="gel-label">In ${forecast.horizon_months || 3} months</span>
+            <span class="gel-money gel-money--good">${forecast.range ? fmtWhole(forecast.range[0]) + " to " + fmtWhole(forecast.range[1]) : ""}</span>
+          </div>
+          <p class="gel-note" style="margin:6px 0 0">If ${forecast.assumption || "you keep repayments on time."}</p>
+        </div>
+      </div>
+    </section>
+
+    <article class="gel-cell" data-goal-banner>
+      <span class="gel-label">Your goal</span>
+      <div class="gel-goal-title">${cf.goal || ""}</div>
+      <div class="gel-row-between" style="margin-top:8px">
+        <span class="gel-muted">${cf.goal_date ? fmtDate(cf.goal_date) : ""}</span>
+        <span class="gel-badge gel-badge--success">${cf.goal_note || "On track"}</span>
+      </div>
+    </article>
+
+    <section class="gel-cell">
+      <div class="gel-row-between">
+        <span class="gel-label">Credit you don't see</span>
+        <span class="gel-badge gel-badge--faint">${bnpl.active_facilities || 0} plans</span>
+      </div>
+      <div style="margin-top:6px">${providers.map(bnplRow).join("")}</div>
+      <p class="gel-note" style="margin-top:10px">${bnpl.note || ""}</p>
+    </section>
+
+    <button class="gel-btn-ghost gel-btn-block" type="button" onclick="openFactors()">
+      What moves your score ${ico("arrow-right")}
+    </button>`;
+}
+
+function setProtected() {
+  if (state.protected) return;
+  state.protected = true;
+  const gym = bills.bills.find((b) => b.id === "bill_gym");
+  if (gym && state.bills[gym.id]?.status !== "done") {
+    state.bills[gym.id] = { status: "done", acted_at: new Date().toISOString() };
+    award("protected_balance", gym.id, gym.label);
+  }
+  syncGoals();
+  save();
+  render();
+  toast(ico("shield") + " Protected balance set for Thu 19 Nov");
+}
+
+/* ---------- boot ----------
+   The demo runs on a fixed clock (bills.as_of) so it behaves the same in every
+   recording. Opening the app records today's check-in, which is what fills the
+   daily goal. */
+function boot() {
+  state.checkins = state.checkins || [];
+  if (!state.checkins.includes(TODAY)) {
+    state.checkins.push(TODAY);
+    award("daily_checkin", TODAY, "Daily check-in");
+  }
+  if (checkinsInWindow() >= 7) {
+    const windowStart = localDay(new Date(new Date(TODAY + "T00:00:00").getTime() - 6 * 86400000));
+    award("checkin_week", windowStart, "Seven days in a row");
+  }
+  syncGoals();
+  save();
+  render();
 }
 
 /* ==========================================================================
@@ -652,26 +971,30 @@ function renderGoals() {
    ========================================================================== */
 
 /* Where each worn item sits on the dragon emoji, per stage (top % of the box). */
+/* Anchors are measured from the rendered PNG silhouettes (see
+   tools/render-dragon.mjs), so the hat lands on the head of the real model
+   rather than floating over the old emoji. */
 const WEAR_ANCHOR = {
   egg: { hat: 2, face: 34, neck: 60 },
-  baby: { hat: 4, face: 37, neck: 62 },
-  teen: { hat: 3, face: 37, neck: 62 },
-  adult: { hat: 2, face: 36, neck: 60 }
+  baby: { hat: 20, face: 23, neck: 36 },
+  teen: { hat: 12, face: 16, neck: 33 },
+  adult: { hat: 7, face: 11, neck: 31 }
 };
 
 function wearGlyph(emoji, slot, top) {
   return `<span class="dragon-wear dragon-wear--${slot}" style="top:${top}%">${emoji}</span>`;
 }
 
-/* The dragon itself (emoji / PNG) with whatever it's wearing layered on top. */
+/* The dragon itself (real model render, or emoji) with whatever it's wearing. */
 function dragonMarkup(stage, equipped) {
   const eq = equipped || state.shop.equipped;
   const hat = itemById(eq.hat);
   const face = itemById(eq.face);
   const neck = itemById(eq.neck);
   const anchor = WEAR_ANCHOR[stage.id] || WEAR_ANCHOR.baby;
+  const art = stage.id === "egg" ? "" : " gel-dragon-wrap--art";
   return `
-    <div class="gel-dragon-wrap" id="dragon-art">
+    <div class="gel-dragon-wrap${art}" id="dragon-art">
       ${imgOrEmoji(stage.image, stage.emoji, stage.name, "dragon-img")}
       ${neck ? wearGlyph(neck.emoji, "neck", anchor.neck) : ""}
       ${face ? wearGlyph(face.emoji, "face", anchor.face) : ""}
@@ -695,23 +1018,80 @@ function sceneHtml(extraClass) {
   </div>`;
 }
 
+/* Personality only. Every factual line is composed in dragonSaid() below, from
+   bills.json and the customer's own state, so the dragon cannot invent a number. */
 const DRAGON_LINES = [
   "Rawr. Every repayment on time makes me a little bigger.",
-  "I only grow from good money habits — never from shopping.",
-  "Review a bill and approve it. I get the XP, you get the savings.",
+  "I only grow from good money habits, never from shopping.",
   "Bills first, snacks later. That's the rule.",
   "A dishonour fee is the only thing that makes me grumpy."
 ];
 
-let lineIdx = 0;
+const dayMonth = (iso) =>
+  new Date(iso + "T00:00:00").toLocaleDateString("en-AU", { day: "numeric", month: "short" });
+
+/**
+ * What the dragon can say right now. Fixed composition, no model call:
+ * each line quotes a figure that exists in bills.json or in the saved state,
+ * which is the compliance rule for this build. Tap cycles through them.
+ */
+function dragonSaid() {
+  const out = [];
+  const cf = bills.credit_file || {};
+  const providers = (cf.bnpl && cf.bnpl.providers) || [];
+  const next = providers
+    .filter((p) => p.next_due)
+    .sort((a, b) => (a.next_due < b.next_due ? -1 : 1))[0];
+  const payday = bills.payday && bills.payday.next;
+
+  if (next) {
+    const before = payday && next.next_due < payday;
+    out.push(
+      next.name + " takes " + fmtAUD(next.amount_due) + " on " + dayMonth(next.next_due) + "." +
+        (payday ? (before ? " Keep cash aside for it." : " Payday lands first.") : "")
+    );
+  }
+
+  const late = bills.bills.find((b) => b.id === "bill_card");
+  if (late && state.bills[late.id]?.status !== "done") {
+    out.push("Your card payment was 3 days late in October.");
+  }
+
+  const gym = bills.bills.find((b) => b.id === "bill_gym");
+  if (gym && state.bills[gym.id]?.status !== "done") {
+    out.push("The gym takes $34 on Thursday. Payday is Friday.");
+  }
+
+  for (const g of rewards.goals) {
+    if (goalDone(g)) continue;
+    const v = goalValue(g);
+    if (g.source === "bnpl_on_time") {
+      out.push(v + " of " + g.target + " instalments paid on time.");
+    } else if (g.source === "no_new_bnpl") {
+      out.push(v + " days with no new plan. " + (g.target - v) + " more fills this one.");
+    } else if (g.source === "checkin") {
+      out.push(checkinsInWindow() + " of " + g.target + " days checked. That bar is full.");
+    }
+  }
+
+  const filled = rewards.goals.filter(goalDone).length;
+  if (filled) {
+    out.push(filled + " goal filled itself, straight from your transactions.");
+  }
+
+  return out.concat(DRAGON_LINES);
+}
+
+let lineIdx = -1; // first tap reads the top line
 function pokeDragon() {
   const bubble = $("#dragon-bubble");
   if (bubble) {
-    lineIdx = (lineIdx + 1) % DRAGON_LINES.length;
-    bubble.textContent = DRAGON_LINES[lineIdx];
+    const lines = dragonSaid();
+    lineIdx = (lineIdx + 1) % lines.length;
+    bubble.textContent = lines[lineIdx];
     bubble.classList.add("show");
     clearTimeout(pokeDragon.timer);
-    pokeDragon.timer = setTimeout(() => bubble.classList.remove("show"), 3200);
+    pokeDragon.timer = setTimeout(() => bubble.classList.remove("show"), 4200);
   }
   hopDragon();
 }
@@ -753,7 +1133,7 @@ function renderDragon() {
   const worn = wornItems();
   const wardrobe = worn.length
     ? worn.map((it) => `<span class="gel-worn">${it.emoji} ${it.name}</span>`).join("")
-    : `<span class="gel-muted">Nothing on yet — visit the shop to dress your dragon.</span>`;
+    : `<span class="gel-muted">Nothing on yet. Visit the shop to dress your dragon.</span>`;
 
   const trail = rewards.stages
     .map((s) => {
@@ -786,6 +1166,10 @@ function renderDragon() {
     </div>
 
     ${sceneHtml()}
+
+    <button class="gel-btn-primary gel-btn-block" type="button" onclick="openAR()" style="margin-bottom:12px">
+      ${ico("camera")} See it in your room
+    </button>
 
     <article class="gel-cell">
       <div class="gel-row-between">
@@ -846,7 +1230,7 @@ function shopCta(item) {
               onclick="buyItem('${item.id}')">${affordable ? "Buy &amp; feed" : "Not enough coins"}</button>`;
   if (owned && isWearing(item.id))
     return `<button class="gel-btn-ghost gel-btn-sm gel-btn-block" type="button"
-              onclick="takeOff('${item.id}')">Wearing — take off</button>`;
+              onclick="takeOff('${item.id}')">Wearing, take off</button>`;
   if (owned)
     return `<button class="gel-btn-primary gel-btn-sm gel-btn-block" type="button"
               onclick="wearItem('${item.id}')">Wear</button>`;
@@ -892,174 +1276,188 @@ function renderShop() {
 }
 
 /* ==========================================================================
-   SCORE — the credit-file trajectory view
+   AR VIEW
    --------------------------------------------------------------------------
-   The dragon is a picture of the score's trajectory. This tab shows the
-   bureau score (consent-gated, sourced, dated), the forecast as a range with
-   a stated assumption, the three honest buckets, the BNPL "credit you don't
-   see" panel, the four bureau factors as direction (not points), and the
-   predicted-vs-actual accountability loop.
+   The camera frame is the room, the dragon sits on it, and the only thing it
+   ever says is a line composed from our own data (dragonSaid). No generation,
+   no open chat: compliance decision for this build.
+
+   The camera needs a secure context, so from file:// the browser will refuse
+   getUserMedia and we fall back to a drawn tabletop. `npm start` serves it on
+   localhost, where the real camera works. Everything else is identical.
    ========================================================================== */
 
-function protectedBalanceAction() {
-  if (state.protected) {
-    return `<div class="gel-alert gel-alert--success">
-      ${ico("check")} Protected balance set for Thu 19 Nov. We'll confirm when the debit clears.
-    </div>`;
-  }
-  return `<button class="gel-btn-primary gel-btn-block" type="button" onclick="setProtected()">
-    ${ico("shield")} Set a protected balance
-  </button>`;
-}
+let arStream = null;
+const arPos = { x: 50, y: 58, scale: 1, drag: null };
 
-function renderScore() {
-  const score = bills.score || {};
-  const cf = bills.credit_file || {};
-  const factors = rewards.credit_factors || [];
-  const forecast = score.forecast || {};
-  const prev = forecast.previous || {};
-  const bnpl = cf.bnpl || {};
-  const gym = bills.bills.find((b) => b.id === "bill_gym");
-  const feesAvoided = (gym && gym.offer && gym.offer.fee_avoided) || 19;
-
-  const factorRows = factors
-    .map((f) => {
-      const up = f.direction === "up";
-      return `
-        <div class="gel-factor-row">
-          <span class="gel-factor-arrow ${up ? "is-up" : "is-down"}">${up ? "↑" : "↓"}</span>
-          <div class="gel-factor-body">
-            <div class="gel-row-between">
-              <span class="gel-bill-title">${f.label}</span>
-              <span class="gel-badge gel-badge--faint">${f.impact}</span>
-            </div>
-            <p class="gel-muted" style="margin:2px 0 0">${f.what}</p>
-          </div>
-        </div>`;
-    })
-    .join("");
-
-  const bnplRows = (bnpl.providers || [])
-    .map(
-      (p) => `
-      <div class="gel-kv gel-bnpl-row">
-        <span class="gel-bnpl-name">${p.name}</span>
-        <span class="gel-muted">${p.facilities} ${p.facilities === 1 ? "facility" : "facilities"} · ${p.instalments_due} due</span>
-        <span class="gel-kv-v">${fmtAUD(p.amount_due)} <span class="gel-money-unit">${fmtDate(p.next_due)}</span></span>
-      </div>`
-    )
-    .join("");
-
+function arStageMarkup() {
+  const stage = stageForXp(state.xp_total);
   return `
-    <div class="gel-screen-head">
-      <div>
-        <h1 class="gel-title">Your credit</h1>
-        <p class="gel-muted">${cf.goal || "Credit health"} · ${cf.goal_date ? "by " + fmtDate(cf.goal_date) : ""}</p>
-      </div>
-      <span class="gel-badge gel-badge--hero">${score.source || "Equifax"}</span>
+    <video class="gel-ar-video" id="ar-video" playsinline muted autoplay></video>
+    <div class="gel-ar-room" aria-hidden="true">
+      <div class="gel-ar-room-wall"></div>
+      <div class="gel-ar-room-table"></div>
     </div>
-
-    <section class="gel-panel gel-score-hero">
-      <div class="gel-panel-head">
-        <span class="gel-panel-title">Credit score</span>
-        <span class="gel-panel-title">${score.consent ? "Shared with consent" : ""}</span>
-      </div>
-      <div class="gel-panel-body">
-        <div class="gel-score-num">${score.value != null ? fmtWhole(score.value) : "—"}<span class="gel-score-max">/${score.max != null ? fmtWhole(score.max) : ""}</span></div>
-        <p class="gel-muted" style="margin:4px 0 0">${score.source} · updated ${score.refreshed_at ? fmtDate(score.refreshed_at) : "—"}</p>
-        ${score.demo_sample ? '<p class="gel-note gel-note--warn" style="margin:6px 0 0">Sample score for this demo.</p>' : ""}
-
-        <div class="gel-hr"></div>
-        <div class="gel-forecast">
-          <div class="gel-row-between">
-            <span class="gel-label">Forecast in ${forecast.horizon_months || 3} months</span>
-            <span class="gel-money gel-money--good">${fmtWhole(forecast.range ? forecast.range[0] : 0)}–${fmtWhole(forecast.range ? forecast.range[1] : 0)}</span>
-          </div>
-          <p class="gel-note" style="margin:6px 0 0">If: ${forecast.assumption || "you keep repayments on time."}</p>
+    <div class="gel-ar-hud">
+      <button class="gel-ar-close" type="button" onclick="closeAR()" aria-label="Close">
+        ${ico("close")}
+      </button>
+      <span class="gel-ar-tag" id="ar-tag">Camera off, demo tabletop</span>
+    </div>
+    <div class="gel-ar-stage" id="ar-stage">
+      <div class="gel-ar-hold" id="ar-hold">
+        <div class="gel-ar-dragon" id="ar-dragon" role="button" tabindex="0"
+             aria-label="Your ${stage.name}. Tap to hear it.">
+          ${imgOrEmoji(stage.image, stage.emoji, stage.name, "ar-img")}
         </div>
       </div>
-    </section>
-
-    <div class="gel-buckets">
-      <div class="gel-bucket gel-bucket--score">
-        <span class="gel-bucket-label">Credit score</span>
-        <span class="gel-bucket-val">${score.value != null ? fmtWhole(score.value) : "—"}</span>
-        <span class="gel-bucket-sub">held, not grown</span>
-      </div>
-      <div class="gel-bucket gel-bucket--cash">
-        <span class="gel-bucket-label">Cash freed</span>
-        <span class="gel-bucket-val">${fmtAUD(recommendedSavings())}</span>
-        <span class="gel-bucket-sub">/month · potential</span>
-      </div>
-      <div class="gel-bucket gel-bucket--fees">
-        <span class="gel-bucket-label">Fees avoided</span>
-        <span class="gel-bucket-val">${fmtAUD(feesAvoided)}</span>
-        <span class="gel-bucket-sub">dishonour fee</span>
-      </div>
+      <div class="gel-ar-bubble" id="ar-bubble"></div>
     </div>
-
-    <section class="gel-cell">
-      <div class="gel-row-between">
-        <span class="gel-label">Credit you don't see</span>
-        <span class="gel-badge gel-badge--faint">${bnpl.active_facilities || 0} facilities</span>
-      </div>
-      <p class="gel-note" style="margin:6px 0 0">${bnpl.note || ""}</p>
-      <div class="gel-hr"></div>
-      ${bnplRows}
-      <div class="gel-hr"></div>
-      <div class="gel-kv">
-        <span class="gel-muted">Credit enquiries</span>
-        <span class="gel-kv-v">${bnpl.enquiries_6m || 0} in 6 months</span>
-      </div>
-    </section>
-
-    <section class="gel-cell">
-      <div class="gel-row-between">
-        <span class="gel-label">What moves it</span>
-        <span class="gel-muted">direction, not points</span>
-      </div>
-      <div class="gel-factor-list">${factorRows}</div>
-    </section>
-
-    ${westpacProductsPanel()}
-
-    <section class="gel-cell">
-      <div class="gel-row-between">
-        <span class="gel-label">Last check</span>
-        <span class="gel-muted">${prev.refreshed_at ? fmtDate(prev.refreshed_at) : "—"}</span>
-      </div>
-      <div class="gel-forecast" style="margin-top:8px">
-        <div class="gel-row-between">
-          <span class="gel-muted">We predicted ${prev.predicted_range ? fmtWhole(prev.predicted_range[0]) + "–" + fmtWhole(prev.predicted_range[1]) : "—"}</span>
-          <span class="gel-money">${prev.actual != null ? fmtWhole(prev.actual) : "—"}</span>
-        </div>
-        <p class="gel-note gel-note--good" style="margin:6px 0 0">You landed inside the range. On-time repayments did the work.</p>
-      </div>
-    </section>
-
-    <section class="gel-cell">
-      <div class="gel-row-between">
-        <span class="gel-label">A debit is at risk</span>
-        <span class="gel-badge gel-badge--warning">Payday minus 1</span>
-      </div>
-      <p class="gel-note" style="margin:6px 0 0">${cf.dishonour ? cf.dishonour.reason : ""}</p>
-      <div class="gel-hr"></div>
-      ${protectedBalanceAction()}
-    </section>`;
+    <div class="gel-ar-controls">
+      <button class="gel-btn-ghost gel-btn-sm" type="button" onclick="arSay()">Say something</button>
+      <button class="gel-btn-ghost gel-btn-sm" type="button" onclick="arZoom(-1)">Smaller</button>
+      <button class="gel-btn-ghost gel-btn-sm" type="button" onclick="arZoom(1)">Bigger</button>
+      <button class="gel-btn-primary gel-btn-sm" type="button" onclick="closeAR()">Done</button>
+    </div>`;
 }
 
-function setProtected() {
-  if (state.protected) { render(); return; }
-  state.protected = true;
-  const gym = bills.bills.find((b) => b.id === "bill_gym");
-  if (gym && state.bills[gym.id]?.status !== "done") {
-    state.bills[gym.id] = { status: "done", acted_at: new Date().toISOString() };
-    award("protected_balance", gym.id, gym.label);
+function arApply() {
+  const hold = $("#ar-hold");
+  if (!hold) return;
+  hold.style.left = arPos.x + "%";
+  hold.style.top = arPos.y + "%";
+  hold.style.width = Math.round(210 * arPos.scale) + "px";
+}
+
+function openAR() {
+  const root = $("#ar-root");
+  if (!root) return;
+  root.hidden = false;
+  root.innerHTML = arStageMarkup();
+  arPos.x = 50;
+  arPos.y = 58;
+  arPos.scale = 1;
+  arApply();
+  arWireDrag();
+  arStartCamera();
+  arDrop();
+  setTimeout(arSay, 900);
+}
+
+function closeAR() {
+  arStopCamera();
+  const root = $("#ar-root");
+  if (!root) return;
+  root.hidden = true;
+  root.innerHTML = "";
+}
+
+async function arStartCamera() {
+  const video = $("#ar-video");
+  const tag = $("#ar-tag");
+  if (!video) return;
+  const media = navigator.mediaDevices;
+  if (!media || !media.getUserMedia) {
+    if (tag) tag.textContent = "Camera off, demo tabletop";
+    return;
   }
-  save();
-  render();
-  toast(ico("shield") + " Protected balance set for Thu 19 Nov");
+  try {
+    arStream = await media.getUserMedia({
+      video: { facingMode: { ideal: "environment" } },
+      audio: false
+    });
+    video.srcObject = arStream;
+    await video.play().catch(() => {});
+    video.classList.add("is-live");
+    if (tag) tag.textContent = "Live camera";
+  } catch {
+    if (tag) tag.textContent = "Camera off, demo tabletop";
+  }
 }
+
+function arStopCamera() {
+  if (arStream) {
+    for (const track of arStream.getTracks()) track.stop();
+    arStream = null;
+  }
+}
+
+/* Dropping it out of the air is what sells the placement. */
+function arDrop() {
+  const hold = $("#ar-hold");
+  if (!hold) return;
+  hold.classList.remove("is-dropping");
+  void hold.offsetWidth;
+  hold.classList.add("is-dropping");
+}
+
+function arSay() {
+  const bubble = $("#ar-bubble");
+  if (!bubble) return;
+  const lines = dragonSaid();
+  arPos.line = ((arPos.line ?? -1) + 1) % lines.length;
+  bubble.textContent = lines[arPos.line];
+  bubble.classList.add("show");
+  clearTimeout(arSay.timer);
+  arSay.timer = setTimeout(() => bubble.classList.remove("show"), 5200);
+}
+
+function arZoom(dir) {
+  arPos.scale = Math.min(1.9, Math.max(0.55, arPos.scale + dir * 0.15));
+  arApply();
+}
+
+/* Drag it anywhere on the table. Pointer events cover mouse and touch. */
+function arWireDrag() {
+  const hold = $("#ar-hold");
+  const stage = $("#ar-stage");
+  if (!hold || !stage) return;
+
+  const toPct = (e) => {
+    const r = stage.getBoundingClientRect();
+    return {
+      x: ((e.clientX - r.left) / r.width) * 100,
+      y: ((e.clientY - r.top) / r.height) * 100
+    };
+  };
+
+  hold.addEventListener("pointerdown", (e) => {
+    if (e.target.closest("button")) return;
+    hold.setPointerCapture(e.pointerId);
+    arPos.drag = { dx: arPos.x - toPct(e).x, dy: arPos.y - toPct(e).y, moved: false };
+    hold.classList.add("is-held");
+  });
+
+  hold.addEventListener("pointermove", (e) => {
+    if (!arPos.drag) return;
+    const p = toPct(e);
+    arPos.x = Math.min(92, Math.max(8, p.x + arPos.drag.dx));
+    arPos.y = Math.min(88, Math.max(24, p.y + arPos.drag.dy));
+    arPos.drag.moved = true;
+    arApply();
+  });
+
+  const end = () => {
+    if (!arPos.drag) return;
+    const moved = arPos.drag.moved;
+    arPos.drag = null;
+    hold.classList.remove("is-held");
+    if (!moved) arSay();
+  };
+  hold.addEventListener("pointerup", end);
+  hold.addEventListener("pointercancel", end);
+
+  hold.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      arSay();
+    }
+  });
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !$("#ar-root")?.hidden) closeAR();
+});
 
 /* ---------- shell ---------- */
 let activeTab = "score";
@@ -1112,4 +1510,4 @@ const now = new Date();
 const timeEl = $("#status-time");
 if (timeEl) timeEl.textContent = now.getHours() + ":" + String(now.getMinutes()).padStart(2, "0");
 
-render();
+boot();

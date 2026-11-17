@@ -1,5 +1,5 @@
 /**
- * Captures the key screens of the prototype into %TEMP%/opencode/cd-shots for review.
+ * Captures the key screens of the prototype into %TEMP%/opencode/cd-shots.
  *   npm run shots
  */
 import { chromium } from "playwright-core";
@@ -29,85 +29,100 @@ const shot = async (name) => {
 // clean state
 await page.evaluate(() => localStorage.clear());
 await page.reload();
-await page.waitForTimeout(800);
+await page.waitForTimeout(900);
 
 // score (default tab)
 await shot("00-score");
 
 // insights
 await page.locator('.gel-tab[data-tab="insights"]').click();
-await page.waitForTimeout(250);
+await page.waitForTimeout(300);
 await shot("01-insights");
 
-// one insight opened ("how we know this")
-await page.locator(".gel-why summary").first().click();
-await page.waitForTimeout(200);
-await shot("02-insight-detail");
-
-// goals
-await page.locator('.gel-tab[data-tab="goals"]').click();
+// one finding, opened as a sheet
+await page.locator(".gel-row-link:not(.gel-row-link--tile)").first().click();
+await page.waitForTimeout(500);
+await shot("02-insight-sheet");
+await page.keyboard.press("Escape");
 await page.waitForTimeout(250);
+
+// goals (self-filling, no buttons)
+await page.locator('.gel-tab[data-tab="goals"]').click();
+await page.waitForTimeout(300);
 await shot("03-goals");
+
+// back to score: movements behind Afterpay
+await page.locator('.gel-tab[data-tab="score"]').click();
+await page.waitForTimeout(300);
+await page.locator(".gel-row-link--tile").first().click();
+await page.waitForTimeout(500);
+await shot("04-movements");
+await page.keyboard.press("Escape");
+await page.waitForTimeout(250);
+
+// what moves your score
+await page.locator('button:has-text("What moves your score")').click();
+await page.waitForTimeout(500);
+await shot("05-factors");
+await page.keyboard.press("Escape");
+await page.waitForTimeout(250);
 
 // dragon (plain scene)
 await page.locator('.gel-tab[data-tab="dragon"]').click();
-await page.waitForTimeout(250);
-await shot("04-dragon");
+await page.waitForTimeout(300);
+await shot("06-dragon");
 
 // shop
 await page.locator('.gel-tab[data-tab="shop"]').click();
-await page.waitForTimeout(250);
-await shot("05-shop");
-
-// grant coins, buy a hat + cave, view dragon dressed
-await page.evaluate(() => {
-  localStorage.setItem(
-    "credit-dragon:state",
-    JSON.stringify({
-      version: 2,
-      xp_total: 320,
-      coins: 1200,
-      streak_weeks: 3,
-      protected: false,
-      bills: {},
-      goals: {},
-      shop: { owned: [], equipped: { hat: null, face: null, neck: null, home: null }, feeds: 0, fed_at: null },
-      choices: {},
-      awarded: [],
-      ledger: []
-    })
-  );
-});
-await page.reload();
-await page.waitForTimeout(800);
-await page.locator('.gel-tab[data-tab="shop"]').click();
-await page.waitForTimeout(250);
-await page.locator('.gel-shop-item[data-item="item_cap"] button', { hasText: "Buy" }).click();
-await page.waitForTimeout(200);
-await page.locator('.gel-shop-item[data-item="item_cave"] button', { hasText: "Buy" }).click();
-await page.waitForTimeout(250);
-await page.locator('.gel-tab[data-tab="dragon"]').click();
 await page.waitForTimeout(300);
-await shot("06-dragon-dressed");
+await shot("07-shop");
 
-// evolution (drop XP just below 800, complete a manual goal)
+// grant coins, buy a hat + cave, view the dragon dressed
 await page.evaluate(() => {
   const s = JSON.parse(localStorage.getItem("credit-dragon:state"));
-  s.xp_total = 720;
+  s.coins = 1200;
   localStorage.setItem("credit-dragon:state", JSON.stringify(s));
 });
 await page.reload();
 await page.waitForTimeout(800);
-await page.locator('.gel-tab[data-tab="goals"]').click();
+await page.locator('.gel-tab[data-tab="shop"]').click();
+await page.waitForTimeout(300);
+await page.locator('.gel-shop-item[data-item="item_cap"] button', { hasText: "Buy" }).click();
 await page.waitForTimeout(250);
-await page.locator('button.gel-btn-primary', { hasText: "Mark done" }).first().click();
-await page.waitForTimeout(500);
-const dlg = await page.locator(".gel-dialog").count();
-if (dlg > 0) {
-  await shot("07-evolution");
-  await page.locator(".gel-btn-primary", { hasText: "Continue" }).click();
-  await page.waitForTimeout(150);
+await page.locator('.gel-shop-item[data-item="item_cave"] button', { hasText: "Buy" }).click();
+await page.waitForTimeout(300);
+await page.locator('.gel-tab[data-tab="dragon"]').click();
+await page.waitForTimeout(350);
+await shot("08-dragon-dressed");
+
+// evolution: sit just below 800, then act on one finding
+await page.evaluate(() => {
+  const s = JSON.parse(localStorage.getItem("credit-dragon:state"));
+  s.xp_total = 790;
+  localStorage.setItem("credit-dragon:state", JSON.stringify(s));
+});
+await page.reload();
+await page.waitForTimeout(800);
+await page.locator('.gel-tab[data-tab="insights"]').click();
+await page.waitForTimeout(300);
+await page.locator(".gel-row-link:not(.gel-row-link--tile)").first().click();
+await page.waitForTimeout(400);
+await page.locator(".gel-sheet-actions .gel-btn-primary").click();
+await page.waitForTimeout(700);
+if ((await page.locator(".gel-dialog").count()) > 0) {
+  await shot("09-evolution");
+  await page.locator(".gel-dialog .gel-btn-primary", { hasText: "Continue" }).click();
 }
+
+// the AR moment: dragon placed in the room, saying a real line
+await page.locator('.gel-tab[data-tab="dragon"]').click();
+await page.waitForTimeout(300);
+await page.locator('button:has-text("See it in your room")').click();
+await page.waitForTimeout(1500);
+await phone.screenshot({ path: join(OUT, "10-ar.png") });
+console.log("saved 10-ar.png");
+await page.locator(".gel-ar-controls .gel-btn-primary").click();
+await page.waitForTimeout(200);
 
 await browser.close();
 console.log("shots written to", OUT);

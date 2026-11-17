@@ -1,50 +1,64 @@
-# Insights screen — spec (for Shawn's SwiftUI)
+# Insights screen: spec for Shawn's SwiftUI
 
-> ⚠️ **This replaces the old "Bill Negotiator" screen.** The negotiator (approve-to-switch)
-> was retired — see `CHANGES.md`. This is the successor: a list of **credit-health findings**.
+> This replaces the old Bill Negotiator screen. See `CHANGES.md`. There is no
+> approve-to-switch flow and no recommended brand.
 
 ## What the screen is
 
-Each card is a *finding* the AI pulled from Mia's own transactions, mapped to what actually
-moves an Australian credit score. There is **no "switch provider"** action and **no brand
-the customer doesn't already pay** is recommended.
+A list of **credit-health findings** the AI pulled from Mia's own transactions, mapped to
+what actually moves an Australian credit score. The card stays short. Tapping it opens a
+sheet with the evidence and the one action.
 
 ## Screen flow
 
 ```
-Insights list  →  expand "How we know this"  →  act (remind / protect / track)  →  card → Done
+Insights list  →  "How we know this"  →  bottom sheet (evidence + why + action)  →  Done
 ```
 
-## 1. Header + summary
+## 1. Header and summary
 
-- Title **Insights**, subtitle `"N patterns to act on"`.
-- A panel: *"Every finding is mapped to what actually moves an Australian credit score —
-  repayment history, enquiries, limits and defaults. Things that only free up cash are
-  labelled **Cash**."*
-- Three count chips: **Credit** / **Cash** / **Fees**.
+- Title **Insights**, subtitle `"N patterns to look at"`.
+- Summary panel: three counts (`affect your score`, `free up cash`, `avoid a fee`), then two
+  rows for the money: **Cash you could free** (`$63.00 a month`, green) and **Fees you could
+  avoid** (`$19.00 a month`).
+- One closing line: "Repayment history matters most. Everything else is smaller."
 
 ## 2. The card
 
-For each `bills[]` entry (ordered `remind` → `protect` → `track` → `keep` / `no_offer`):
+- Head: brand logo tile (or GEL icon), title, `provider · plan`, current amount on the right.
+- A factor chip (`Credit` navy / `Cash` green / `Fees` amber) and the one-line `finding`.
+- A **How we know this** row that opens the sheet.
+- No action button on the card. The action lives in the sheet, which keeps the list calm.
 
-- Head: icon · title · provider·plan, and the current amount right-aligned (tabular figures).
-- A **factor chip** (`Credit` navy / `Cash` green / `Fees` amber) + a `finding` one-liner.
-- `How we know this` disclosure: `evidence` label/value rows, `why` (why it matters), and
-  `advice` (the action line).
-- A **neutral source link** where relevant (ACCC market band, or Westpac's own product page).
+## 3. The sheet (GEL BottomSheet)
 
-## 3. Actions (never "approve to switch")
+Slides up from the bottom, rounded top corners (12px), black/65 backdrop, close button, tap
+outside or Escape to dismiss.
 
-| action_type | Button | Result |
-|---|---|---|
-| `remind` | **Set a reminder** | Card → "Done: reminder set. On-time repayments are the #1 factor." |
-| `protect` | **Protect balance** | Card → "Done: protected balance set. No dishonour fee." |
-| `track` | **Track this** | Card → "Done: we're watching. We'll confirm any saving when the debit changes." |
-| `keep` / `no_offer` | — | Muted, informational. |
+Contents, in order:
 
-Each action also has a **Dismiss** text button (no award, ledgered so we don't nag again).
+1. `evidence` rows (`k` muted left, `v` bold right, hairline between).
+2. `why`, one sentence on why it matters to the score.
+3. `advice`, one short line, in the warning colour.
+4. A neutral source link when there is one (ACCC market band, or the customer's own provider).
+5. A verified line: `Westpac transaction history · 17 Nov 2026`.
+6. Actions: the primary button (**Set a reminder** / **Protect balance** / **Track this**),
+   then a **Dismiss** text button.
 
-## 4. Award
+## 4. After acting
 
-Acting awards the mapped action in `rewards.json` (`reminder_set` 100 / `protected_balance`
-60 / `insight_tracked` 40), updates the dragon's XP bar, and can trigger an evolution toast.
+The card switches to a Done state with a short confirmation:
+
+| action_type | Done copy |
+|---|---|
+| `remind` | "Reminder set. Your next repayment should land on time." |
+| `protect` | "Protected balance set for Thu 19 Nov." |
+| `track` | "We're watching this and will report back." |
+
+Awards: `reminder_set` 100 XP / 60 coins, `protected_balance` 60 / 40, `insight_tracked`
+40 / 20. Acting can also complete a goal, which shows one combined toast.
+
+## 5. Status cards
+
+`keep` (Spotify) and `no_offer` (rent) render muted and informational: reason only, no
+button, no sheet.

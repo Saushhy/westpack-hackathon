@@ -279,6 +279,15 @@
     display: inline-flex; align-items: center; justify-content: center;
   }
   .gel-adorn .gel-ico { width: 24px; height: 24px; }
+  /* A brand Mia already pays: its own mark on a white tile. */
+  .gel-adorn--brand {
+    background: var(--background-white);
+    border: 1px solid var(--border-muted-soft);
+    overflow: hidden;
+  }
+  .gel-brand-img {
+    width: 26px; height: 26px; object-fit: contain; display: block;
+  }
 
   /* ================= Panel (GEL Panel, hero look) ======================= */
   .gel-panel {
@@ -573,25 +582,26 @@
     100% { transform: scale(1.1) rotate(24deg); opacity: 0; }
   }
 
-  /* ================= collapsible "why" (native details/summary) ======== */
-  details.gel-why summary {
-    cursor: pointer;
-    list-style: none;
-    display: flex; align-items: center; gap: 6px;
-    font-size: var(--typography-body-size-10);
-    font-weight: 700;
-    color: var(--text-link);
+  /* ================= tappable row (opens a sheet) ======================= */
+  .gel-row-link {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    width: 100%; margin-top: 12px; padding: 11px 0 0;
+    border: 0; border-top: 1px solid var(--border-muted-soft);
+    background: none; cursor: pointer;
+    font-family: inherit; font-size: var(--typography-body-size-10); font-weight: 700;
+    color: var(--text-link); text-align: left;
   }
-  details.gel-why summary::-webkit-details-marker { display: none; }
-  details.gel-why summary::after {
-    content: "";
-    width: 8px; height: 8px;
-    border-right: 2px solid currentColor;
-    border-bottom: 2px solid currentColor;
-    transform: rotate(45deg) translateY(-2px);
-    transition: transform 0.2s var(--ease);
+  .gel-row-link .gel-ico { width: 18px; height: 18px; flex: none; }
+  .gel-row-link--tile {
+    margin-top: 0; padding: 12px 0; border-top: 1px solid var(--border-muted-soft);
+    color: var(--text-body);
   }
-  details.gel-why[open] summary::after { transform: rotate(-135deg) translateY(-2px); }
+  .gel-row-link--tile:first-of-type { border-top: 0; }
+  .gel-row-link--tile .gel-cell-body { gap: 2px; min-width: 0; }
+  .gel-move-name {
+    font-family: var(--font-brand), var(--font-family-sans);
+    font-size: 16px; font-weight: 700; color: var(--text-heading);
+  }
 
   /* ================= banking UI: money + structure ====================== */
   /* Money is the hero: brand font, tabular figures, right-aligned. */
@@ -778,6 +788,15 @@
   .dragon-wear--face { font-size: 32px; }
   .dragon-wear--neck { font-size: 32px; }
 
+  /* The real model render is a photo-like image, so the worn glyphs sit a
+     little smaller than they did over the old emoji dragon. */
+  .gel-dragon-wrap--art .dragon-wear--hat { font-size: 34px; }
+  .gel-dragon-wrap--art .dragon-wear--face,
+  .gel-dragon-wrap--art .dragon-wear--neck { font-size: 26px; }
+  .gel-scene--mini .gel-dragon-wrap--art .dragon-wear--hat { font-size: 24px; }
+  .gel-scene--mini .gel-dragon-wrap--art .dragon-wear--face,
+  .gel-scene--mini .gel-dragon-wrap--art .dragon-wear--neck { font-size: 18px; }
+
   .gel-scene--mini .gel-dragon-wrap { width: 130px; height: 130px; }
   .gel-scene--mini .dragon-img { width: 120px; height: 120px; }
   .gel-scene--mini .dragon-img.emoji-fallback { font-size: 108px; line-height: 120px; }
@@ -860,29 +879,43 @@
   }
   .gel-score-max { font-size: 22px; font-weight: 500; color: var(--text-muted); letter-spacing: 0; }
 
-  .gel-buckets { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px; }
-  .gel-bucket {
-    border: 1px solid var(--border-muted-soft); border-radius: var(--rounded-2xl);
-    padding: 12px; background: var(--background-white);
-    display: flex; flex-direction: column; gap: 2px;
-  }
-  .gel-bucket-label { font-size: 12px; font-weight: 600; color: var(--text-muted); }
-  .gel-bucket-val {
+  .gel-goal-title {
     font-family: var(--font-brand), var(--font-family-sans);
-    font-size: 20px; line-height: 1.1; font-weight: 700; color: var(--text-heading);
+    font-size: 22px; line-height: 1.15; font-weight: 700; color: var(--text-heading);
+    margin-top: 4px;
+  }
+
+  /* three counts + the two dollar figures that used to sit in a bucket strip */
+  .gel-counts { display: flex; gap: 18px; }
+  .gel-count { display: flex; flex-direction: column; gap: 2px; }
+  .gel-count-val {
+    font-family: var(--font-brand), var(--font-family-sans);
+    font-size: 24px; line-height: 1; font-weight: 700; color: var(--text-heading);
     font-variant-numeric: tabular-nums;
   }
-  .gel-bucket-sub { font-size: 11px; color: var(--text-muted); line-height: 1.3; }
-  .gel-bucket--score .gel-bucket-val { color: var(--text-hero); }
-  .gel-bucket--cash .gel-bucket-val { color: var(--text-success); }
-  .gel-bucket--fees .gel-bucket-val { color: var(--text-warning); }
+  .gel-count-label { font-size: 12px; color: var(--text-muted); line-height: 1.2; }
 
   .gel-forecast {
     background: var(--surface-hero-faint); border-radius: var(--rounded-md); padding: 12px;
   }
 
-  .gel-bnpl-row { align-items: baseline; }
-  .gel-bnpl-name { font-weight: 600; color: var(--text-body); }
+  /* movements inside the sheet */
+  .gel-move-month { margin-top: 16px; }
+  .gel-move {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 0; border-bottom: 1px solid var(--border-muted-soft);
+  }
+  .gel-move:last-child { border-bottom: 0; }
+  .gel-move-day {
+    flex: none; width: 26px; text-align: center;
+    font-family: var(--font-brand), var(--font-family-sans);
+    font-size: 15px; font-weight: 700; color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .gel-move-desc {
+    font-size: var(--typography-body-size-10); color: var(--text-body);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
 
   .gel-factor-list { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
   .gel-factor-row { display: flex; gap: 10px; align-items: flex-start; }
@@ -895,6 +928,13 @@
   .gel-factor-arrow.is-down { background: var(--surface-warning-faint); color: var(--text-warning); }
   .gel-factor-body { flex: 1 1 auto; min-width: 0; }
 
+  /* goals: bar + the "next check" line, never a button */
+  .gel-progress-note {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    margin-top: 8px;
+  }
+  .gel-progress-note .gel-muted { font-size: 12px; }
+
   .gel-factor {
     display: inline-flex; align-items: center; height: 20px; padding: 0 8px;
     border-radius: var(--rounded-sm); font-size: 12px; font-weight: 600;
@@ -906,4 +946,85 @@
   .gel-factor--credit { color: var(--text-hero); border-color: var(--wbc-hero-100); background: var(--surface-hero-faint); }
 
   .gel-badge--warning { background: var(--surface-warning-faint); color: var(--text-warning); border-color: var(--border-warning-mild); }
+
+  /* ================= AR view (camera + placed dragon) ===================
+     The dragon portrait already carries its own contact shadow, so nothing
+     here fakes one. When the camera is unavailable the drawn tabletop stands
+     in, which keeps the demo honest about what is on screen. */
+  .gel-ar {
+    position: absolute; inset: 0; z-index: 60;
+    background: #0d0f14; overflow: hidden;
+  }
+  .gel-ar[hidden] { display: none; }
+
+  .gel-ar-video {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; display: none;
+  }
+  .gel-ar-video.is-live { display: block; }
+  .gel-ar-video.is-live ~ .gel-ar-room { display: none; }
+
+  .gel-ar-room { position: absolute; inset: 0; }
+  .gel-ar-room-wall { position: absolute; inset: 0 0 32% 0; background: linear-gradient(#eef1f6 0%, #dde2ea 100%); }
+  .gel-ar-room-table {
+    position: absolute; inset: 32% 0 0 0;
+    background: linear-gradient(#cfae8b 0%, #b08c66 48%, #8a6746 100%);
+    box-shadow: inset 0 16px 26px -14px rgba(0, 0, 0, 0.45);
+  }
+
+  .gel-ar-hud {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 3;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px;
+  }
+  .gel-ar-close {
+    width: 36px; height: 36px; border-radius: 999px; border: 0;
+    background: rgba(22, 22, 25, 0.55); color: #fff; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .gel-ar-close .gel-ico { width: 20px; height: 20px; }
+  .gel-ar-tag {
+    font-size: 11px; font-weight: 600; color: #fff;
+    background: rgba(22, 22, 25, 0.55); padding: 5px 9px; border-radius: 999px;
+  }
+
+  .gel-ar-stage { position: absolute; inset: 0; z-index: 2; }
+  .gel-ar-hold {
+    position: absolute; left: 50%; top: 58%;
+    width: 210px; transform: translate(-50%, -100%);
+    touch-action: none; cursor: grab;
+  }
+  .gel-ar-hold.is-held { cursor: grabbing; }
+  .gel-ar-dragon { display: block; }
+  .ar-img {
+    width: 100%; height: auto; display: block;
+    filter: drop-shadow(0 14px 22px rgba(0, 0, 0, 0.32));
+  }
+  .ar-img.emoji-fallback { font-size: 150px; line-height: 1; text-align: center; }
+
+  .gel-ar-hold.is-dropping { animation: ar-drop 0.8s var(--spring, cubic-bezier(0.2, 0.8, 0.3, 1)); }
+  @keyframes ar-drop {
+    0% { transform: translate(-50%, -170%) scale(0.7); opacity: 0; }
+    55% { opacity: 1; }
+    78% { transform: translate(-50%, -95%) scale(1.05); }
+    100% { transform: translate(-50%, -100%) scale(1); }
+  }
+
+  .gel-ar-bubble {
+    position: absolute; left: 16px; right: 16px; bottom: 78px; z-index: 4;
+    background: rgba(255, 255, 255, 0.97); border-radius: var(--rounded-3xl);
+    padding: 10px 12px; font-size: var(--typography-body-size-10); line-height: 1.4;
+    color: var(--text-body); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.24);
+    opacity: 0; transform: translateY(6px); pointer-events: none;
+    transition: opacity 0.2s var(--ease), transform 0.22s var(--ease);
+  }
+  .gel-ar-bubble.show { opacity: 1; transform: none; }
+
+  .gel-ar-controls {
+    position: absolute; left: 12px; right: 12px; bottom: 12px; z-index: 5;
+    display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 6px;
+  }
+  .gel-ar-controls .gel-btn-ghost,
+  .gel-ar-controls .gel-btn-primary { height: 38px; background-color: rgba(255, 255, 255, 0.95); }
+  .gel-ar-controls .gel-btn-ghost { border-color: var(--border-muted-soft); }
 }

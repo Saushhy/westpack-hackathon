@@ -1,126 +1,163 @@
-# CHANGES — Credit Dragon: a credit-score coach, not a bill negotiator
+# CHANGES: Credit Dragon, a credit-score coach
 
-> **Read this first if you're an AI or teammate picking up this branch.**
-> Branch: `feat/santiago-credit-trajectory` · Owner: Santiago · Date: Mon 16 Nov 2026
+> **Read this first if you are an AI or a teammate picking up this branch.**
+> Branch: `feat/santiago-credit-trajectory` · Owner: Santiago · Updated Tue 17 Nov 2026
 
-This records the product direction we agreed in person and the exact data/UI that implements it.
-It supersedes the earlier "bill negotiator" framing entirely.
+This records the product direction we agreed in person and the exact data and UI that
+implements it. It supersedes the earlier "bill negotiator" framing entirely.
 
 ---
 
-## 1. What this product is now (in one breath)
+## 1. What the product is
 
 > **The dragon is a picture of your credit score's trajectory.** It reads Westpac's own
-> transaction data, finds the habits and patterns that move an Australian credit score —
-> money you've borrowed (BNPL, cards, loans), whether you pay on time, and debit-risk that
-> could become a black mark — then gives you one action at a time. Acting on them earns XP
-> and coins, which grow and dress the dragon. **There is no "switch provider" and no brand
-> you don't already pay is ever recommended.**
+> transaction data, finds the habits that move an Australian credit score (money you have
+> borrowed, whether you pay on time, debits that could bounce), and gives you one action at
+> a time. Acting on them grows and dresses the dragon.
 
-The tool is **not** a financial advisor and **not** a telco/energy broker. It is a
-credit-health coach that shows you your own file and helps you improve it.
+There is no "switch provider", no promoted brand, and no manual "mark as done".
 
 ---
 
-## 2. The honest rule that shapes everything
+## 2. The rules that shape the UI
 
-> **We don't predict your credit score. We predict your credit *file*.** The score is just
-> what the bureau says about it.
-
-Three buckets, never blended:
-
-| Bucket | What it is | What moves it | In the app |
-|---|---|---|---|
-| **Credit score** | The bureau number | Repayment history · enquiries · limits · defaults | Score tab: score, factors, BNPL, reminders |
-| **Cash freed** | Money kept each month | Cheaper bills / fewer subscriptions | Insights labelled **Cash** |
-| **Fees avoided** | Charges that never happen | Stopping a dishonour | Insights labelled **Fees** (protected balance) |
-
-And the data-integrity loop:
-
-> **Nothing is claimed that isn't observed.** A saving starts as *potential*, becomes
-> *verified* only when the old debit stops appearing in transactions, and only then earns
-> the full `saving_verified` award.
+1. **No brand the customer does not already pay.** Naming Afterpay, Zip, Vodafone, Netflix
+   or Goodlife is their own data. Recommending anyone else is promotion, so we do not.
+2. **The AI never claims a saving.** A finding is *potential* until the transaction shows it
+   happened.
+3. **The score is the ground truth, XP comes from behaviour.** Nobody can promise points, so
+   the forecast is a range with a stated assumption, and factors are direction only.
+4. **Goals fill themselves.** A goal completes when the data says it happened, never when
+   someone taps a button.
 
 ---
 
-## 3. The brand rule (the fix for "should Westpac promote other businesses?")
+## 3. The dragon is the real model now
 
-> **Naming a provider the customer already pays is not promotion — it's their own data.
-> Naming a provider they don't pay is a recommendation, and that's where sponsor conflicts
-> and affiliate optics live.**
+`/assets/dragon_3d` (an OBJ with separate PBR maps and no material file) is assembled
+into `web/assets/dragon/dragon.glb` by `npm run build:dragon`. 19,782 triangles, three
+maps embedded, 915 kB, all inside the file so it works offline.
 
-**This is now fully implemented.** The old "switch to Belong" offer is gone. The phone
-finding is a neutral **market band** (`$35–$45`, ACCC), linked to a neutral source, with the
-advice *"we don't pick a provider for you — check it yourself."* Every brand shown in the
-app is one Mia already transacts with (Vodafone, Netflix, Afterpay, Goodlife), or Westpac
-itself.
+- `npm run build:dragon` reads the OBJ, downscales the maps with sharp (base colour and
+  normal to 1024, a packed ORM map to 512) and attaches them to the glTF. The source has
+  no `.mtl`, so the material is wired by hand.
+- `npm run render:dragon` renders the model in headless Edge through three.js and writes
+  `assets/dragon/{baby,teen,adult}.png` with a transparent background. The app already
+  looked for those filenames, so no rendering code ships to the browser. The egg stage
+  stays the emoji on purpose: the model is a dragon, not an egg.
+- The stage portraits are the same dragon framed larger, so it visibly grows with the
+  score. `WEAR_ANCHOR` was re-measured from the alpha silhouette of each render, so hats
+  and shades land on the head of the real model.
+- The model has **no rig**, so the app wears items at measured offsets and the AR build
+  uses transforms only. See `docs/ar-dragon-handoff.md` for the USDZ path and the
+  RealityKit snippet.
+
+### The dragon speaks, and only from our data
+
+The compliance rule for this build: **no free chat, no generation at runtime.** The
+dragon's bubble is composed by `dragonSaid()` in `web/app.js` from `bills.json` and the
+saved state, so every line quotes a figure the transaction file proves:
+
+- "Afterpay takes $84.50 on 18 Nov. Keep cash aside for it."
+- "Your card payment was 3 days late in October."
+- "2 of 4 instalments paid on time."
+
+The audit asserts that the first line matches the real payment, that goal progress is
+live, and that no other provider is ever named.
 
 ---
 
-## 4. Where the data comes from — three tiers (tier 2 + 3 are wired now)
+## 4. What changed before that (v3)
+
+### Deleted
+- **Low Rate Card panel** and the `westpac_products` array. It read as an advert with no
+  clear purpose.
+- **"Last check" predicted-vs-actual block**, plus `score.forecast.previous`.
+- **"A debit is at risk" block** on the Score tab. It duplicated the gym finding in Insights.
+- **The three-bucket strip** (score / cash / fees). The big score panel does that job better.
+  The two dollar figures moved into the Insights summary.
+- **Every "mark done" / "complete goal" button.** Goals are computed.
+
+### Added
+- **Real brand logos** in `web/assets/brands/` (9 files), fetched once by
+  `npm run fetch:logos` and committed so the prototype still works offline. `adorn()` prefers
+  the logo and falls back to the GEL icon when a file is missing.
+- **Movements sheet.** Tapping Afterpay or Zip lists the real payments from Carlos's
+  transaction file, grouped by month with subtotals.
+- **Self-filling goals**, three of them, each driven by a real signal.
+- **A generic slide-up sheet** (`openSheet`) used by every detail view.
+- **Daily check-in** on boot (`daily_checkin` 10 XP, `checkin_week` 120 XP).
+
+### Rewritten
+- **All user-facing copy.** No em dashes or en dashes anywhere in the app, one idea per
+  sentence, `why` under about 14 words. The audit fails the build if a dash comes back.
+- **BNPL rows** now read `Next payment $84.50 on 18 Nov` instead of `2 facilities · 3 due`.
+
+---
+
+## 5. Where the data comes from
 
 | Tier | Source | In the app |
 |---|---|---|
-| **1. Westpac transactions** | Recurring debits, repayment timing, dishonours, BNPL | Every finding's `evidence` rows |
-| **2. Westpac's own products** | CDR **Product Reference Data** (public, no auth) | `westpac_products` — Low Rate Card **13.74% p.a.**, live endpoint verified |
-| **3. Neutral benchmark** | ACCC / AER (brand-free ranges, link out) | Phone finding's `benchmark` |
+| 1. Westpac transactions | Recurring debits, repayment timing, dishonours, BNPL | Every finding's `evidence`, and the movements sheets |
+| 2. Neutral benchmark | ACCC price monitoring (brand-free range, link out) | The phone finding's `benchmark` |
 
-Westpac PRD endpoint (verified live): `GET https://digital-api.westpac.com.au/cds-au/v1/banking/products`
-(list `x-v: 5`, detail `x-v: 7`) → 65 products, `lastUpdated` 2026-11-16.
+Tier 2 (Westpac's own CDR product data) is no longer shown in the UI. The endpoint is
+recorded here for later: `GET https://digital-api.westpac.com.au/cds-au/v1/banking/products`
+(list `x-v: 5`, detail `x-v: 7`).
 
 ---
 
-## 5. Schema (what changed)
+## 6. Schema
 
 ### `data/bills.json`
-- `score` — the bureau score anchor + forecast (range + assumption + previous, for the
-  predicted-vs-actual loop).
-- `credit_file` — the goal, BNPL panel, dishonour risk.
-- `westpac_products[]` — Westpac's own products (tier 2).
-- `bills[]` — now **findings**, each with:
-  - `factor` → `credit` / `cash` / `fees` / `none` (the three-bucket chip)
-  - `action_type` → `remind` / `protect` / `track` / `keep` / `no_offer` (**no more
-    `switch` / `cancel` / `reschedule`**)
-  - `advice` → the one action-oriented line
-  - `evidence_tier` → `westpac_transactions` / `gov_benchmark` / `westpac_prd`
-  - `benchmark` (phone only) → neutral market band + source link
-- `recommendations` → `[]` (the streaming "keep one" mechanic was removed; streaming is a
-  single `track` finding).
+- `score` is now `{ value, scale, max, source, refreshed_at, consent, demo_sample, forecast:
+  { range, horizon_months, assumption } }`. No `previous`.
+- `credit_file.bnpl.providers[]` gained `logo`, `match` (regex for the transactions),
+  `paid_on_time`, `instalments_cycle`, `plans`. `bnpl` also has `last_facility_date`.
+- `totals.fees_avoided` added (was a hardcoded fallback in `app.js`).
+- `bills[]` entries gained `logo` and `provider_match`, and lost `offer`, `risk_notes` and
+  `requires_approval` where they were noise.
+- `westpac_products` and `recommendations` are gone.
 
 ### `data/rewards.json`
-- `credit_factors[]` — the four bureau factors (direction, not points).
-- Actions replaced: `bill_switch` / `bill_cancel` / `bill_reschedule` → `reminder_set` (100)
-  / `protected_balance` (60) / `insight_tracked` (40). `saving_verified` (120) retained.
-- Goals re-aimed at credit health: pay card on time, protect a debit at risk, no new BNPL.
+- `starting_state.checkins[]` seeds six days so the seventh (demo day) completes the week.
+- New actions: `daily_checkin` (10 XP), `checkin_week` (120 XP).
+- `goals[]` are now `{ id, title, description, xp, coins, source, target, unit, watching,
+  next_check }` where `source` is `checkin` / `bnpl_on_time` / `no_new_bnpl`.
 
 ---
 
-## 6. The demo journey (new numbers)
+## 7. The demo journey
 
-1. **Score** — 612 / 1200 (Equifax, consent-gated), forecast 635–650, the four factors,
-   BNPL "credit you don't see", Westpac's own Low Rate Card, predicted-vs-actual.
-2. **Insights** — act on 6 findings: *set a reminder* (card), *protect balance* (gym),
-   *track* ×4 (BNPL, phone, internet, streaming).
-3. **Goals** — complete the 3 goals; the dragon **evolves to Teen** crossing 800 XP.
-4. **Dragon / Shop** — spend coins on a hat / cave, see the dragon wear it.
+1. **Score**: 612/1200 Equifax, forecast 635 to 650, "Your goal: Car loan in 12 months",
+   Afterpay and Zip with next payment dates, and a "What moves your score" sheet.
+2. **Opening the app** records the daily check-in, which completes the seven-day goal:
+   **550 XP, 330 coins** before you touch anything.
+3. **Insights**: six findings, each opening a sheet with the evidence and one action.
+   Acting on all six takes you to **870 XP and 510 coins**, and the dragon **evolves to Teen**
+   in the middle of them (it crosses 800).
+4. **Goals**: 1 of 3 done. The other two sit at 2 of 4 instalments and 27 of 30 days, and
+   will complete themselves when the payments land.
+5. **Dragon and Shop**: spend coins on a hat and a cave and watch it wear them.
 
-**Ends at 940 XP · 480 coins · Level 5 · Teen dragon.** (The old "1080 XP / 600 coins /
-$92.99 saved" numbers are retired — there is no bill-switching total anymore.)
+The old "1080 XP / 600 coins / $92.99 saved" numbers are retired. There is no switching total.
 
 ---
 
-## 7. Still to do as a team (not built)
+## 7. Still to do as a team
 
-1. **Split the score layer with Carlos** — Carlos owns the AI-generated *insight text and
-   questions*; Santiago owns the factor→action→dragon mapping and forecast display.
-2. **Fill `detected_from`** on `bill_card` and `bill_bnpl` — they're placeholders until
-   Carlos maps them to real transaction ids.
-3. **Verify before the slide**: (a) the Equifax score scale (differs from Experian/illion —
-   print `/1200` next to it), (b) current BNPL reporting + the new BNPL credit regime.
+1. **Carlos** owns the insight text and questions. Santiago owns the factor to action to
+   dragon mapping. Confirm the split.
+2. **Carlos's transaction file** still lives at the repo root as `mia_transactions.json`.
+   `build-data.js` reads it from either the root or `/data/transactions.json`, so moving it is
+   safe whenever he is ready.
+3. **Verify before the slide**: the Equifax score scale, and the current BNPL reporting rules.
+4. **Naomi's dragon and shop PNGs** are still pending. The emoji is the designed fallback.
 
 ---
 
 ## 8. How to see it
 
-Open `web/index.html` (double-click, works offline) or the screenshots in
-`%TEMP%\opencode\cd-shots`. Run `npm run audit` (65 assertions) and `npm run shots` from `web/`.
+Open `web/index.html` by double-click, or look at `%TEMP%\opencode\cd-shots`.
+From `web/`: `npm run audit` (89 assertions) and `npm run shots`.

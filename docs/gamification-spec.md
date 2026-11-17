@@ -1,60 +1,62 @@
-# Gamification spec — Credit Dragon
+# Gamification spec: Credit Dragon
 
-How XP, coins, levels and dragon stages work, and why the rules are credit-health-first
-(not engagement-farming).
+How XP, coins, levels and dragon stages work, and why every rule is credit-health-first.
 
 ## 1. Design principle
 
-> Rewards only ever come from behaviours that improve **credit health** — paying on time,
-> protecting a debit at risk, and holding off new credit. There is **no XP for spending**,
-> opening the app, or the volume of transactions.
+> Rewards only ever come from behaviours that improve **credit health**: paying on time,
+> protecting a debit at risk, and holding off new credit. There is no XP for spending.
 
-Every award is **explainable** and **auditable**: it carries a `why_rewards_you` string and
-is written to a ledger (see `data-contracts.md` §3). The dragon is a picture of the credit
-file's trajectory — it grows from the small habits that feed the slow-moving score.
+Every award is explainable and auditable. It carries a `why_rewards_you` string and is
+written to a ledger (see `data-contracts.md` §3).
 
 ## 2. Reward table (`data/rewards.json` → `actions`)
 
 | Action | XP | Coins | Cap | Why it rewards you |
 |---|---|---|---|---|
-| Set a repayment reminder (`reminder_set`) | 100 | 60 | per finding | On-time repayments are the #1 score factor. |
+| Daily check-in (`daily_checkin`) | 10 | 10 | one per day | Tiny on purpose. It cannot be farmed. |
+| Seven days in a row (`checkin_week`) | 120 | 60 | once per 7-day window | A week of checking turns awareness into habit. |
+| Set a repayment reminder (`reminder_set`) | 100 | 60 | per finding | The step that makes an on-time payment happen. |
 | Protect a debit at risk (`protected_balance`) | 60 | 40 | per finding | Stops a dishonour becoming a black mark. |
-| Track a money pattern (`insight_tracked`) | 40 | 20 | per finding | Lets us watch it and confirm any saving. |
-| On-time repayment (`on_time_repayment`) | 150 | 100 | 1 / month | Repayment history is the top factor. |
-| No new BNPL this month (`no_new_bnpl_month`) | 250 | 150 | 1 / month | Fewer enquiries & debts protects the file. |
-| Completed a plan goal (`goal_completed`) | 100 | 60 | per goal | A real step toward credit health. |
-| Verified a saving (`saving_verified`) | 120 | 80 | per finding | Awarded only once the debit stops (proven). |
-| 4-week savings streak | 200 | 120 | 1 / month | Consistency moves a score. |
-| Answered a question | 25 | 10 | 5 / month | Low value, can't be farmed. |
-| Shop purchase | 0 | — | — | Cosmetics never earn XP. |
+| Track a money pattern (`insight_tracked`) | 40 | 20 | per finding | Lets us watch it and confirm what happens. |
+| Completed a plan goal (`goal_completed`) | 100 | 60 | per goal | Only fires when the data says it happened. |
+| On-time repayment (`on_time_repayment`) | 150 | 100 | 1 per month | Repayment history is the biggest factor. |
+| No new BNPL this month (`no_new_bnpl_month`) | 250 | 150 | 1 per month | Fewer enquiries and less debt. |
+| Verified a saving (`saving_verified`) | 120 | 80 | per finding | Reserved for a saving proven by transactions. |
+| Shop purchase | 0 | spend | none | Cosmetics never earn XP. |
 
 ## 3. Levels and stages
 
 - **Levels**: 10 levels at `0, 100, 250, 450, 700, 1000, 1350, 1750, 2200, 2700` XP.
-- **Stages**: egg (0) → baby (250) → **teen (800)** → adult (1500). The demo evolves to
-  **Teen** mid-journey.
+- **Stages**: egg (0) → baby (250) → **teen (800)** → adult (1500).
 
-## 4. The integrity mechanic — predicted vs verified
+## 4. Goals fill themselves
 
-A saving is **potential** when the AI spots it, and **verified** only when the old debit
-stops appearing in the customer's own transactions. XP for acting is given for the
-*behaviour* (set a reminder, protect a debit), while `saving_verified` is reserved for the
-*proof*. Nothing is claimed that isn't observed.
+There are no goal buttons in the app. `syncGoals()` reads a real signal and completes the
+goal, and the XP follows:
 
-## 5. Dressing your dragon (wardrobe + scenes + food)
+| Goal | Signal | Target |
+|---|---|---|
+| Your dragon checks your file daily | `state.checkins` inside the last 7 days | 7 |
+| Pay every Afterpay and Zip on time | `bnpl.providers[].paid_on_time` | cycle total |
+| Go a month without new BNPL | days since `bnpl.last_facility_date` | 30 |
 
-- **Hats / shades / scarves** attach to the dragon and scale with its stage (buying = wearing).
-- **Homes** change the scene behind it (`Lava Lair` → volcanic, `Starry Cave` → night sky).
-- **Food** is repeatable — feeding makes the dragon hop; it tracks a `feeds` counter, never XP.
-- The dragon is tappable — it gives a credit-health tip.
+Because only real payments can move goals 2 and 3, they sit at 2 of 4 and 27 of 30 during
+the demo. That is the point: the bar does not lie.
 
-All cosmetic, spends coins, never awards XP — the economy stays credit-health-first.
+## 5. Dressing your dragon (wardrobe, scenes, food)
 
-## 6. Demo click-path (lands at 940 XP → Teen dragon)
+- **Hats, shades and scarves** attach to the dragon and scale with its stage.
+- **Homes** change the scene behind it (`Starry Cave` → night sky, `Lava Lair` → volcanic).
+- **Food** is repeatable and counts `feeds`. It never awards XP.
+- The dragon is tappable and answers with a credit-health line.
 
-1. **Score** — see 612, the forecast band, the four factors, BNPL, Westpac's own card.
-2. **Insights** — set a reminder (+100), protect the debit (+60), track four patterns (+40×4).
-3. **Goals** — complete all three (+100×3). The dragon **evolves to Teen** crossing 800.
-4. **Dragon / Shop** — spend ~480 coins (a hat + a cave) and watch it wear them.
+## 6. Demo click-path (550 → 870 XP, Teen dragon)
 
-Ends at **940 XP · 480 coins · Level 5 · Teen dragon**.
+1. **Score**: 612/1200 Equifax, forecast 635 to 650, the goal card, Afterpay and Zip with
+   next payment dates, the factors sheet.
+2. **On open** the daily check-in and the seven-day goal land: **550 XP, 330 coins**.
+3. **Insights**: six findings, each opening a sheet with evidence and one action. All six
+   take you to **870 XP, 510 coins**, and the dragon evolves to **Teen** partway through.
+4. **Goals**: 1 of 3 done, the other two honestly in progress.
+5. **Dragon and Shop**: spend coins on a hat and a cave and watch it wear them.
