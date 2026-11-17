@@ -1,0 +1,71 @@
+{
+  "as_of": "2026-11-17",
+  "note": "Brand-free Australian averages for the Bill check. They describe the market, never a provider. Re-check the sources before a demo.",
+  "items": [
+    {
+      "key": "mobile",
+      "utility": "Mobile plan",
+      "match": "postpaid|mobile|5g family",
+      "average_monthly": 47,
+      "per": "line",
+      "label": "Average Australian phone bill",
+      "source": "Canstar, average phone bill 2026",
+      "source_url": "https://www.canstar.com.au/mobile-phone/average-mobile-phone-bill/"
+    },
+    {
+      "key": "mobile_prepaid",
+      "utility": "Prepaid mobile",
+      "match": "prepaid",
+      "average_monthly": 30,
+      "per": "line",
+      "label": "Average Australian prepaid phone bill",
+      "source": "Canstar, average phone bill 2026",
+      "source_url": "https://www.canstar.com.au/mobile-phone/average-mobile-phone-bill/"
+    },
+    {
+      "key": "nbn_25",
+      "utility": "Home internet",
+      "match": "nbn 25\\b",
+      "average_monthly": 73.11,
+      "label": "Average NBN 25 plan",
+      "source": "TechRadar, average NBN price by speed tier",
+      "source_url": "https://www.techradar.com/computing/wi-fi-broadband/average-nbn-plan-costs-compared-whats-a-fair-price-for-your-speed-tier"
+    },
+    {
+      "key": "nbn_50",
+      "utility": "Home internet",
+      "match": "nbn 50\\b",
+      "average_monthly": 87.57,
+      "label": "Average NBN 50 plan",
+      "source": "TechRadar, average NBN price by speed tier",
+      "source_url": "https://www.techradar.com/computing/wi-fi-broadband/average-nbn-plan-costs-compared-whats-a-fair-price-for-your-speed-tier"
+    },
+    {
+      "key": "nbn_100",
+      "utility": "Home internet",
+      "match": "nbn 100\\b",
+      "average_monthly": 93.34,
+      "label": "Average NBN 100 plan",
+      "source": "TechRadar, average NBN price by speed tier",
+      "source_url": "https://www.techradar.com/computing/wi-fi-broadband/average-nbn-plan-costs-compared-whats-a-fair-price-for-your-speed-tier"
+    },
+    {
+      "key": "nbn_500",
+      "utility": "Home internet",
+      "match": "nbn 250\\b|nbn 500\\b",
+      "average_monthly": 93.61,
+      "label": "Average NBN 500 plan (as fast or faster)",
+      "source": "TechRadar, average NBN price by speed tier",
+      "source_url": "https://www.techradar.com/computing/wi-fi-broadband/average-nbn-plan-costs-compared-whats-a-fair-price-for-your-speed-tier"
+    },
+    {
+      "key": "nbn_1000",
+      "utility": "Home internet",
+      "match": "nbn 1000\\b",
+      "average_monthly": 118.18,
+      "label": "Average NBN 1000 plan",
+      "source": "TechRadar, average NBN price by speed tier",
+      "source_url": "https://www.techradar.com/computing/wi-fi-broadband/average-nbn-plan-costs-compared-whats-a-fair-price-for-your-speed-tier"
+    }
+  ]
+}

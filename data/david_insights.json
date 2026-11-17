@@ -51,8 +51,8 @@
   "recommended_goals": [
     {
       "goal_id": "goal_d001",
-      "title": "Reduce Total Credit Limits ($35k -> $6k)",
-      "target_metric": "Cut Westpac limit to $6,000 and close secondary ANZ card",
+      "title": "Lower Your Westpac Card Limit ($20k -> $6k)",
+      "target_metric": "Reduce the Westpac card limit to $6,000",
       "xp_reward": 200,
       "coin_reward": 80,
       "estimated_score_delta": 40
@@ -67,8 +67,8 @@
     },
     {
       "goal_id": "goal_d003",
-      "title": "Streamline Living Expenses for Mortgage Audit",
-      "target_metric": "Save $220/month across telco, NBN, and subscriptions",
+      "title": "Cover Living Expenses Before the Mortgage Review",
+      "target_metric": "Move recurring bill money into a Westpac buffer each payday for 90 days",
       "xp_reward": 120,
       "coin_reward": 45,
       "estimated_score_delta": 15

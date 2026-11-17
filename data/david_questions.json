@@ -1,16 +1,16 @@
 [
   {
     "id": "qd_001",
-    "question": "You hold $35,000 in combined credit card limits across Westpac ($20k) and ANZ ($15k), but typically spend under $3,000/month. Are you open to reducing these limits?",
+    "question": "You hold $35,000 in combined credit card limits across Westpac ($20k) and ANZ ($15k), but typically spend under $3,000/month. Would you like to lower your Westpac limit?",
     "why_asking": "Why am I asking? On 24 Aug you paid an annual fee on your Altitude Black card, and you clear balances monthly (e.g., $1,845 on 8 Sep, $2,240 on 6 Oct, and $2,680 on 5 Nov).",
     "related_transaction_ids": ["tx_d009", "tx_d026", "tx_d027", "tx_d056", "tx_d057", "tx_d089", "tx_d090"],
     "answer_options": [
-      "Yes, reduce Westpac limit to $6k and close ANZ card",
-      "Keep Westpac at $20k for points, close ANZ card",
-      "I need both limits for international business travel",
+      "Yes, lower my Westpac limit to $6k",
+      "Keep my Westpac limit at $20k for points",
+      "I need my limits for international business travel",
       "Skip question"
     ],
-    "impact": "Crucial Impact: Australian mortgage underwriters (APRA guidelines) assess 3% of your total credit card limits as an ongoing monthly liability ($1,050/month for $35k). Dropping your total limit from $35k to $6k immediately unlocks ~$95,000 in additional home loan borrowing power."
+    "impact": "Crucial Impact: Mortgage underwriters assess about 3% of your total card limits as a monthly liability ($1,050/month for $35k). Lowering your Westpac limit from $20k to $6k cuts that by about $420/month. Your ANZ card is with ANZ, so any change there is yours to make with them."
   },
   {
     "id": "qd_002",
@@ -40,16 +40,16 @@
   },
   {
     "id": "qd_004",
-    "question": "Your premium telco, health, and media subscriptions total $875.95/month. Do you want your Dragon to optimize these before your 3-month mortgage audit?",
+    "question": "Your premium telco, health, and media subscriptions total $875.95/month. Want to set this money aside each month before your 3-month mortgage review so every bill is covered?",
     "why_asking": "Why am I asking? Recurring debits include Telstra 5G Family ($195), Bupa Health ($348), Aussie Broadband ($129), Apple One ($49.95), Naked Wines ($80), Kayo Sports ($35), and The Australian ($40).",
     "related_transaction_ids": ["tx_d011", "tx_d018", "tx_d020", "tx_d022", "tx_d023", "tx_d045", "tx_d051", "tx_d052", "tx_d054", "tx_d055", "tx_d078", "tx_d084", "tx_d085", "tx_d086", "tx_d087", "tx_d108", "tx_d109", "tx_d110", "tx_d111"],
     "answer_options": [
-      "Yes, consolidate telco/NBN and pause unused streaming",
-      "Review health insurance tier, but keep telco as is",
+      "Yes, move $876 a month into a Westpac bills buffer",
+      "Show my recurring bills and their due dates in one place",
       "Keep everything as is",
       "Skip question"
     ],
-    "impact": "Medium Impact: Lenders scrutinize the last 90 days of living expenses against the Household Expenditure Measure (HEM). Trimming $200/month in non-essential recurring overhead directly improves your net disposable income buffer."
+    "impact": "Medium Impact: Lenders review your last 90 days of living expenses. Your plans with these providers stay as they are; showing every bill covered on time from a Westpac buffer strengthens your disposable income picture."
   },
   {
     "id": "qd_005",

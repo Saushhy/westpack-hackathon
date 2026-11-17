@@ -43,7 +43,11 @@ const PERSONAS = {
     goal: "Home loan pre-approval",
     goal_date: "2027-02-17",
     goal_note: "On track",
-    label: "Home buyer"
+    label: "Home buyer",
+    /* Where a Bill check saving goes. The repayment is from his transactions;
+       no balance is in the data, so the app shows the yearly amount instead of
+       a payoff date. */
+    debt_target: { name: "Westpac Car Loan", balance: null, repayment_monthly: 620 }
   }
 };
 
@@ -89,7 +93,7 @@ const CATEGORY_FACTOR = [
    advice instead. */
 const CATEGORY_ADVICE = [
   [/repayment/i, "Set a reminder so the next one lands on time."],
-  [/default/i, "Protect the balance before the debit lands."],
+  [/default/i, "Move money into a savings buffer before the debit lands."],
   [/enquir|credit limits|utilisation/i, "Hold off new credit until this clears."],
   [/cash flow|liquidity|living expenses|serviceab/i, "Free the cash first, then pay down debt."],
   [/history length|alternative payment|credit friction/i, "Keep reporting the accounts you already pay well."]
@@ -317,6 +321,104 @@ function toCreditFile(persona, tx, meta) {
   };
 }
 
+/* ---------- Bill check ----------
+   Utilities the person pays (phone, home internet) compared with a brand-free
+   Australian average from data/benchmarks.json. Only a bill above the average
+   becomes a finding, and it never names a provider to move to. */
+const BENCHMARKS = JSON.parse(readFileSync(join(dataDir, "benchmarks.json"), "utf8"));
+function benchmarkFor(description) {
+  const d = String(description || "").toLowerCase();
+  const order = ["mobile_prepaid", "nbn_25", "nbn_50", "nbn_100", "nbn_500", "nbn_1000", "mobile"];
+  for (const key of order) {
+    const item = BENCHMARKS.items.find((i) => i.key === key);
+    if (item && new RegExp(item.match, "i").test(d)) return item;
+  }
+  return null;
+}
+function monthlyOf(list) {
+  /* The usual charge, not a one-off setup fee: the most common amount wins. */
+  const counts = {};
+  for (const t of list) counts[t.amount] = (counts[t.amount] || 0) + 1;
+  const amount = Number(Object.entries(counts).sort((a, b) => b[1] - a[1] || b[0] - a[0])[0][0]);
+  const days = String(list[list.length - 1].description).match(/(\d+)-day/i);
+  return days ? Math.round(((amount * 30.4) / Number(days[1])) * 100) / 100 : amount;
+}
+function toBillChecks(tx) {
+  const groups = new Map();
+  for (const t of tx) {
+    if (t.type !== "debit" || !/telco/i.test(t.category || "")) continue;
+    if (/business|commercial/i.test(t.description + " " + t.merchant)) continue; // consumer averages only
+    const bm = benchmarkFor(t.description);
+    if (!bm) continue;
+    if (!groups.has(t.merchant)) groups.set(t.merchant, { bm, list: [] });
+    groups.get(t.merchant).list.push(t);
+  }
+  const out = [];
+  for (const [merchant, { bm, list }] of groups) {
+    const last = list[list.length - 1];
+    const linesMatch = String(last.description).match(/(\d+)\s*lines?/i);
+    const lines = linesMatch ? Number(linesMatch[1]) : 1;
+    const monthly = monthlyOf(list);
+    const avg = Math.round(bm.average_monthly * lines * 100) / 100;
+    const saving = Math.round((monthly - avg) * 100) / 100;
+    if (saving < 5) continue; // below or close to the average: nothing to suggest
+    const brand = brandOf(merchant);
+    const isNet = /^nbn/.test(bm.key);
+    out.push({
+      id: "bc_" + merchant.toLowerCase().replace(/[^a-z0-9]+/g, "_"),
+      category: isNet ? "internet" : "mobile",
+      factor: "cash",
+      evidence_tier: "market_average",
+      savings_status: "potential",
+      icon: isNet ? "desktop" : "phone",
+      logo: brand.logo,
+      label: bm.utility,
+      provider: merchant,
+      plan: last.description,
+      billing_period: "monthly",
+      current_amount: monthly,
+      current_monthly: monthly,
+      provider_url: null,
+      provider_match: brand.brand ? [brand.brand] : [merchant],
+      detected_from: list.map((t) => t.id),
+      confidence: "high",
+      action_type: "track",
+      advice: "Consider a cheaper plan with another provider. We don't name one: compare the market yourself.",
+      benchmark: {
+        key: bm.key,
+        average_monthly: bm.average_monthly,
+        lines,
+        label: bm.label,
+        source: bm.source,
+        source_url: bm.source_url,
+        checked_at: AS_OF
+      },
+      verification: { checked_at: AS_OF, source: bm.source },
+      savings_monthly: saving,
+      savings_annual: Math.round(saving * 12 * 100) / 100,
+      why: "",
+      requires_approval: false,
+      xp: 40,
+      coins: 20,
+      finding: "You pay " + "$" + Math.round(saving) + " a month more than the average.",
+      evidence: [
+        { k: "Charged", v: list.map((t) => Number(t.date.slice(8)) + " " + MONTHS[Number(t.date.slice(5, 7)) - 1]).join(", ") },
+        { k: "You pay", v: "$" + monthly.toFixed(2) + " a month" },
+        { k: "Australian average", v: "$" + avg.toFixed(2) + " a month" }
+      ]
+    });
+  }
+  return out;
+}
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/* The AI pipeline's own estimate for its bills goal, used as the top of the
+   score range a Bill check could add. Absent: no score line is shown. */
+function billCheckUpside(insights) {
+  const g = (insights.recommended_goals || []).find((x) => /bill|living expenses|telco|subscription/i.test(x.title || ""));
+  return g && g.estimated_score_delta ? g.estimated_score_delta : null;
+}
+
 /* ---------- the plan ----------
    The three goals are the same mechanism for everyone, because credit behaves
    the same way for everyone. What changes is the target, which comes from that
@@ -377,7 +479,10 @@ for (const [name, meta] of Object.entries(PERSONAS)) {
   const score = insights.credit_score;
   const delta = score.projected_score_after_plan - score.current_score;
 
-  const findings = toFindings(insights, txById);
+  const checks = toBillChecks(tx);
+  const findings = toFindings(insights, txById).concat(checks);
+  const freed = Math.round(checks.reduce((a, c) => a + c.savings_monthly, 0) * 100) / 100;
+  const upside = checks.length ? billCheckUpside(insights) : null;
 
   out[name] = {
     id: name,
@@ -407,11 +512,25 @@ for (const [name, meta] of Object.entries(PERSONAS)) {
           range: [Math.round(score.current_score + delta * 0.6), score.projected_score_after_plan],
           horizon_months: score.timeframe_months,
           assumption: "you keep every repayment on time and open no new credit."
-        }
+        },
+        ...(upside
+          ? {
+              bill_check: {
+                upside_points: upside,
+                basis: "AI estimate from " + name + "_insights.json (bills goal), not a promise",
+                assumption: "you take the cheaper plans, put the saving on your debt and keep every repayment on time."
+              }
+            }
+          : {})
       },
-      credit_file: toCreditFile(name, tx, meta),
+      credit_file: { ...toCreditFile(name, tx, meta), ...(meta.debt_target ? { debt_target: meta.debt_target } : {}) },
       payday: { frequency: "fortnightly", next: "2026-11-20" },
-      totals: { recurring_monthly: 0, potential_cash_freed_monthly: 0, potential_cash_freed_annual: 0, fees_avoided: 0 },
+      totals: {
+        recurring_monthly: 0,
+        potential_cash_freed_monthly: freed,
+        potential_cash_freed_annual: Math.round(freed * 12 * 100) / 100,
+        fees_avoided: 0
+      },
       bills: findings
     }
   };

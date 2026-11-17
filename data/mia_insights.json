@@ -40,7 +40,7 @@
     },
     {
       "id": "ins_004",
-      "title": "$216.97/month in Optimisable Subscriptions & Telco",
+      "title": "$216.97/month in Recurring Subscriptions & Telco",
       "category": "Cash Flow Buffer",
       "severity": "low",
       "summary": "You spend $89.00/mo on Vodafone, $68.00/mo on Aussie Broadband, and $59.97/mo across 4 streaming services (Netflix, Stan, Disney+, Spotify).",
@@ -67,8 +67,8 @@
     },
     {
       "goal_id": "goal_003",
-      "title": "Shift Gym Billing Date & Optimise Telco Plan",
-      "target_metric": "Move direct debit to Friday and reduce telco bill",
+      "title": "Keep a Bills Buffer in Savings",
+      "target_metric": "Move $40 into a Westpac savings buffer each payday so the gym debit always clears",
       "xp_reward": 100,
       "coin_reward": 35,
       "estimated_score_delta": 20

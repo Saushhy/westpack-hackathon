@@ -46,22 +46,22 @@
     "answer_options": [
       "Yes, automate a fixed fortnightly Director Salary of $3,500",
       "Keep flexible transfers based on cash flow availability",
-      "Flag commingled personal charges automatically for my bookkeeper",
+      "Flag personal charges on my business account so I can review them",
       "Skip question"
     ],
     "impact": "Lending Assessment (APRA Serviceability): When a business owner applies for personal refinancing, underwriters examine commingling. Clean separation between commercial cash flow and personal director remuneration dramatically speeds up mortgage and credit line approvals."
   },
   {
     "id": "qm_005",
-    "question": "You hold a flawless $1,150/month repayment record on your Toyota commercial vehicle loan. Would you like to review asset finance refinancing options?",
+    "question": "You hold a flawless $1,150/month repayment record on your Toyota commercial vehicle loan. Want to see how this loan affects your personal borrowing capacity?",
     "why_asking": "Why am I asking? On-time debits of $1,150.00 cleared reliably on 25 Aug, 25 Sep, and 25 Oct.",
     "related_transaction_ids": ["tx_m009", "tx_m034", "tx_m054"],
     "answer_options": [
-      "Yes, check if Westpac Commercial Asset Finance offers lower rates",
-      "Keep the existing vehicle facility until payout",
-      "Show how this commercial liability impacts my personal borrowing capacity",
+      "Yes, show how this loan affects my borrowing capacity",
+      "Remind me before the final repayment",
+      "Keep the loan as it is",
       "Skip question"
     ],
-    "impact": "Positive Profile: Flawless commercial asset finance repayments demonstrate commercial maturity, qualifying your business for unsecured Westpac Business Overdraft discounts."
+    "impact": "Positive Profile: Flawless asset finance repayments show commercial maturity. Your Toyota loan is your agreement with Toyota, so it stays as it is; this only shows what it means for your next Westpac application."
   }
 ]

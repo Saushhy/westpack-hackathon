@@ -40,7 +40,7 @@
     },
     {
       "id": "ins_e004",
-      "title": "$250 Energy Provider Security Deposit Reclaimable",
+      "title": "$250 Energy Security Deposit Paid Upfront",
       "category": "Credit Friction",
       "severity": "medium",
       "summary": "You paid a $250 security deposit to Origin Energy because you lacked local credit history.",
@@ -59,8 +59,8 @@
     },
     {
       "goal_id": "goal_e002",
-      "title": "Reclaim $250 Energy Security Deposit",
-      "target_metric": "Request deposit release after 90 days of on-time utility payments",
+      "title": "Build an On-Time Bills Record",
+      "target_metric": "Keep 90 days of on-time utility payments in your Westpac history to show Origin or a landlord",
       "xp_reward": 120,
       "coin_reward": 40,
       "estimated_score_delta": 30

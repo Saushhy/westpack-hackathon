@@ -110,7 +110,7 @@
     },
     {
       "id": "protected_balance",
-      "label": "Protected a debit at risk",
+      "label": "Covered a debit at risk",
       "xp": 60,
       "coins": 40,
       "cap": { "type": "per_bill" },

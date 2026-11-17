@@ -1733,14 +1733,14 @@ window.PERSONAS = {
         "answer_options": [
           "Yes, automate a fixed fortnightly Director Salary of $3,500",
           "Keep flexible transfers based on cash flow availability",
-          "Flag commingled personal charges automatically for my bookkeeper",
+          "Flag personal charges on my business account so I can review them",
           "Skip question"
         ],
         "impact": "Lending Assessment (APRA Serviceability): When a business owner applies for personal refinancing, underwriters examine commingling. Clean separation between commercial cash flow and personal director remuneration dramatically speeds up mortgage and credit line approvals."
       },
       {
         "id": "qm_005",
-        "question": "You hold a flawless $1,150/month repayment record on your Toyota commercial vehicle loan. Would you like to review asset finance refinancing options?",
+        "question": "You hold a flawless $1,150/month repayment record on your Toyota commercial vehicle loan. Want to see how this loan affects your personal borrowing capacity?",
         "why_asking": "Why am I asking? On-time debits of $1,150.00 cleared reliably on 25 Aug, 25 Sep, and 25 Oct.",
         "related_transaction_ids": [
           "tx_m009",
@@ -1748,12 +1748,12 @@ window.PERSONAS = {
           "tx_m054"
         ],
         "answer_options": [
-          "Yes, check if Westpac Commercial Asset Finance offers lower rates",
-          "Keep the existing vehicle facility until payout",
-          "Show how this commercial liability impacts my personal borrowing capacity",
+          "Yes, show how this loan affects my borrowing capacity",
+          "Remind me before the final repayment",
+          "Keep the loan as it is",
           "Skip question"
         ],
-        "impact": "Positive Profile: Flawless commercial asset finance repayments demonstrate commercial maturity, qualifying your business for unsecured Westpac Business Overdraft discounts."
+        "impact": "Positive Profile: Flawless asset finance repayments show commercial maturity. Your Toyota loan is your agreement with Toyota, so it stays as it is; this only shows what it means for your next Westpac application."
       }
     ],
     "rewards": {
@@ -1885,7 +1885,7 @@ window.PERSONAS = {
         },
         {
           "id": "protected_balance",
-          "label": "Protected a debit at risk",
+          "label": "Covered a debit at risk",
           "xp": 60,
           "coins": 40,
           "cap": {
@@ -3367,7 +3367,7 @@ window.PERSONAS = {
       },
       {
         "id": "qe_002",
-        "question": "You paid a $250 upfront deposit to Origin Energy because you lacked local credit history. Want us to connect on-time utility reporting?",
+        "question": "You paid a $250 upfront deposit to Origin Energy because you lacked local credit history, and you have paid every bill on time since. Want a record of that from your Westpac history?",
         "why_asking": "Why am I asking? On 3 Sep you paid a $250 security deposit to Origin Energy, and you have paid every monthly power bill on time since.",
         "related_transaction_ids": [
           "tx_e014",
@@ -3375,27 +3375,27 @@ window.PERSONAS = {
           "tx_e066"
         ],
         "answer_options": [
-          "Yes, request refund of my $250 deposit after 90 days",
-          "Show me how utility accounts are reported in Australia",
+          "Yes, add these on-time payments to my Westpac payment summary",
+          "Remind me in 90 days so I can ask Origin about my deposit",
           "Leave it as is",
           "Skip question"
         ],
-        "impact": "High Impact: Energy retailers in Australia hold deposits for thin-file customers. Proving 3 consecutive months of on-time banking history allows Westpac's AI to prompt you to reclaim your $250 deposit."
+        "impact": "Medium Impact: Your deposit is part of your agreement with Origin, so only you and Origin can change it. A clear on-time record from your Westpac history is something you can show them, or a future landlord or lender."
       },
       {
         "id": "qe_003",
-        "question": "You paid $250 upfront for a 365-day Optus prepaid SIM. Would you prefer switching to a postpaid mobile plan once your score is established?",
+        "question": "You paid $250 upfront for a 365-day Optus prepaid SIM. Want to set a little aside each month so big yearly payments like this are always covered?",
         "why_asking": "Why am I asking? On 22 Aug you made an upfront annual payment to Optus rather than taking out a standard monthly postpaid contract.",
         "related_transaction_ids": [
           "tx_e003",
           "tx_e071"
         ],
         "answer_options": [
-          "Yes, I want a monthly phone plan once eligible",
-          "No, I prefer prepaid so I never overspend",
+          "Yes, start a Westpac savings goal of $21 a month for yearly bills",
+          "No, paying upfront works for me",
           "Skip question"
         ],
-        "impact": "Medium Impact: Postpaid telco contracts report positive repayment data to Australian credit bureaus under CCR. Once your credit footprint exists, postpaid plans can act as a secondary score builder."
+        "impact": "Low Impact: Your Optus plan is your choice and stays as it is. A small monthly saving means the next annual payment is already there when it is due."
       },
       {
         "id": "qe_004",
@@ -3563,7 +3563,7 @@ window.PERSONAS = {
         },
         {
           "id": "protected_balance",
-          "label": "Protected a debit at risk",
+          "label": "Covered a debit at risk",
           "xp": 60,
           "coins": 40,
           "cap": {
@@ -4060,7 +4060,7 @@ window.PERSONAS = {
           "requires_approval": false,
           "xp": 40,
           "coins": 20,
-          "finding": "$250 Energy Provider Security Deposit Reclaimable",
+          "finding": "$250 Energy Security Deposit Paid Upfront",
           "detail": "You paid a $250 security deposit to Origin Energy because you lacked local credit history.",
           "severity": "medium",
           "evidence": [
@@ -5382,7 +5382,7 @@ window.PERSONAS = {
     "questions": [
       {
         "id": "qd_001",
-        "question": "You hold $35,000 in combined credit card limits across Westpac ($20k) and ANZ ($15k), but typically spend under $3,000/month. Are you open to reducing these limits?",
+        "question": "You hold $35,000 in combined credit card limits across Westpac ($20k) and ANZ ($15k), but typically spend under $3,000/month. Would you like to lower your Westpac limit?",
         "why_asking": "Why am I asking? On 24 Aug you paid an annual fee on your Altitude Black card, and you clear balances monthly (e.g., $1,845 on 8 Sep, $2,240 on 6 Oct, and $2,680 on 5 Nov).",
         "related_transaction_ids": [
           "tx_d009",
@@ -5394,12 +5394,12 @@ window.PERSONAS = {
           "tx_d090"
         ],
         "answer_options": [
-          "Yes, reduce Westpac limit to $6k and close ANZ card",
-          "Keep Westpac at $20k for points, close ANZ card",
-          "I need both limits for international business travel",
+          "Yes, lower my Westpac limit to $6k",
+          "Keep my Westpac limit at $20k for points",
+          "I need my limits for international business travel",
           "Skip question"
         ],
-        "impact": "Crucial Impact: Australian mortgage underwriters (APRA guidelines) assess 3% of your total credit card limits as an ongoing monthly liability ($1,050/month for $35k). Dropping your total limit from $35k to $6k immediately unlocks ~$95,000 in additional home loan borrowing power."
+        "impact": "Crucial Impact: Mortgage underwriters assess about 3% of your total card limits as a monthly liability ($1,050/month for $35k). Lowering your Westpac limit from $20k to $6k cuts that by about $420/month. Your ANZ card is with ANZ, so any change there is yours to make with them."
       },
       {
         "id": "qd_002",
@@ -5435,7 +5435,7 @@ window.PERSONAS = {
       },
       {
         "id": "qd_004",
-        "question": "Your premium telco, health, and media subscriptions total $875.95/month. Do you want your Dragon to optimize these before your 3-month mortgage audit?",
+        "question": "Your premium telco, health, and media subscriptions total $875.95/month. Want to set this money aside each month before your 3-month mortgage review so every bill is covered?",
         "why_asking": "Why am I asking? Recurring debits include Telstra 5G Family ($195), Bupa Health ($348), Aussie Broadband ($129), Apple One ($49.95), Naked Wines ($80), Kayo Sports ($35), and The Australian ($40).",
         "related_transaction_ids": [
           "tx_d011",
@@ -5459,12 +5459,12 @@ window.PERSONAS = {
           "tx_d111"
         ],
         "answer_options": [
-          "Yes, consolidate telco/NBN and pause unused streaming",
-          "Review health insurance tier, but keep telco as is",
+          "Yes, move $876 a month into a Westpac bills buffer",
+          "Show my recurring bills and their due dates in one place",
           "Keep everything as is",
           "Skip question"
         ],
-        "impact": "Medium Impact: Lenders scrutinize the last 90 days of living expenses against the Household Expenditure Measure (HEM). Trimming $200/month in non-essential recurring overhead directly improves your net disposable income buffer."
+        "impact": "Medium Impact: Lenders review your last 90 days of living expenses. Your plans with these providers stay as they are; showing every bill covered on time from a Westpac buffer strengthens your disposable income picture."
       },
       {
         "id": "qd_005",
@@ -5617,7 +5617,7 @@ window.PERSONAS = {
         },
         {
           "id": "protected_balance",
-          "label": "Protected a debit at risk",
+          "label": "Covered a debit at risk",
           "xp": 60,
           "coins": 40,
           "cap": {
@@ -5890,6 +5890,11 @@ window.PERSONAS = {
           ],
           "horizon_months": 3,
           "assumption": "you keep every repayment on time and open no new credit."
+        },
+        "bill_check": {
+          "upside_points": 15,
+          "basis": "AI estimate from david_insights.json (bills goal), not a promise",
+          "assumption": "you take the cheaper plans, put the saving on your debt and keep every repayment on time."
         }
       },
       "credit_file": {
@@ -5949,6 +5954,11 @@ window.PERSONAS = {
           "risk": "low",
           "reason": "",
           "action": ""
+        },
+        "debt_target": {
+          "name": "Westpac Car Loan",
+          "balance": null,
+          "repayment_monthly": 620
         }
       },
       "payday": {
@@ -5957,8 +5967,8 @@ window.PERSONAS = {
       },
       "totals": {
         "recurring_monthly": 0,
-        "potential_cash_freed_monthly": 0,
-        "potential_cash_freed_annual": 0,
+        "potential_cash_freed_monthly": 42.39,
+        "potential_cash_freed_annual": 508.68,
         "fees_avoided": 0
       },
       "bills": [
@@ -6194,6 +6204,128 @@ window.PERSONAS = {
             {
               "k": "Bupa Australia",
               "v": "$348.00 · 02 09"
+            }
+          ]
+        },
+        {
+          "id": "bc_telstra_mobile",
+          "category": "mobile",
+          "factor": "cash",
+          "evidence_tier": "market_average",
+          "savings_status": "potential",
+          "icon": "phone",
+          "logo": null,
+          "label": "Mobile plan",
+          "provider": "Telstra Mobile",
+          "plan": "Telstra 5G Family Bundle (4 Lines)",
+          "billing_period": "monthly",
+          "current_amount": 195,
+          "current_monthly": 195,
+          "provider_url": null,
+          "provider_match": [
+            "Telstra Mobile"
+          ],
+          "detected_from": [
+            "tx_d018",
+            "tx_d051",
+            "tx_d084"
+          ],
+          "confidence": "high",
+          "action_type": "track",
+          "advice": "Consider a cheaper plan with another provider. We don't name one: compare the market yourself.",
+          "benchmark": {
+            "key": "mobile",
+            "average_monthly": 47,
+            "lines": 4,
+            "label": "Average Australian phone bill",
+            "source": "Canstar, average phone bill 2026",
+            "source_url": "https://www.canstar.com.au/mobile-phone/average-mobile-phone-bill/",
+            "checked_at": "2026-11-17"
+          },
+          "verification": {
+            "checked_at": "2026-11-17",
+            "source": "Canstar, average phone bill 2026"
+          },
+          "savings_monthly": 7,
+          "savings_annual": 84,
+          "why": "",
+          "requires_approval": false,
+          "xp": 40,
+          "coins": 20,
+          "finding": "You pay $7 a month more than the average.",
+          "evidence": [
+            {
+              "k": "Charged",
+              "v": "1 Sep, 1 Oct, 1 Nov"
+            },
+            {
+              "k": "You pay",
+              "v": "$195.00 a month"
+            },
+            {
+              "k": "Australian average",
+              "v": "$188.00 a month"
+            }
+          ]
+        },
+        {
+          "id": "bc_aussie_broadband",
+          "category": "internet",
+          "factor": "cash",
+          "evidence_tier": "market_average",
+          "savings_status": "potential",
+          "icon": "desktop",
+          "logo": "assets/brands/aussiebroadband.png",
+          "label": "Home internet",
+          "provider": "Aussie Broadband",
+          "plan": "Aussie Broadband NBN 250 Enterprise Plan",
+          "billing_period": "monthly",
+          "current_amount": 129,
+          "current_monthly": 129,
+          "provider_url": null,
+          "provider_match": [
+            "Aussie Broadband"
+          ],
+          "detected_from": [
+            "tx_d022",
+            "tx_d054",
+            "tx_d086"
+          ],
+          "confidence": "high",
+          "action_type": "track",
+          "advice": "Consider a cheaper plan with another provider. We don't name one: compare the market yourself.",
+          "benchmark": {
+            "key": "nbn_500",
+            "average_monthly": 93.61,
+            "lines": 1,
+            "label": "Average NBN 500 plan (as fast or faster)",
+            "source": "TechRadar, average NBN price by speed tier",
+            "source_url": "https://www.techradar.com/computing/wi-fi-broadband/average-nbn-plan-costs-compared-whats-a-fair-price-for-your-speed-tier",
+            "checked_at": "2026-11-17"
+          },
+          "verification": {
+            "checked_at": "2026-11-17",
+            "source": "TechRadar, average NBN price by speed tier"
+          },
+          "savings_monthly": 35.39,
+          "savings_annual": 424.68,
+          "why": "",
+          "requires_approval": false,
+          "xp": 40,
+          "coins": 20,
+          "finding": "You pay $35 a month more than the average.",
+          "evidence": [
+            {
+              "k": "Charged",
+              "v": "4 Sep, 4 Oct, 2 Nov"
+            },
+            {
+              "k": "You pay",
+              "v": "$129.00 a month"
+            },
+            {
+              "k": "Australian average",
+              "v": "$93.61 a month"
             }
           ]
         }
