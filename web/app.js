@@ -937,27 +937,22 @@ function openGoal(id) {
         <h2 class="gel-sheet-title" id="sheet-title">${g.title}</h2>
         <p class="gel-sheet-sub">${stageName} · ${value} of ${g.target} ${g.unit}</p>
       </div>
-      <div class="gel-sheet-head-end">
-        <span class="gel-money gel-money--sm">+${g.xp}</span><span class="gel-money-unit">XP</span>
-      </div>
     </div>`;
 
   const rows = [
-    ["What it watches", g.watching || "Your transactions"],
+    ["Watching", g.watching || "Your transactions"],
     ["Next check", complete ? "Done" : g.next_check],
     ["Reward", "+" + g.xp + " XP · +" + g.coins + " coins"]
   ]
     .map(([k, v]) => `<div class="gel-kv"><span class="gel-kv-k">${k}</span><span class="gel-kv-v">${v}</span></div>`)
     .join("");
 
+  /* No essay here. The fields answer the three questions a customer actually
+     has: what is being watched, when it is checked, and what it pays. */
   const body = `
     <div class="gel-evidence-card">
-      <span class="gel-evidence-eyebrow">The goal</span>
+      <span class="gel-evidence-eyebrow">Details</span>
       ${rows}
-    </div>
-    <p class="gel-detail">${g.description}</p>
-    <div class="gel-verified" style="margin-top:14px">
-      ${ico("check")} Westpac transaction history · ${fmtDate(TODAY)}
     </div>`;
 
   openSheet({
