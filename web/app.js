@@ -968,7 +968,7 @@ function renderScore() {
   return `
     <div class="gel-screen-head">
       <div>
-        <h1 class="gel-title">${bills.persona ? bills.persona + ", this is your score" : "Your score"}</h1>
+        <h1 class="gel-title">${bills.persona ? "Your score, " + bills.persona : "Your score"}</h1>
         <p class="gel-muted">${score.band || ""}</p>
       </div>
       <span class="gel-badge gel-badge--hero">${score.source || "Equifax"}</span>

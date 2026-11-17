@@ -177,7 +177,7 @@ await page.waitForTimeout(900);
   }));
 
   check("Score shows 612", "612", s.num, s.num.startsWith("612"));
-  check("Title reads 'Mia, this is your score'", "Mia, this is your score", s.title, s.title === "Mia, this is your score");
+  check("Title reads 'Your score, Mia'", "Your score, Mia", s.title, s.title === "Your score, Mia");
   check("Band shown under the title", "Average", s.band, s.band === "Average");
   check("Score source = Equifax", "Equifax", s.hero, /Equifax/.test(s.hero));
   check("Goal card is labelled 'Your goal'", "Your goal", s.goalLabel.join("|"), s.goalLabel.includes("Your goal"));
@@ -544,7 +544,7 @@ await page.waitForTimeout(900);
     };
   });
   check("Marcus page loads his own score", "670", m.score.split("/")[0], m.score.split("/")[0] === "670");
-  check("The title names the person", "Marcus, this is your score", m.title, m.title === "Marcus, this is your score");
+  check("The title names the person", "Your score, Marcus", m.title, m.title === "Your score, Marcus");
   check(
     "Marcus sees his card, car loan and overdraft",
     "3",
