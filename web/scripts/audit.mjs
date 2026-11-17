@@ -690,6 +690,20 @@ await page.waitForTimeout(900);
   const arLine = await page.evaluate(() => document.querySelector("#ar-bubble")?.textContent || "");
   check("In AR it quotes our own data", "Afterpay takes $84.50 on 18 Nov.", arLine, /Afterpay takes \$84\.50/.test(arLine));
 
+  const bubbleGeom = await page.evaluate(() => {
+    const bubble = document.querySelector("#ar-bubble");
+    const dragon = document.querySelector("#ar-dragon").getBoundingClientRect();
+    const b = bubble.getBoundingClientRect();
+    return {
+      above: Math.round(dragon.top - b.bottom),
+      centred: Math.abs(b.left + b.width / 2 - (dragon.left + dragon.width / 2)) < 3,
+      travels: !!document.querySelector("#ar-hold #ar-bubble")
+    };
+  });
+  check("The bubble sits above the dragon", "10px", String(bubbleGeom.above), bubbleGeom.above >= 0 && bubbleGeom.above < 24);
+  check("And is centred on it", "true", String(bubbleGeom.centred), bubbleGeom.centred);
+  check("It travels with the dragon", "true", String(bubbleGeom.travels), bubbleGeom.travels);
+
   await page.locator('button:has-text("Say something")').click();
   await page.waitForTimeout(300);
   const arLine2 = await page.evaluate(() => document.querySelector("#ar-bubble")?.textContent || "");

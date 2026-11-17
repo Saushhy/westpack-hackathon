@@ -1576,12 +1576,12 @@ function arStageMarkup() {
     </div>
     <div class="gel-ar-stage" id="ar-stage">
       <div class="gel-ar-hold" id="ar-hold">
+        <div class="gel-ar-bubble" id="ar-bubble" aria-live="polite"></div>
         <div class="gel-ar-dragon" id="ar-dragon" role="button" tabindex="0"
              aria-label="Your ${stage.name}. Tap to hear it.">
           ${imgOrEmoji(stage.image, stage.emoji, stage.name, "ar-img")}
         </div>
       </div>
-      <div class="gel-ar-bubble" id="ar-bubble"></div>
     </div>
     <div class="gel-ar-controls">
       <button class="gel-ar-say" type="button" onclick="arSay()">Say something</button>
