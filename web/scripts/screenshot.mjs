@@ -52,7 +52,7 @@ await shot("00-score");
 await tab("insights");
 await shot("01-insights");
 
-await page.locator(".gel-row-link:not(.gel-row-link--tile)").first().click();
+await page.locator(".gel-bill--tap").first().click();
 await page.waitForTimeout(500);
 await shot("02-insight-sheet");
 await page.keyboard.press("Escape");
@@ -81,7 +81,7 @@ await shot("06-dragon-egg");
 // ---------- hatch it: 10 XP short, then act on one finding ----------
 await setState({ xp_total: 790 });
 await tab("insights");
-await page.locator(".gel-row-link:not(.gel-row-link--tile)").first().click();
+await page.locator(".gel-bill--tap").first().click();
 await page.waitForTimeout(400);
 await page.locator(".gel-sheet-actions .gel-btn-primary").click();
 await page.waitForTimeout(800);
@@ -100,10 +100,14 @@ await shot("09-shop");
 
 await setState({ coins: 1200 });
 await tab("shop");
-await page.locator('.gel-shop-item[data-item="item_cap"] button', { hasText: "Buy" }).click();
-await page.waitForTimeout(250);
-await page.locator('.gel-shop-item[data-item="item_cave"] button', { hasText: "Buy" }).click();
+await page.locator('.gel-shop-row[data-item="item_cap"]').click();
+await page.waitForTimeout(350);
+await page.locator(".gel-sheet-actions .gel-btn-primary").click();
 await page.waitForTimeout(300);
+await page.locator('.gel-shop-row[data-item="item_cave"]').click();
+await page.waitForTimeout(350);
+await page.locator(".gel-sheet-actions .gel-btn-primary").click();
+await page.waitForTimeout(350);
 await tab("dragon");
 await shot("10-dragon-dressed");
 
@@ -111,7 +115,7 @@ await shot("10-dragon-dressed");
 await page.locator('button:has-text("See it in your room")').click();
 await page.waitForTimeout(1500);
 await shot("11-ar");
-await page.locator(".gel-ar-controls .gel-btn-primary").click();
+await page.locator(".gel-ar-done").click();
 await page.waitForTimeout(200);
 
 // ---------- the other three personas, generated from Carlos's data ----------

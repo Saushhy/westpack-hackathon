@@ -105,8 +105,9 @@ function adorn(bill) {
   return brandTile(bill.logo, BILL_ICON[bill.id] || "receipt");
 }
 
-/* The three-bucket label a change feeds: credit score / cash freed / fees avoided. */
-const FACTOR_LABEL = { cash: "Cash", fees: "Fees", credit: "Credit", none: "" };
+/* The tag word doubles as the label in the sheet header, and matches the three
+   counts in the summary exactly: affect your score / free up cash / avoid a fee. */
+const FACTOR_LABEL = { cash: "Cash", fees: "Fee", credit: "Score", none: "" };
 function factorChip(factor) {
   if (!factor || factor === "none") return "";
   return `<span class="gel-factor gel-factor--${factor}">${FACTOR_LABEL[factor] || factor}</span>`;
@@ -451,14 +452,14 @@ function billHead(bill, trailing) {
       ${adorn(bill)}
       <div class="gel-cell-body">
         <div class="gel-bill-title">${bill.label}</div>
-        <div class="gel-muted">${bill.provider} · ${bill.plan}</div>
+        <div class="gel-muted">${bill.provider}</div>
       </div>
       <div class="gel-bill-amount">${trailing || ""}</div>
     </div>`;
 }
 
 function evidenceRows(bill) {
-  const rows = bill.evidence || [];
+  const rows = (bill.evidence || []).slice(0, 2);
   if (!rows.length) return "";
   return (
     '<div class="gel-kvs">' +
@@ -545,30 +546,34 @@ function openInsight(id) {
   if (!bill) return;
   const copy = ACTION_COPY[bill.action_type] || ACTION_COPY.track;
 
+  /* Only a finding that still needs something offers the action. Anything
+     already done, dismissed, or informational opens read only. */
+  const status = state.bills[bill.id]?.status;
+  const canAct = isActionable(bill) && status !== "done" && status !== "dismissed";
+
   const head = `
     <div class="gel-sheet-head">
       ${adorn(bill)}
       <div class="gel-sheet-head-body">
         <h2 class="gel-sheet-title" id="sheet-title">${bill.label}</h2>
-        <p class="gel-sheet-sub">${bill.provider} · ${bill.plan}</p>
+        <p class="gel-sheet-sub">${[bill.provider, FACTOR_LABEL[bill.factor]].filter(Boolean).join(" · ")}</p>
       </div>
-      ${
-        bill.current_amount
-          ? `<div class="gel-sheet-head-end">
-               <span class="gel-money gel-money--sm">${fmtAUD(bill.current_amount)}</span>${moneyUnit(
-                 bill.billing_period
-               )}
-             </div>`
-          : ""
-      }
     </div>`;
 
+  /* What happened, then what to do about it, then where it came from. The
+     description is shown outright: no disclosure, no label to open. */
   const body = `
-    <div class="gel-evidence-card">
-      <span class="gel-evidence-eyebrow">What we saw</span>
-      ${evidenceRows(bill)}
-    </div>
+    ${
+      status === "done"
+        ? `<div class="gel-callout gel-callout--done">
+             ${ico("check")}
+             <p class="gel-callout-text">${doneCopy(bill)}</p>
+           </div>`
+        : ""
+    }
+    ${bill.finding ? `<p class="gel-lead">${bill.finding}</p>` : ""}
     ${bill.detail ? `<p class="gel-detail">${bill.detail}</p>` : ""}
+    <div class="gel-evidence-card">${evidenceRows(bill)}</div>
     ${
       bill.advice
         ? `<div class="gel-callout">
@@ -587,11 +592,12 @@ function openInsight(id) {
       }
     </div>`;
 
-  const actions = `
-    <button class="gel-btn-primary gel-btn-block" type="button" onclick="actFromSheet('${bill.id}')">
-      ${ico(copy.icon)} ${copy.label}
-    </button>
-    <button class="gel-btn-text" type="button" onclick="dismissFromSheet('${bill.id}')">Not now</button>`;
+  const actions = canAct
+    ? `<button class="gel-btn-primary gel-btn-block" type="button" onclick="actFromSheet('${bill.id}')">
+         ${ico(copy.icon)} ${copy.label}
+       </button>
+       <button class="gel-btn-text" type="button" onclick="dismissFromSheet('${bill.id}')">Not now</button>`
+    : '<button class="gel-btn-ghost gel-btn-block" type="button" onclick="closeSheet()">Close</button>';
 
   openSheet({ title: bill.label, head, body, actions });
 }
@@ -610,12 +616,22 @@ function insightCard(bill) {
   const st = state.bills[bill.id]?.status;
 
   if (st === "dismissed")
-    return `<article class="gel-cell gel-bill is-muted" data-bill="${bill.id}">
+    return `<article class="gel-cell gel-bill is-muted gel-bill--tap" data-bill="${bill.id}"
+             role="button" tabindex="0" aria-label="${bill.label}. Dismissed. Review."
+             onclick="openInsight('${bill.id}')"
+             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openInsight('${
+               bill.id
+             }')}">
       ${billHead(bill, `<span class="gel-badge gel-badge--faint">Dismissed</span>`)}
     </article>`;
 
   if (st === "done")
-    return `<article class="gel-cell gel-bill is-done" data-bill="${bill.id}">
+    return `<article class="gel-cell gel-bill is-done gel-bill--tap" data-bill="${bill.id}"
+             role="button" tabindex="0" aria-label="${bill.label}. Done. Review."
+             onclick="openInsight('${bill.id}')"
+             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openInsight('${
+               bill.id
+             }')}">
       ${billHead(bill, `<span class="gel-badge gel-badge--success">Done</span>`)}
       <div class="gel-hr"></div>
       <p class="gel-note gel-note--good">${doneCopy(bill)}</p>
@@ -625,25 +641,21 @@ function insightCard(bill) {
     ? `<span class="gel-money gel-money--sm">${fmtAUD(bill.current_amount)}</span>${moneyUnit(bill.billing_period)}`
     : "";
 
+  /* The fuller card: logo, what it is, who provides it, the one line that
+     explains it, and the tag that ties it to the summary counts. */
   return `
-    <article class="gel-cell gel-bill" data-bill="${bill.id}">
+    <article class="gel-cell gel-bill gel-bill--tap" data-bill="${bill.id}"
+             role="button" tabindex="0" aria-label="${bill.label}. ${bill.finding || ""} Review."
+             onclick="openInsight('${bill.id}')"
+             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openInsight('${
+               bill.id
+             }')}">
       ${billHead(bill, amount)}
       <div class="gel-tagline">
         ${factorChip(bill.factor)}
-        <span class="gel-muted">${bill.finding || ""}</span>
+        <span class="gel-muted gel-tagline-text">${bill.finding || ""}</span>
+        ${ico("arrow-right")}
       </div>
-      <button class="gel-row-link" type="button" onclick="openInsight('${bill.id}')">
-        <span>Review</span>${ico("arrow-right")}
-      </button>
-    </article>`;
-}
-
-function billStatusCard(bill) {
-  const label = bill.action_type === "keep" ? "Keeping" : "No change";
-  return `
-    <article class="gel-cell gel-bill is-muted" data-bill="${bill.id}">
-      ${billHead(bill, `<span class="gel-money gel-money--sm gel-money--muted">${fmtAUD(bill.current_amount)}</span>${moneyUnit(bill.billing_period)}`)}
-      <div class="gel-tagline"><span class="gel-badge gel-badge--faint">${label}</span></div>
     </article>`;
 }
 
@@ -665,15 +677,15 @@ function insightsSummary() {
       </div>
       <div class="gel-found-stats">
         <div class="gel-found-stat">
-          <span class="gel-found-num">${credit}</span>
+          <span class="gel-found-num gel-found-num--credit">${credit}</span>
           <span class="gel-found-label">affect your score</span>
         </div>
         <div class="gel-found-stat">
-          <span class="gel-found-num">${cash}</span>
+          <span class="gel-found-num gel-found-num--cash">${cash}</span>
           <span class="gel-found-label">free up cash</span>
         </div>
         <div class="gel-found-stat">
-          <span class="gel-found-num">${fees}</span>
+          <span class="gel-found-num gel-found-num--fees">${fees}</span>
           <span class="gel-found-label">avoid a fee</span>
         </div>
       </div>
@@ -689,20 +701,41 @@ function insightsSummary() {
           <span class="gel-money-tile-unit">a month</span>
         </div>
       </div>
-      <p class="gel-found-note">Repayment history matters most. Everything else is smaller.</p>
     </section>`;
+}
+
+/* Cards that need nothing from you are one row each inside a single card,
+   rather than two full cards that say almost nothing. */
+function statusGroup(list) {
+  if (!list.length) return "";
+  const rows = list
+    .map(
+      (b) => `
+      <div class="gel-status-row" data-bill="${b.id}">
+        <button class="gel-status-tap" type="button" onclick="openInsight('${b.id}')">
+          <span class="gel-status-name">${b.label}</span>
+          <span class="gel-muted">${b.action_type === "keep" ? "Keeping" : "No change"}</span>
+          <span class="gel-money gel-money--sm gel-money--muted">${fmtAUD(b.current_amount)}</span>
+          ${ico("arrow-right")}
+        </button>
+      </div>`
+    )
+    .join("");
+  return `
+    <article class="gel-cell">
+      <div class="gel-row-between">
+        <span class="gel-label">Nothing to change</span>
+        <span class="gel-badge gel-badge--faint">${list.length}</span>
+      </div>
+      <div style="margin-top:4px">${rows}</div>
+    </article>`;
 }
 
 function renderInsights() {
   const order = { remind: 0, protect: 1, track: 2, keep: 3, no_offer: 4 };
-
-  const cards = bills.bills
-    .slice()
-    .sort((a, b) => order[a.action_type] - order[b.action_type])
-    .map((b) =>
-      b.action_type === "keep" || b.action_type === "no_offer" ? billStatusCard(b) : insightCard(b)
-    )
-    .join("");
+  const sorted = bills.bills.slice().sort((a, b) => order[a.action_type] - order[b.action_type]);
+  const actionable = sorted.filter((b) => isActionable(b));
+  const quiet = sorted.filter((b) => !isActionable(b));
 
   return `
     <div class="gel-screen-head">
@@ -711,7 +744,8 @@ function renderInsights() {
       </div>
     </div>
     ${insightsSummary()}
-    ${cards}`;
+    ${actionable.map(insightCard).join("")}
+    ${statusGroup(quiet)}`;
 }
 
 /* ==========================================================================
@@ -773,8 +807,7 @@ function openMovements(name, match) {
             .join("")}
         </div>`;
       })
-      .join("") +
-    '<p class="gel-note" style="margin-top:14px">Every line here is a Westpac transaction.</p>';
+      .join("");
 
   openSheet({
     title: name,
@@ -863,14 +896,36 @@ function goalStatus(g) {
   return goalValue(g) > 0 ? "In progress" : "Not started";
 }
 
+/* Each goal gets the icon for what it actually watches, so three panels do not
+   read as three copies of the same card. */
+/* What is left to do first, and within that the goal closest to done, because
+   the next win is the one worth surfacing. Completed goals sink to the bottom. */
+function orderedGoals() {
+  return rewards.goals.slice().sort((a, b) => {
+    const da = goalDone(a) ? 1 : 0;
+    const db = goalDone(b) ? 1 : 0;
+    if (da !== db) return da - db;
+    return goalPct(b) - goalPct(a);
+  });
+}
+
+function completedOn(g) {
+  const at = state.goals[g.id]?.completed_at;
+  if (!at) return "Done";
+  return "Done " + dayMonth(at.slice(0, 10));
+}
+
 /* The goal, as the same kind of panel the score uses: the state and the reward
    live in the navy head, the number and the bar in the body, and the reasoning
    waits behind Review. */
 function renderGoals() {
-  const cards = rewards.goals
+  const cards = orderedGoals()
     .map((g) => {
       const complete = goalDone(g);
       const value = Math.min(goalValue(g), g.target);
+      const when = complete
+        ? `<span class="gel-when is-done">${ico("check")}${completedOn(g)}</span>`
+        : `<span class="gel-when">${ico("notification")}Next check ${g.next_check}</span>`;
       return `
         <article class="gel-panel gel-goal" data-goal="${g.id}">
           <div class="gel-panel-head">
@@ -879,12 +934,12 @@ function renderGoals() {
           </div>
           <div class="gel-panel-body">
             <div class="gel-goal-title">${g.title}</div>
-            <div class="gel-row-between" style="margin-top:10px">
-              <span class="gel-muted">${value} of ${g.target} ${g.unit}</span>
-              <span class="gel-muted">${complete ? "Done" : "Next check " + g.next_check}</span>
+            <div class="gel-goal-meta">
+              <span class="gel-goal-count"><b>${value}</b><span>/ ${g.target} ${g.unit}</span></span>
+              ${when}
             </div>
-            <div class="gel-bar gel-bar--skinny" style="margin-top:8px">
-              <div class="gel-bar-fill" style="width:${fmtPct(goalPct(g))}"></div>
+            <div class="gel-bar gel-bar--skinny" style="margin-top:6px">
+              <div class="gel-bar-fill ${complete ? "is-done" : ""}" style="width:${fmtPct(goalPct(g))}"></div>
             </div>
             <button class="gel-row-link" type="button" onclick="openGoal('${g.id}')">
               <span>Review</span>${ico("arrow-right")}
@@ -897,48 +952,47 @@ function renderGoals() {
   return `
     <div class="gel-screen-head">
       <div>
-        <h1 class="gel-title">Your plan</h1>
+        <h1 class="gel-title">Your goals</h1>
       </div>
     </div>
     ${cards}`;
 }
 
-/* Why the goal exists, what it watches, and what it pays. */
+/* What the goal watches, when it is checked, and what it pays. */
 function openGoal(id) {
   const g = rewards.goals.find((x) => x.id === id);
   if (!g) return;
   const complete = goalDone(g);
-  const value = Math.min(goalValue(g), g.target);
-  const stageName = goalStatus(g);
 
   const head = `
     <div class="gel-sheet-head gel-sheet-head--goal">
       <span class="gel-adorn">${ico("target")}</span>
       <div class="gel-sheet-head-body">
         <h2 class="gel-sheet-title" id="sheet-title">${g.title}</h2>
-        <p class="gel-sheet-sub">${stageName} · ${value} of ${g.target} ${g.unit}</p>
-      </div>
-      <div class="gel-sheet-head-end">
-        <span class="gel-money gel-money--sm">+${g.xp}</span><span class="gel-money-unit">XP</span>
       </div>
     </div>`;
 
+  /* Three questions, three answers. The state and the count are already on the
+     card behind this sheet, so they are not repeated here. */
+  const reward = `<span class="gel-reward">
+      <span class="gel-reward-part">${ico("paw")}+${g.xp} XP</span>
+      <span class="gel-reward-part">${coin()}+${g.coins}</span>
+    </span>`;
+
   const rows = [
-    ["What it watches", g.watching || "Your transactions"],
+    ["Watching", g.watching || "Your transactions"],
     ["Next check", complete ? "Done" : g.next_check],
-    ["Reward", "+" + g.xp + " XP · +" + g.coins + " coins"]
+    ["Reward", reward]
   ]
     .map(([k, v]) => `<div class="gel-kv"><span class="gel-kv-k">${k}</span><span class="gel-kv-v">${v}</span></div>`)
     .join("");
 
+  /* No essay here. The fields answer the three questions a customer actually
+     has: what is being watched, when it is checked, and what it pays. */
   const body = `
     <div class="gel-evidence-card">
-      <span class="gel-evidence-eyebrow">The goal</span>
+      <span class="gel-evidence-eyebrow">Details</span>
       ${rows}
-    </div>
-    <p class="gel-detail">${g.description}</p>
-    <div class="gel-verified" style="margin-top:14px">
-      ${ico("check")} Westpac transaction history · ${fmtDate(TODAY)}
     </div>`;
 
   openSheet({
@@ -1283,9 +1337,21 @@ function renderDragon() {
     : 100;
 
   const worn = wornItems();
-  const wardrobe = worn.length
-    ? worn.map((it) => `<span class="gel-worn">${it.emoji} ${it.name}</span>`).join("")
-    : `<span class="gel-muted">Nothing on yet. Visit the shop to dress your dragon.</span>`;
+  const wornRows = worn.length
+    ? worn
+        .map(
+          (it) => `
+        <button class="gel-shop-row" type="button" onclick="takeOff('${it.id}')">
+          <span class="gel-item-tile">${imgOrEmoji(it.image, it.emoji, it.name, "shop-img")}</span>
+          <span class="gel-cell-body">
+            <span class="gel-move-name">${it.name}</span>
+            <span class="gel-muted">${it.slot_label}</span>
+          </span>
+          <span class="gel-badge gel-badge--success">Wearing</span>
+        </button>`
+        )
+        .join("")
+    : `<p class="gel-muted">Nothing on yet. Visit the shop to dress your dragon.</p>`;
 
   const trail = rewards.stages
     .map((s) => {
@@ -1311,61 +1377,70 @@ function renderDragon() {
   return `
     <div class="gel-screen-head">
       <div>
-        <h1 class="gel-title">${stage.name}</h1>
-        <p class="gel-muted">Level ${lvl.level} · ${fmtWhole(state.xp_total)} XP · ${state.streak_weeks}-week streak</p>
+        <h1 class="gel-title">Your dragon</h1>
       </div>
-      <span class="gel-coin-pill">${coin()}${fmtWhole(state.coins)}</span>
     </div>
 
     ${sceneHtml()}
 
     ${
       stage.id === "egg"
-        ? `<p class="gel-note" style="margin:0 0 12px">Your dragon hatches at ${fmtWhole(
-            nextStage(state.xp_total)?.xp_required ?? 800
-          )} XP. Act on an insight to get there.</p>`
+        ? ""
         : `<button class="gel-btn-primary gel-btn-block" type="button" onclick="openAR()" style="margin-bottom:12px">
              ${ico("camera")} See it in your room
            </button>`
     }
 
-    <article class="gel-cell">
-      <div class="gel-row-between">
-        <span class="gel-label">Wearing</span>
-        <button class="gel-btn-text gel-btn-text--sm" type="button" onclick="setTab('shop')">Change</button>
+    <section class="gel-panel gel-goal">
+      <div class="gel-panel-head">
+        <span class="gel-band">Level ${lvl.level}</span>
+        <span class="gel-goal-xp">${fmtWhole(state.xp_total)} XP</span>
       </div>
-      <div class="gel-wornlist">${wardrobe}</div>
-      <div class="gel-hr"></div>
-      <div class="gel-row-between">
-        <span class="gel-label">Feasts</span>
-        <span class="gel-kv-v">${state.shop.feeds}</span>
-      </div>
-    </article>
-
-    <article class="gel-cell">
-      <div class="gel-row-between">
-        <span class="gel-label">Level ${lvl.level}</span>
-        <span class="gel-label">${nxt ? "Level " + nxt.level : "Max level"}</span>
-      </div>
-      <div class="gel-bar" style="margin-top:6px">
-        <div class="gel-bar-fill" style="width:${fmtPct(lvlPct)}">
-          <span class="gel-bar-label">${fmtPct(lvlPct)}</span>
+      <div class="gel-panel-body">
+        <div class="gel-goal-meta">
+          <span class="gel-goal-count"><b>${fmtPct(lvlPct).replace("%", "")}</b><span>% to ${
+            nxt ? "Level " + nxt.level : "max"
+          }</span></span>
+          <span class="gel-when">${ico("paw")}${
+            nxt ? fmtWhole(nxt.xp_required - state.xp_total) + " XP to go" : "Top level"
+          }</span>
+        </div>
+        <div class="gel-bar gel-bar--skinny" style="margin-top:6px">
+          <div class="gel-bar-fill" style="width:${fmtPct(lvlPct)}"></div>
         </div>
       </div>
-      <p class="gel-note">${
-        nxt ? fmtWhole(nxt.xp_required - state.xp_total) + " XP to Level " + nxt.level : "You've reached the top level."
-      }</p>
-    </article>
+    </section>
 
-    <article class="gel-cell">
-      <div class="gel-stage-trail">${trail}</div>
-      <div class="gel-bar gel-bar--skinny">
-        <div class="gel-bar-fill" style="width:${fmtPct(stagePct)}"></div>
+    <section class="gel-panel gel-goal">
+      <div class="gel-panel-head">
+        <span class="gel-band">Stage</span>
+        <span class="gel-goal-xp">${stage.name}</span>
       </div>
-      <p class="gel-note">${
-        nxtStage ? fmtWhole(nxtStage.xp_required - state.xp_total) + " XP to evolve into " + nxtStage.name : "Fully grown."
-      }</p>
-    </article>
+      <div class="gel-panel-body">
+        <div class="gel-stage-trail">${trail}</div>
+        <div class="gel-bar gel-bar--skinny" style="margin-top:8px">
+          <div class="gel-bar-fill" style="width:${fmtPct(stagePct)}"></div>
+        </div>
+        <p class="gel-note" style="margin-top:8px">${
+          nxtStage ? fmtWhole(nxtStage.xp_required - state.xp_total) + " XP to evolve into " + nxtStage.name : "Fully grown."
+        }</p>
+      </div>
+    </section>
+
+    <section class="gel-panel gel-goal" data-worn-panel>
+      <div class="gel-panel-head">
+        <span class="gel-band">Wearing</span>
+        <span class="gel-goal-xp">${worn.length} of ${rewards.shop.filter((i) => i.slot !== "food" && i.slot !== "perk").length}</span>
+      </div>
+      <div class="gel-panel-body">
+        ${wornRows}
+        <div class="gel-hr"></div>
+        <div class="gel-row-between" style="padding-top:2px">
+          <span class="gel-muted">Feasts</span>
+          <span class="gel-bill-amount"><span class="gel-money gel-money--sm">${state.shop.feeds}</span></span>
+        </div>
+      </div>
+    </section>
 
     <details class="gel-cell">
       <summary class="gel-summary">Activity log</summary>
@@ -1375,25 +1450,81 @@ function renderDragon() {
     <button class="gel-btn-ghost gel-btn-block" type="button" onclick="reset()">Reset demo</button>`;
 }
 
-function shopCta(item) {
+/* One item, opened the same way as a finding: description, state, action. */
+function openItem(id) {
+  const item = rewards.shop.find((i) => i.id === id);
+  if (!item) return;
   const owned = state.shop.owned.includes(item.id);
+  const wearingNow = isWearing(item.id);
   const unlocked = !item.unlock_level || levelForXp(state.xp_total).level >= item.unlock_level;
   const affordable = state.coins >= item.cost;
 
-  if (item.locked) return `<span class="gel-badge gel-badge--hero">Pitch concept</span>`;
-  if (!unlocked)
-    return `<span class="gel-badge gel-badge--faint">Unlocks at Level ${item.unlock_level}</span>`;
-  if (item.slot === "food")
-    return `<button class="gel-btn-primary gel-btn-sm gel-btn-block" type="button" ${affordable ? "" : "disabled"}
-              onclick="buyItem('${item.id}')">${affordable ? "Buy &amp; feed" : "Not enough coins"}</button>`;
-  if (owned && isWearing(item.id))
-    return `<button class="gel-btn-ghost gel-btn-sm gel-btn-block" type="button"
-              onclick="takeOff('${item.id}')">Wearing, take off</button>`;
-  if (owned)
-    return `<button class="gel-btn-primary gel-btn-sm gel-btn-block" type="button"
-              onclick="wearItem('${item.id}')">Wear</button>`;
-  return `<button class="gel-btn-primary gel-btn-sm gel-btn-block" type="button" ${affordable ? "" : "disabled"}
-            onclick="buyItem('${item.id}')">${affordable ? "Buy " + fmtWhole(item.cost) : "Not enough coins"}</button>`;
+  const head = `
+    <div class="gel-sheet-head">
+      <span class="gel-item-tile gel-item-tile--lg">
+        ${imgOrEmoji(item.image, item.emoji, item.name, "shop-img")}
+      </span>
+      <div class="gel-sheet-head-body">
+        <h2 class="gel-sheet-title" id="sheet-title">${item.name}</h2>
+        <p class="gel-sheet-sub">${item.slot_label} · ${fmtWhole(item.cost)} coins</p>
+      </div>
+    </div>`;
+
+  const stateLine = item.locked
+    ? "Pitch concept"
+    : !unlocked
+    ? "Unlocks at Level " + item.unlock_level
+    : wearingNow
+    ? "On your dragon"
+    : owned
+    ? "In your wardrobe"
+    : affordable
+    ? "You have the coins"
+    : "Not enough coins yet";
+
+  const body = `
+    <p class="gel-detail">${item.description}</p>
+    <div class="gel-verified" style="margin-top:12px">${ico("check")}${stateLine}</div>`;
+
+  let primary = "";
+  if (!item.locked && unlocked) {
+    if (item.slot === "food") {
+      primary = `<button class="gel-btn-primary gel-btn-block" type="button" ${
+        affordable ? "" : "disabled"
+      } onclick="buyFromSheet('${item.id}')">${affordable ? "Buy and feed" : "Not enough coins"}</button>`;
+    } else if (wearingNow) {
+      primary = `<button class="gel-btn-ghost gel-btn-block" type="button" onclick="takeOffFromSheet('${item.id}')">Take off</button>`;
+    } else if (owned) {
+      primary = `<button class="gel-btn-primary gel-btn-block" type="button" onclick="wearFromSheet('${item.id}')">Wear it</button>`;
+    } else {
+      primary = `<button class="gel-btn-primary gel-btn-block" type="button" ${
+        affordable ? "" : "disabled"
+      } onclick="buyFromSheet('${item.id}')">${
+        affordable ? "Buy for " + fmtWhole(item.cost) : "Not enough coins"
+      }</button>`;
+    }
+  }
+
+  openSheet({
+    title: item.name,
+    head,
+    body,
+    actions:
+      primary + '<button class="gel-btn-ghost" type="button" onclick="closeSheet()">Close</button>'
+  });
+}
+
+function buyFromSheet(id) {
+  closeSheet();
+  buyItem(id);
+}
+function wearFromSheet(id) {
+  closeSheet();
+  wearItem(id);
+}
+function takeOffFromSheet(id) {
+  closeSheet();
+  takeOff(id);
 }
 
 function renderShop() {
@@ -1402,35 +1533,43 @@ function renderShop() {
   const items = rewards.shop
     .map((item) => {
       const wearingNow = isWearing(item.id);
+      const owned = state.shop.owned.includes(item.id);
+      const unlocked = !item.unlock_level || levelForXp(state.xp_total).level >= item.unlock_level;
+      const note = wearingNow
+        ? " · Wearing"
+        : owned
+        ? " · Owned"
+        : !unlocked
+        ? " · Level " + item.unlock_level
+        : "";
       return `
-        <article class="gel-cell gel-shop-item ${wearingNow ? "is-worn" : ""}" data-item="${item.id}">
-          <div class="gel-shop-art">
-            ${imgOrEmoji(item.image, item.emoji, item.name, "shop-img")}
-            ${wearingNow ? `<span class="gel-shop-worn">${ico("check")}</span>` : ""}
-          </div>
-          <div class="gel-shop-name">${item.name}</div>
-          <div class="gel-shop-price">
-            <span class="gel-money gel-money--sm">${fmtWhole(item.cost)}</span>
-            ${coin()}
-          </div>
-          ${disc("What it is", item.description)}
-          ${shopCta(item)}
-        </article>`;
+        <button class="gel-shop-row ${wearingNow ? "is-worn" : ""}" type="button"
+                data-item="${item.id}" onclick="openItem('${item.id}')">
+          <span class="gel-item-tile">${imgOrEmoji(item.image, item.emoji, item.name, "shop-img")}</span>
+          <span class="gel-cell-body">
+            <span class="gel-move-name">${item.name}</span>
+            <span class="gel-muted">${item.slot_label}${note}</span>
+          </span>
+          <span class="gel-shop-price">
+            <span class="gel-money gel-money--sm">${fmtWhole(item.cost)}</span>${coin()}
+          </span>
+          ${ico("arrow-right")}
+        </button>`;
     })
     .join("");
 
   return `
     <div class="gel-screen-head">
       <div>
-        <h1 class="gel-title">Dragon shop</h1>
-        <p class="gel-muted">${worn.length ? worn.length + " items worn · " : ""}${fmtWhole(state.coins)} coins</p>
+        <h1 class="gel-title">Shop</h1>
+        <p class="gel-muted">${worn.length} ${worn.length === 1 ? "item" : "items"} worn</p>
       </div>
       <span class="gel-badge gel-badge--faint">${stage.emoji} ${stage.name}</span>
     </div>
 
     ${sceneHtml("gel-scene--mini")}
 
-    <div class="gel-shop-grid">${items}</div>`;
+    <section class="gel-cell" style="padding:4px 12px">${items}</section>`;
 }
 
 /* ==========================================================================
@@ -1464,18 +1603,20 @@ function arStageMarkup() {
     </div>
     <div class="gel-ar-stage" id="ar-stage">
       <div class="gel-ar-hold" id="ar-hold">
+        <div class="gel-ar-bubble" id="ar-bubble" aria-live="polite"></div>
         <div class="gel-ar-dragon" id="ar-dragon" role="button" tabindex="0"
              aria-label="Your ${stage.name}. Tap to hear it.">
           ${imgOrEmoji(stage.image, stage.emoji, stage.name, "ar-img")}
         </div>
       </div>
-      <div class="gel-ar-bubble" id="ar-bubble"></div>
     </div>
     <div class="gel-ar-controls">
-      <button class="gel-btn-ghost gel-btn-sm" type="button" onclick="arSay()">Say something</button>
-      <button class="gel-btn-ghost gel-btn-sm" type="button" onclick="arZoom(-1)">Smaller</button>
-      <button class="gel-btn-ghost gel-btn-sm" type="button" onclick="arZoom(1)">Bigger</button>
-      <button class="gel-btn-primary gel-btn-sm" type="button" onclick="closeAR()">Done</button>
+      <button class="gel-ar-say" type="button" onclick="arSay()">Say something</button>
+      <div class="gel-ar-zoom">
+        <button class="gel-ar-icon" type="button" aria-label="Make it smaller" onclick="arZoom(-1)">&minus;</button>
+        <button class="gel-ar-icon" type="button" aria-label="Make it bigger" onclick="arZoom(1)">+</button>
+      </div>
+      <button class="gel-ar-done" type="button" onclick="closeAR()">Done</button>
     </div>`;
 }
 
@@ -1624,6 +1765,10 @@ let lastCoins = 0;
 function render() {
   animateCount($("#header-coins"), lastCoins, state.coins, fmtWhole);
   lastCoins = state.coins;
+
+  /* Coins are a shop currency, so the balance only appears there. */
+  const pill = $("#coin-pill");
+  if (pill) pill.hidden = activeTab !== "shop";
 
   const screen = $("#screen");
   if (activeTab === "score") screen.innerHTML = renderScore();

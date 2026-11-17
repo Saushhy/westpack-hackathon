@@ -319,20 +319,57 @@
     color: var(--text-mono);
     white-space: nowrap;
   }
-  .gel-band.is-done { background: var(--surface-success); color: #fff; }
+  .gel-band.is-done { background: rgba(255, 255, 255, 0.34); color: var(--text-mono); }
 
   /* goals: the same panel as the score, with the state on the left of the head
-     and the reward on the right */
-  .gel-goal .gel-panel-body { padding-top: 14px; }
-  .gel-goal-xp {
+     and the reward on the right. Tighter than a generic panel, because three of
+     them stack on one screen. */
+  .gel-goal .gel-panel-head { padding: 8px 12px; }
+  .gel-goal .gel-panel-body { padding: 12px 16px 14px; }
+  .gel-goal .gel-goal-title { font-size: 19px; line-height: 1.22; margin-top: 0; }
+  .gel-goal .gel-row-link { height: 34px; margin-top: 10px; }
+
+  /* the count carries the weight, the timing is an icon and a few words */
+  .gel-goal-meta {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+    margin-top: 8px;
+  }
+  .gel-goal-count { display: inline-flex; align-items: baseline; gap: 4px; }
+  .gel-goal-count b {
     font-family: var(--font-brand), var(--font-family-sans);
-    font-size: 12px; font-weight: 700; color: var(--text-mono);
+    font-size: 17px; line-height: 1; font-weight: 700; color: var(--text-heading);
     font-variant-numeric: tabular-nums;
   }
+  .gel-goal-count span { font-size: 12px; color: var(--text-muted); }
+  .gel-when {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 12px; color: var(--text-muted); white-space: nowrap;
+  }
+  .gel-when .gel-ico { width: 13px; height: 13px; flex: none; }
+  .gel-when.is-done { color: var(--text-success); }
+  .gel-goal-xp {
+    font-family: var(--font-brand), var(--font-family-sans);
+    font-size: 14px; font-weight: 700; color: var(--text-mono);
+    font-variant-numeric: tabular-nums;
+  }
+  /* a finished goal reads green at a glance, without reading the word */
+  .gel-bar-fill.is-done { background: var(--surface-success); }
+
+  /* the reward, as two icons rather than two sentences */
+  .gel-reward { display: inline-flex; align-items: center; gap: 12px; }
+  .gel-reward-part {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+  .gel-reward-part .gel-ico { width: 15px; height: 15px; color: var(--text-hero); }
+  .gel-reward-part .gel-coin { margin-right: 1px; }
   .gel-sheet-head--goal .gel-sheet-title {
     white-space: normal; display: -webkit-box; -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
   }
+  /* no subtitle in the goal sheet, so the head does not need the height that
+     reserved space for one */
+  .gel-sheet-head--goal { padding: 14px 54px 12px 24px; align-items: flex-start; }
 
   /* ================= Buttons (GEL Button) =============================== */
   .gel-btn-primary,
@@ -598,8 +635,19 @@
     background: var(--surface-hero-faint);
   }
   .gel-callout .gel-ico { width: 18px; height: 18px; flex: none; margin-top: 2px; color: var(--text-hero); }
+  .gel-callout--done { background: var(--surface-success-faint); }
+  .gel-callout--done .gel-ico { color: var(--text-success); }
+  .gel-callout--done .gel-callout-text { color: var(--text-success); }
   .gel-callout-text {
     margin: 0; font-size: var(--typography-body-size-10); line-height: 1.45;
+    color: var(--text-heading);
+  }
+
+  /* the finding, stated before anything else */
+  .gel-lead {
+    margin: 0 0 10px;
+    font-family: var(--font-brand), var(--font-family-sans);
+    font-size: var(--typography-body-size-9); line-height: 1.35; font-weight: 700;
     color: var(--text-heading);
   }
 
@@ -822,11 +870,13 @@
     border-radius: var(--rounded-2xl); margin-bottom: 12px;
     background: var(--surface-hero-faint);
     cursor: pointer; user-select: none;
+    display: flex; align-items: center; justify-content: center;
   }
   .gel-scene--mini { height: 190px; }
   .gel-evo-scene {
     position: relative; height: 200px; border-radius: var(--rounded-2xl);
     background: var(--surface-hero-faint); overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
   }
   .gel-scene[data-scene="lava"] { background: linear-gradient(#2a0a08 0%, #5a150d 55%, #a63a18 100%); }
   .gel-scene[data-scene="stars"] { background: linear-gradient(#0e0c2b 0%, #1f1c4f 100%); }
@@ -860,8 +910,11 @@
     to { transform: translateY(-10px); opacity: 0; }
   }
 
+  /* the scene centres the dragon with flex, so nothing depends on a transform
+     and the hop cannot drift sideways. The small left offset is deliberate: at
+     a dead centre the pose reads slightly right-heavy. */
   .gel-dragon-wrap {
-    position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
+    position: relative; left: -40px;
     width: 180px; height: 180px;
     display: flex; align-items: flex-end; justify-content: center;
   }
@@ -897,11 +950,13 @@
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-4px); }
   }
+  /* the wrap no longer relies on a translate for centring, so the hop is a
+     pure vertical movement */
   @keyframes dragon-hop {
     0% { transform: translateY(0) scale(1, 1); }
     35% { transform: translateY(-16px) scale(1.04, 0.9); }
     70% { transform: translateY(2px) scale(0.96, 1.04); }
-    100% { transform: none; }
+    100% { transform: translateY(0) scale(1, 1); }
   }
 
   .gel-bubble {
@@ -942,21 +997,30 @@
   .gel-summary::-webkit-details-marker { display: none; }
 
   /* ================= shop =============================================== */
-  .gel-shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .gel-shop-item { text-align: center; margin: 0; display: flex; flex-direction: column; align-items: center; }
-  .gel-shop-item.is-worn { border-color: var(--surface-success); }
-  .gel-shop-art { position: relative; height: 54px; display: flex; align-items: center; justify-content: center; }
-  .gel-shop-worn {
-    position: absolute; top: 0; right: 0; width: 18px; height: 18px; border-radius: 50%;
-    background: var(--surface-success); color: #fff;
-    display: flex; align-items: center; justify-content: center;
+  .gel-shop-row {
+    display: flex; align-items: center; gap: 12px;
+    width: 100%; padding: 10px 0;
+    border: 0; border-top: 1px solid var(--border-muted-soft);
+    background: none; cursor: pointer; text-align: left; font-family: inherit;
   }
-  .gel-shop-worn .gel-ico { width: 12px; height: 12px; }
-  .gel-shop-name {
-    font-family: var(--font-brand), var(--font-family-sans);
-    font-size: 16px; font-weight: 700; color: var(--text-heading); margin-top: 4px;
+  .gel-shop-row:first-child { border-top: 0; }
+  .gel-shop-row:hover { background: var(--surface-muted-faint); }
+  .gel-shop-row:focus-visible { outline: 2px solid var(--text-link); outline-offset: 2px; }
+  .gel-shop-row .gel-ico { width: 16px; height: 16px; flex: none; color: var(--text-muted); }
+  .gel-shop-row .gel-cell-body { flex: 1 1 auto; min-width: 0; gap: 1px; }
+  .gel-shop-row .gel-shop-price { margin-left: auto; flex: none; }
+
+  .gel-item-tile {
+    width: 42px; height: 42px; flex: none;
+    border-radius: var(--rounded-2xl);
+    background: var(--surface-muted-faint);
+    display: inline-flex; align-items: center; justify-content: center;
   }
-  .gel-shop-price { display: flex; align-items: baseline; gap: 2px; margin-top: 2px; }
+  .gel-item-tile .shop-img { width: 26px; height: 26px; }
+  .gel-item-tile .shop-img.emoji-fallback { font-size: 22px; line-height: 1; }
+  .gel-item-tile--lg { width: 44px; height: 44px; }
+
+  .gel-shop-price { display: flex; align-items: baseline; gap: 2px; }
 
   /* ================= score / credit trajectory ========================== */
   .gel-score-hero .gel-panel-body { padding-top: 6px; }
@@ -1000,6 +1064,10 @@
     font-variant-numeric: tabular-nums;
   }
   .gel-found-label { font-size: 12px; color: var(--text-muted); line-height: 1.25; }
+  /* each count matches the tag colour used on the rows below */
+  .gel-found-num--credit { color: var(--text-hero); }
+  .gel-found-num--cash { color: var(--text-success); }
+  .gel-found-num--fees { color: var(--text-warning); }
 
   .gel-found-money { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
   .gel-money-tile {
@@ -1021,7 +1089,27 @@
   .gel-money-tile--good .gel-money-tile-value { color: var(--text-success); }
   .gel-money-tile-unit { font-size: 11px; color: var(--text-muted); }
 
-  .gel-found-note { font-size: 12px; line-height: 1.4; color: var(--text-muted); margin: 12px 0 0; }
+  /* the row: title left, amount and chevron right, nothing else */
+  /* the whole row is the tap target */
+  .gel-bill--tap { cursor: pointer; transition: background 0.15s var(--ease); }
+  .gel-bill--tap:hover { background: var(--surface-muted-faint); }
+  .gel-bill--tap:active { background: var(--surface-muted-pale); }
+  .gel-bill--tap:focus-visible { outline: 2px solid var(--text-link); outline-offset: 2px; }
+  .gel-bill--tap .gel-bill-head { align-items: center; }
+  .gel-bill--tap .gel-bill-head > .gel-ico { width: 16px; height: 16px; flex: none; color: var(--text-muted); }
+
+  /* cards that need nothing, as rows inside one card */
+  .gel-status-row { border-top: 1px solid var(--border-muted-soft); }
+  .gel-status-row:first-child { border-top: 0; }
+  .gel-status-tap {
+    display: flex; align-items: baseline; gap: 8px; width: 100%;
+    padding: 9px 0; border: 0; background: none; cursor: pointer;
+    font-family: inherit; text-align: left;
+  }
+  .gel-status-tap .gel-ico { width: 15px; height: 15px; flex: none; color: var(--text-muted); align-self: center; }
+  .gel-status-name { font-size: 14px; font-weight: 600; color: var(--text-body); }
+  .gel-status-tap .gel-muted { font-size: 12px; }
+  .gel-status-tap .gel-money { margin-left: auto; font-variant-numeric: tabular-nums; }
 
   /* ================= big tappable row (opens a sheet) ================== */
   .gel-row-card {
@@ -1219,21 +1307,58 @@
     100% { transform: translate(-50%, -100%) scale(1); }
   }
 
+  /* the bubble sits on the dragon's shoulder and travels with it */
   .gel-ar-bubble {
-    position: absolute; left: 16px; right: 16px; bottom: 78px; z-index: 4;
-    background: rgba(255, 255, 255, 0.97); border-radius: var(--rounded-3xl);
-    padding: 10px 12px; font-size: var(--typography-body-size-10); line-height: 1.4;
-    color: var(--text-body); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.24);
-    opacity: 0; transform: translateY(6px); pointer-events: none;
-    transition: opacity 0.2s var(--ease), transform 0.22s var(--ease);
+    position: absolute; bottom: calc(100% + 10px); left: 50%;
+    width: max-content; max-width: 232px; z-index: 4;
+    padding: 9px 12px;
+    background: var(--background-white);
+    border-radius: var(--rounded-3xl);
+    font-size: 13px; line-height: 1.4; color: var(--text-body);
+    text-align: center;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.26);
+    opacity: 0;
+    transform: translate(-50%, 6px) scale(0.96);
+    transform-origin: 50% 100%;
+    transition: opacity 0.18s var(--ease), transform 0.22s var(--ease);
+    pointer-events: none;
   }
-  .gel-ar-bubble.show { opacity: 1; transform: none; }
+  /* the tail, pointing back at the dragon */
+  .gel-ar-bubble::after {
+    content: ""; position: absolute; left: 50%; bottom: -5px;
+    width: 12px; height: 12px; margin-left: -6px;
+    background: var(--background-white);
+    border-radius: 2px; transform: rotate(45deg);
+  }
+  .gel-ar-bubble.show { opacity: 1; transform: translate(-50%, 0) scale(1); }
 
+  /* one floating bar instead of four equal boxes */
   .gel-ar-controls {
     position: absolute; left: 12px; right: 12px; bottom: 12px; z-index: 5;
-    display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 6px;
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: var(--rounded-3xl);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.24);
   }
-  .gel-ar-controls .gel-btn-ghost,
-  .gel-ar-controls .gel-btn-primary { height: 38px; background-color: rgba(255, 255, 255, 0.95); }
-  .gel-ar-controls .gel-btn-ghost { border-color: var(--border-muted-soft); }
+  .gel-ar-say {
+    flex: 1 1 auto; min-width: 0; border: 0; background: none; padding: 0 2px;
+    font-family: inherit; font-size: var(--typography-body-size-10); font-weight: 700;
+    color: var(--text-heading); text-align: left; cursor: pointer;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .gel-ar-zoom { display: flex; gap: 6px; flex: none; }
+  .gel-ar-icon {
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 1px solid var(--border-muted-soft); background: var(--background-white);
+    color: var(--text-heading); font-family: inherit; font-size: 18px; line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+  .gel-ar-icon:active { background: var(--surface-muted-faint); }
+  .gel-ar-done {
+    flex: none; height: 34px; padding: 0 16px; border: 0; border-radius: 999px;
+    background: var(--surface-primary); color: var(--text-mono);
+    font-family: inherit; font-size: var(--typography-body-size-10); font-weight: 700;
+    cursor: pointer;
+  }
 }

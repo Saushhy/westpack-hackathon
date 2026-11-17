@@ -107,10 +107,11 @@ await page.waitForTimeout(900);
   check("Real Westpac logo loaded", ">0", String(logo), logo > 0);
   const chrome = await page.evaluate(() => ({
     dead: document.querySelectorAll(".gel-header-btn").length,
-    coin: !!document.querySelector(".gel-coin-pill")
+    coin: !!document.querySelector(".gel-coin-pill"),
+    coinHidden: document.querySelector(".gel-coin-pill")?.hidden === true
   }));
   check("Header has no dead help/profile buttons", "0", String(chrome.dead), chrome.dead === 0);
-  check("Header keeps the coin balance", "true", String(chrome.coin), chrome.coin);
+  check("Coin pill exists but stays out of the way", "true", String(chrome.coin && chrome.coinHidden), chrome.coin && chrome.coinHidden);
 }
 
 // ============================ buttons / cells / icons ============================
@@ -332,6 +333,12 @@ await page.waitForTimeout(900);
   check("Movements are real transactions (>=5 rows)", ">=5", String(moves.rows), moves.rows >= 5);
   check("Movements grouped by month", ">=2", String(moves.months), moves.months >= 2);
   check("Movements show a total", "present", moves.body.includes("payments") ? "present" : "missing", moves.body.includes("payments"));
+  check(
+    "No closing explainer under the movement list",
+    "absent",
+    /Every line here/.test(moves.body) ? "present" : "absent",
+    !/Every line here/.test(moves.body)
+  );
   await page.keyboard.press("Escape");
   await page.waitForTimeout(200);
   check("Escape closes the sheet", "0", String(await page.locator(".gel-sheet").count()), (await page.locator(".gel-sheet").count()) === 0);
@@ -344,37 +351,48 @@ await page.waitForTimeout(900);
 
   const ins = await page.evaluate(() => {
     const body = document.querySelector("#screen").innerText;
+    const taps = Array.from(document.querySelectorAll(".gel-bill--tap"));
     return {
       cards: document.querySelectorAll(".gel-bill").length,
-      why: document.querySelectorAll(".gel-row-link:not(.gel-row-link--tile)").length,
-      whyLabel: document.querySelector(".gel-row-link:not(.gel-row-link--tile)")?.textContent.trim() || "",
-      whyHeight: (() => {
-        const b = document.querySelector(".gel-row-link:not(.gel-row-link--tile)");
-        return b ? getComputedStyle(b).height : "";
-      })(),
+      why: taps.length,
+      tappable: taps.every((t) => t.getAttribute("role") === "button" && t.getAttribute("tabindex") === "0"),
+      buttonsInCards: document.querySelectorAll(".gel-bill button").length,
       details: document.querySelectorAll("details").length,
       factors: document.querySelectorAll(".gel-factor").length,
       found: document.querySelectorAll(".gel-found").length,
       moneyTiles: document.querySelectorAll(".gel-found .gel-money-tile").length,
+      statusRows: document.querySelectorAll(".gel-status-row").length,
+      rowText: Array.from(document.querySelectorAll(".gel-bill--tap")).map((b) => b.innerText.replace(/\s+/g, " ").trim()).join(" | "),
+      tags: Array.from(document.querySelectorAll(".gel-bill--tap .gel-factor")).map((t) => t.textContent.trim()),
+      tagColours: new Set(Array.from(document.querySelectorAll(".gel-bill--tap .gel-factor")).map((t) => getComputedStyle(t).color)).size,
       body
     };
   });
 
   check("Insights shows >= 6 findings", ">=6", String(ins.cards), ins.cards >= 6);
-  check("Every actionable finding has a Review button", "6", String(ins.why), ins.why === 6);
-  check("The button says Review", "Review", ins.whyLabel, ins.whyLabel.startsWith("Review"));
-  check("Review is a real button (38px tall)", "38px", ins.whyHeight, ins.whyHeight === "38px");
+  check("Every actionable finding is a tappable row", "6", String(ins.why), ins.why === 6);
+  check("Rows are reachable by keyboard", "true", String(ins.tappable), ins.tappable);
+  check("No repeated Review button on the cards", "0", String(ins.buttonsInCards), ins.buttonsInCards === 0);
   check("No 'N patterns to look at' subtitle", "absent", ins.body.includes("patterns to look at") ? "present" : "absent", !ins.body.includes("patterns to look at"));
   check("What we found is the new summary card", "1", String(ins.found), ins.found === 1);
   check("The two dollar totals are tiles", "2", String(ins.moneyTiles), ins.moneyTiles === 2);
+  check("No closing prose under the summary", "absent", /Repayment history matters most/.test(ins.body) ? "present" : "absent", !/Repayment history matters most/.test(ins.body));
+  check("Cards that need nothing share one card", "2 rows", String(ins.statusRows), ins.statusRows === 2);
   check("Accordions replaced by sheets", "0", String(ins.details), ins.details === 0);
-  check("Factor chips on findings", ">=5", String(ins.factors), ins.factors >= 5);
-  check("Repayment history is named", "present", ins.body.includes("Repayment history") ? "present" : "missing", ins.body.includes("Repayment history"));
+  check("Rows carry the full description again", "present", /Late|Bounced|Three services/.test(ins.rowText) ? "present" : "missing", /Late|Bounced|Three services/.test(ins.rowText));
   check("Cash and fees are separated", "present", ins.body.includes("free up cash") && ins.body.includes("avoid a fee") ? "present" : "missing", ins.body.includes("free up cash") && ins.body.includes("avoid a fee"));
   check("Cash freed figure is shown", "$63.00", ins.body.includes("$63.00") ? "$63.00" : "missing", ins.body.includes("$63.00"));
   check("No 'switch provider' language", "clean", /switch to/i.test(ins.body) ? "switch" : "clean", !/switch to/i.test(ins.body));
   check("No competitor brand (Belong/Optus/Telstra)", "clean", /Belong|Optus|Telstra/i.test(ins.body) ? "found" : "clean", !/Belong|Optus|Telstra/i.test(ins.body));
-  check("Only Mia's own providers are named", "present", /Vodafone/.test(ins.body) && /Netflix/.test(ins.body) && /Goodlife/.test(ins.body) ? "present" : "missing", /Vodafone/.test(ins.body) && /Netflix/.test(ins.body) && /Goodlife/.test(ins.body));
+  check("Rows stay one line of identity", "present", ins.rowText.length > 0 ? "present" : "missing", ins.rowText.length > 0);
+  check(
+    "Every row is tagged to one of the three counts",
+    "6 tags",
+    ins.tags.join(", "),
+    ins.tags.length === 6 && ins.tags.every((t) => /^(Score|Cash|Fee)$/i.test(t))
+  );
+  check("Tags use a colour each", "3", String(ins.tagColours), ins.tagColours === 3);
+  check("The tags are the factor chips", "6 chips", String(ins.factors), ins.factors === 6);
   check("No em or en dashes on screen", "clean", dashFree(ins.body) ? "clean" : "dash found", dashFree(ins.body));
 }
 
@@ -391,7 +409,7 @@ await page.waitForTimeout(900);
   check("The demo opens as an egg", "egg", before.xp_total < 800 ? "egg" : "hatched", before.xp_total < 800);
 
   // Open one finding: the evidence must be in a sheet, not on the card.
-  await page.locator(".gel-row-link:not(.gel-row-link--tile)").first().click();
+  await page.locator(".gel-bill--tap").first().click();
   await page.waitForTimeout(400);
   const sheet = await page.evaluate(() => {
     const s = document.querySelector(".gel-sheet");
@@ -407,20 +425,24 @@ await page.waitForTimeout(900);
       hasBrandTile: !!head?.querySelector(".gel-adorn"),
       eyebrow: s?.querySelector(".gel-evidence-eyebrow")?.textContent.trim() || "",
       callout: callout ? callout.innerText.trim() : "",
+      proofOpen: s ? s.querySelectorAll(".gel-disc[open]").length : -1,
+      proofCount: s ? s.querySelectorAll(".gel-disc").length : -1,
+      proofLabel: s?.querySelector(".gel-disc-label")?.textContent.trim() || "",
+      textContent: s ? s.textContent : "",
       primaryFill: s
         ? getComputedStyle(s.querySelector(".gel-sheet-actions .gel-btn-primary")).backgroundColor
         : "",
       body: s ? s.innerText : ""
     };
   });
-  check("Review opens a sheet", "present", sheet.open ? "present" : "missing", sheet.open);
-  check("Sheet shows the evidence rows", ">=3", String(sheet.rows), sheet.rows >= 3);
+  check("Tapping a row opens a sheet", "present", sheet.open ? "present" : "missing", sheet.open);
+  check("Sheet shows the evidence rows", "2", String(sheet.rows), sheet.rows === 2);
   check("Sheet carries the action", "present", sheet.action ? "present" : "missing", sheet.action);
   check("Primary action is Westpac red", "rgb(218, 23, 16)", sheet.primaryFill, sheet.primaryFill === "rgb(218, 23, 16)");
   check("Sheet header is the finding itself", "Credit card repayment", sheet.headTitle, sheet.headTitle === "Credit card repayment");
   check("Header shows the provider line", "Westpac", sheet.headSub, /^Westpac/.test(sheet.headSub));
   check("Header carries a brand tile", "true", String(sheet.hasBrandTile), sheet.hasBrandTile);
-  check("Evidence is labelled 'What we saw'", "What we saw", sheet.eyebrow, sheet.eyebrow === "What we saw");
+  check("No eyebrow needed above the rows", "absent", sheet.eyebrow ? "present" : "absent", !sheet.eyebrow);
   check(
     "Leading with the advice, not a lecture",
     "Set a reminder so the next one is on time.",
@@ -428,6 +450,8 @@ await page.waitForTimeout(900);
     /^Set a reminder so the next one is on time\.$/.test(sheet.callout)
   );
   check("No credit-scoring lecture in the sheet", "absent", /biggest thing in your score/i.test(sheet.body) ? "present" : "absent", !/biggest thing in your score/i.test(sheet.body));
+  check("The description is shown outright", "3 days late", sheet.body, /Paid 3 days late on 12 Oct\./.test(sheet.body));
+  check("No disclosure left in the sheet", "0", String(sheet.proofCount), sheet.proofCount === 0);
   check("Westpac source is shown", "present", /Westpac transaction history/.test(sheet.body) ? "present" : "missing", /Westpac transaction history/.test(sheet.body));
 
   await page.locator(".gel-sheet-actions .gel-btn-primary").click();
@@ -440,7 +464,7 @@ await page.waitForTimeout(900);
 
   // Work through the remaining findings.
   for (let i = 0; i < 6; i++) {
-    const link = page.locator(".gel-row-link:not(.gel-row-link--tile)").first();
+    const link = page.locator(".gel-bill--tap:not(.is-done):not(.is-muted)").first();
     if ((await link.count()) === 0) break;
     await link.click();
     await page.waitForTimeout(250);
@@ -459,6 +483,38 @@ await page.waitForTimeout(900);
   check("The dragon hatched into a baby (>= 800 XP)", "baby", st.xp_total >= 800 ? "baby" : "still an egg", st.xp_total >= 800);
   check("No duplicate awards", "0 dups", new Set(st.awarded).size === st.awarded.length ? "0 dups" : "dups", new Set(st.awarded).size === st.awarded.length);
   check("Exactly one goal completed (the daily one)", "1", String(Object.keys(st.goals).length), Object.keys(st.goals).length === 1);
+
+  // Anything finished has to stay readable, not become a dead end.
+  await page.locator(".gel-bill--tap.is-done").first().click();
+  await page.waitForTimeout(350);
+  const doneSheet = await page.evaluate(() => {
+    const s = document.querySelector(".gel-sheet");
+    return {
+      open: !!s,
+      body: s?.innerText || "",
+      primary: !!s?.querySelector(".gel-sheet-actions .gel-btn-primary"),
+      close: !!s?.querySelector(".gel-sheet-actions .gel-btn-ghost")
+    };
+  });
+  check("A finished finding still opens", "present", doneSheet.open ? "present" : "missing", doneSheet.open);
+  check("It shows what was done", "present", /Reminder set|Protected balance|watching this/.test(doneSheet.body) ? "present" : "missing", /Reminder set|Protected balance|watching this/.test(doneSheet.body));
+  check("And offers no action, only Close", "no primary", doneSheet.primary ? "primary" : "no primary", doneSheet.primary === false && doneSheet.close);
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(200);
+
+  await page.locator(".gel-status-tap").first().click();
+  await page.waitForTimeout(350);
+  const keepSheet = await page.evaluate(() => {
+    const s = document.querySelector(".gel-sheet");
+    return {
+      title: s?.querySelector(".gel-sheet-title")?.textContent.trim() || "",
+      primary: !!s?.querySelector(".gel-sheet-actions .gel-btn-primary")
+    };
+  });
+  check("A 'nothing to change' row opens too", "present", keepSheet.title || "missing", keepSheet.title.length > 0);
+  check("It also has no action", "no primary", keepSheet.primary ? "primary" : "no primary", keepSheet.primary === false);
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(200);
 }
 
 // ============================ goals tab ============================
@@ -470,36 +526,59 @@ await page.waitForTimeout(900);
     const body = document.querySelector("#screen").innerText;
     const cards = Array.from(document.querySelectorAll(".gel-goal"));
     return {
+      title: document.querySelector(".gel-title")?.textContent.trim() || "",
       cards: cards.length,
       buttons: document.querySelectorAll("#screen button").length,
       reviews: document.querySelectorAll("#screen .gel-goal .gel-row-link").length,
       bars: Array.from(document.querySelectorAll(".gel-goal .gel-bar-fill")).map((b) => b.style.width),
       statuses: cards.map((c) => c.querySelector(".gel-band").textContent.trim()),
       xp: cards.map((c) => c.querySelector(".gel-goal-xp").textContent.trim()),
+      icons: cards.filter((c) => !!c.querySelector(".gel-goal-head-left svg")).length,
+      heights: cards.map((c) => Math.round(c.getBoundingClientRect().height)),
+      doneLabels: cards
+        .filter((c) => /Completed/.test(c.querySelector(".gel-band").textContent))
+        .map((c) => c.querySelector(".gel-when")?.textContent.trim() || ""),
+      counts: cards.map((c) => {
+        const n = c.querySelector(".gel-goal-count b")?.textContent.trim() || "";
+        const rest = (c.querySelector(".gel-goal-count span")?.textContent.trim() || "").replace(/^\/\s*/, "");
+        return n + " of " + rest;
+      }),
       body
     };
   });
 
   check("Three goals", "3", String(g.cards), g.cards === 3);
+  check("The tab is titled 'Your goals'", "Your goals", g.title, g.title === "Your goals");
   check("Goals carry a Review button and no action button", "3 reviews", g.reviews + " reviews, " + (g.buttons - g.reviews) + " other", g.reviews === 3 && g.buttons - g.reviews === 0);
   check("No '1 of 3 done' subtitle", "absent", g.body.includes(" of 3 done") ? "present" : "absent", !g.body.includes(" of 3 done"));
   check("No explanatory note above the cards", "absent", /fill in on their own/.test(g.body) ? "present" : "absent", !/fill in on their own/.test(g.body));
-  check("Goal 1 shows the Done state", "Completed", g.statuses[0], g.statuses[0] === "Completed");
-  check("Goal 2 shows it is in progress", "In progress", g.statuses[1], g.statuses[1] === "In progress");
+  check(
+    "Unfinished goals come first, closest to done on top",
+    "In progress, In progress, Completed",
+    g.statuses.join(", "),
+    g.statuses.join(", ") === "In progress, In progress, Completed"
+  );
+  check("The completed goal says when", "done date", g.doneLabels[0], /^Done \d/.test(g.doneLabels[0]));
   check("Each goal shows its reward", "+100 XP", g.xp.join(","), g.xp.every((x) => /^\+\d+ XP$/.test(x)));
+  check("Cards stay compact", "<190px each", g.heights.join(","), g.heights.every((h) => h < 190));
   check(
     "Goal explanations are not on the card",
     "absent",
     /re-reads your transactions/.test(g.body) ? "present" : "absent",
     !/re-reads your transactions/.test(g.body)
   );
-  check("Goal 3 shows 27 of 30 days", "27 of 30", g.body.includes("27 of 30") ? "27 of 30" : "missing", g.body.includes("27 of 30"));
-  check("Bars reflect the data", "100%,50%,90%", g.bars.join(","), g.bars.join(",") === "100%,50%,90%");
+  check(
+    "The numbers read as value of target",
+    "27 of 30 days, 2 of 4 instalments, 7 of 7 days",
+    g.counts.join(", "),
+    g.counts.join(", ") === "27 of 30 days, 2 of 4 instalments, 7 of 7 days"
+  );
+  check("Bars reflect the data", "90%,50%,100%", g.bars.join(","), g.bars.join(",") === "90%,50%,100%");
   check("Next check is stated", "present", /Next check/.test(g.body) ? "present" : "missing", /Next check/.test(g.body));
   check("No em or en dashes on screen", "clean", dashFree(g.body) ? "clean" : "dash found", dashFree(g.body));
 
   // Review opens the goal, the same way an insight does.
-  await page.locator("#screen .gel-goal .gel-row-link").first().click();
+  await page.locator('.gel-goal[data-goal="goal_checkin"] .gel-row-link').click();
   await page.waitForTimeout(400);
   const gs = await page.evaluate(() => {
     const s = document.querySelector(".gel-sheet");
@@ -510,8 +589,11 @@ await page.waitForTimeout(900);
     };
   });
   check("Review opens the goal sheet", "present", gs.title || "missing", gs.title.length > 0);
-  check("The goal sheet explains the goal", "present", /re-reads your transactions/.test(gs.body) ? "present" : "missing", /re-reads your transactions/.test(gs.body));
-  check("The goal sheet says what it watches", "present", /What it watches/.test(gs.body) ? "present" : "missing", /What it watches/.test(gs.body));
+  check("The goal sheet carries the fields", "present", /Watching/.test(gs.body) ? "present" : "missing", /Watching/.test(gs.body));
+  check("The goal sheet says when it is checked", "present", /Next check/.test(gs.body) ? "present" : "missing", /Next check/.test(gs.body));
+  check("The goal sheet states the reward", "present", /Reward/.test(gs.body) ? "present" : "missing", /Reward/.test(gs.body));
+  check("No long description in the goal sheet", "absent", /re-reads your transactions/.test(gs.body) ? "present" : "absent", !/re-reads your transactions/.test(gs.body));
+  check("No provenance line in the goal sheet", "absent", /transaction history/i.test(gs.body) ? "present" : "absent", !/transaction history/i.test(gs.body));
   check("The goal sheet closes", "true", String(gs.close), gs.close);
   await page.keyboard.press("Escape");
   await page.waitForTimeout(200);
@@ -567,35 +649,63 @@ await page.waitForTimeout(900);
   );
   check("No dashes in what it says", "clean", spoken.join(" "), dashFree(spoken.join(" ")));
 
+  // The hop must stay in place: the wrap is centred with translateX(-50%).
+  await page.waitForTimeout(500);
+  const beforeHop = await page.evaluate(() => {
+    const r = document.querySelector("#dragon-art").getBoundingClientRect();
+    return { cx: Math.round(r.left + r.width / 2), top: Math.round(r.top) };
+  });
+  await page.locator(".gel-scene").click();
+  await page.waitForTimeout(180);
+  const midHop = await page.evaluate(() => {
+    const r = document.querySelector("#dragon-art").getBoundingClientRect();
+    return { cx: Math.round(r.left + r.width / 2), top: Math.round(r.top) };
+  });
+  check("The hop lifts the dragon", ">0", String(beforeHop.top - midHop.top) + "px", beforeHop.top - midHop.top > 0);
+  check("And does not slide it sideways", "0px", String(Math.abs(midHop.cx - beforeHop.cx)) + "px", Math.abs(midHop.cx - beforeHop.cx) === 0);
+  await page.waitForTimeout(500);
+
   await page.locator('.gel-tab[data-tab="shop"]').click();
   await page.waitForTimeout(300);
   const shop = await page.evaluate(() => ({
-    items: document.querySelectorAll(".gel-shop-item").length,
-    discs: document.querySelectorAll(".gel-shop-item .gel-disc").length,
+    items: document.querySelectorAll(".gel-shop-row").length,
     body: document.querySelector("#screen").innerText
   }));
-  check("Shop keeps its tiles", ">=8", String(shop.items), shop.items >= 8);
-  check("Every shop tile hides its blurb behind a disclosure", String(shop.items), String(shop.discs), shop.discs === shop.items);
+  check("Shop lists every item", ">=8", String(shop.items), shop.items >= 8);
+  const coinHere = await page.evaluate(() => document.querySelector(".gel-coin-pill")?.hidden === false);
+  check("Coins appear on the shop tab", "true", String(coinHere), coinHere === true);
   check(
-    "Shop blurbs are not on the tiles",
+    "Shop blurbs are not on the rows",
     "absent",
     /hops and asks for more/.test(shop.body) ? "present" : "absent",
     !/hops and asks for more/.test(shop.body)
   );
 
-  const cap = page.locator('.gel-shop-item[data-item="item_cap"] button', { hasText: "Buy" });
-  if ((await cap.count()) > 0) {
-    await cap.click();
-    await page.waitForTimeout(300);
-  }
+  // Open an item, check the sheet, then buy from it.
+  await page.locator('.gel-shop-row[data-item="item_cap"]').click();
+  await page.waitForTimeout(400);
+  const itemSheet = await page.evaluate(() => {
+    const s = document.querySelector(".gel-sheet");
+    return {
+      title: s?.querySelector(".gel-sheet-title")?.textContent.trim() || "",
+      body: s?.innerText || "",
+      primary: s?.querySelector(".gel-sheet-actions .gel-btn-primary")?.textContent.trim() || ""
+    };
+  });
+  check("Tapping an item opens its sheet", "Peak Cap", itemSheet.title, itemSheet.title === "Peak Cap");
+  check("The sheet carries the description", "present", /Sits on the head/.test(itemSheet.body) ? "present" : "missing", /Sits on the head/.test(itemSheet.body));
+  check("And the price on the action", "Buy for 120", itemSheet.primary, /Buy for 120/.test(itemSheet.primary));
+  await page.locator(".gel-sheet-actions .gel-btn-primary").click();
+  await page.waitForTimeout(400);
+  check("Buying closes the sheet", "0", String(await page.locator(".gel-sheet").count()), (await page.locator(".gel-sheet").count()) === 0);
+
   const worn = await page.evaluate(() => !!document.querySelector("#dragon-art .dragon-wear--hat"));
   check("Buying a hat puts it on the dragon", "true", String(worn), worn);
 
-  const cave = page.locator('.gel-shop-item[data-item="item_cave"] button', { hasText: "Buy" });
-  if ((await cave.count()) > 0) {
-    await cave.click();
-    await page.waitForTimeout(300);
-  }
+  await page.locator('.gel-shop-row[data-item="item_cave"]').click();
+  await page.waitForTimeout(350);
+  await page.locator(".gel-sheet-actions .gel-btn-primary").click();
+  await page.waitForTimeout(400);
   const scene2 = await page.evaluate(() => document.querySelector(".gel-scene")?.dataset.scene);
   check("Buying a home changes the scene", "stars", scene2, scene2 === "stars");
 }
@@ -628,6 +738,20 @@ await page.waitForTimeout(900);
   const arLine = await page.evaluate(() => document.querySelector("#ar-bubble")?.textContent || "");
   check("In AR it quotes our own data", "Afterpay takes $84.50 on 18 Nov.", arLine, /Afterpay takes \$84\.50/.test(arLine));
 
+  const bubbleGeom = await page.evaluate(() => {
+    const bubble = document.querySelector("#ar-bubble");
+    const dragon = document.querySelector("#ar-dragon").getBoundingClientRect();
+    const b = bubble.getBoundingClientRect();
+    return {
+      above: Math.round(dragon.top - b.bottom),
+      centred: Math.abs(b.left + b.width / 2 - (dragon.left + dragon.width / 2)) < 3,
+      travels: !!document.querySelector("#ar-hold #ar-bubble")
+    };
+  });
+  check("The bubble sits above the dragon", "10px", String(bubbleGeom.above), bubbleGeom.above >= 0 && bubbleGeom.above < 24);
+  check("And is centred on it", "true", String(bubbleGeom.centred), bubbleGeom.centred);
+  check("It travels with the dragon", "true", String(bubbleGeom.travels), bubbleGeom.travels);
+
   await page.locator('button:has-text("Say something")').click();
   await page.waitForTimeout(300);
   const arLine2 = await page.evaluate(() => document.querySelector("#ar-bubble")?.textContent || "");
@@ -642,7 +766,7 @@ await page.waitForTimeout(900);
   const moved = await page.evaluate(() => document.querySelector("#ar-hold").style.top);
   check("Dragging moves the dragon on the table", "changed", moved, moved !== ar.left && moved !== "58%");
 
-  await page.locator(".gel-ar-controls .gel-btn-primary").click();
+  await page.locator(".gel-ar-done").click();
   await page.waitForTimeout(300);
   check("Done closes AR", "0", String(await page.locator("#ar-root:not([hidden])").count()), (await page.locator("#ar-root:not([hidden])").count()) === 0);
 }
