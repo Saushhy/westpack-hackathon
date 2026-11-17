@@ -34,23 +34,76 @@ There is no "switch provider", no promoted brand, and no manual "mark as done".
 
 ## 3. The dragon is the real model now
 
-`/assets/dragon_3d` (an OBJ with separate PBR maps and no material file) is assembled
-into `web/assets/dragon/dragon.glb` by `npm run build:dragon`. 19,782 triangles, three
-maps embedded, 915 kB, all inside the file so it works offline.
+There are **three stages, not four**: egg (0 XP) → baby (800) → adult (1500). The baby is
+the model in `/assets/dragon_3d`; the adult model is still to be supplied, so 🐉 stands in.
+The demo therefore opens on 550 XP as an **egg**, and the egg hatches into the baby during
+the insights journey. "See it in your room" only appears once the dragon exists.
+
+`/assets/dragon_3d` (an OBJ with separate PBR maps and no material file) is assembled into
+`web/assets/dragon/dragon.glb` by `npm run build:dragon`. 19,782 triangles, three maps
+embedded, 915 kB, all inside the file so it works offline.
 
 - `npm run build:dragon` reads the OBJ, downscales the maps with sharp (base colour and
   normal to 1024, a packed ORM map to 512) and attaches them to the glTF. The source has
-  no `.mtl`, so the material is wired by hand.
+  no `.mtl`, so the material is wired by hand. `--src` and `--out` let it build the adult
+  from a second object later.
 - `npm run render:dragon` renders the model in headless Edge through three.js and writes
-  `assets/dragon/{baby,teen,adult}.png` with a transparent background. The app already
-  looked for those filenames, so no rendering code ships to the browser. The egg stage
-  stays the emoji on purpose: the model is a dragon, not an egg.
-- The stage portraits are the same dragon framed larger, so it visibly grows with the
-  score. `WEAR_ANCHOR` was re-measured from the alpha silhouette of each render, so hats
-  and shades land on the head of the real model.
+  `assets/dragon/baby.png` with a transparent background. The app already looked for that
+  filename, so no rendering code ships to the browser.
+- Lighting was toned down after the first pass blew the highlights out: Neutral tone
+  mapping at 0.82 exposure, key 1.15, rim 0.35, hemisphere 0.32, environment 0.35, plus a
+  baked contact shadow so the model sits instead of floating. The tool reports luminance
+  and clipping per stage (`lum 139/255, clipping 0.0%`).
+- The render fits the wider axis, because the wingspan is wider than the body is tall and
+  fitting the height clipped the wings at the frame edge.
+- `WEAR_ANCHOR` was re-measured from the alpha silhouette (>200, which excludes the contact
+  shadow), so hats, shades and scarves land on the real head.
 - The model has **no rig**, so the app wears items at measured offsets and the AR build
-  uses transforms only. See `docs/ar-dragon-handoff.md` for the USDZ path and the
-  RealityKit snippet.
+  uses transforms only. See `docs/ar-dragon-handoff.md`.
+
+### UI changes in this pass
+
+- **Header**: the help and profile buttons are gone. They did nothing, and a dead control on
+  a bank screen is worse than no control.
+- **Insights**: the "N patterns to look at" subtitle is gone. "How we know this" is now a
+  full-width **Review** button (38px, bordered, soft fill) instead of a text link.
+- **What we found**: rebuilt as a flat card with an eyebrow label, three large figures and
+  the two dollar totals as tinted tiles, instead of the navy panel header and key/value
+  rows.
+- **Your plan**: the "1 of 3 done" subtitle and the explanatory note are gone. The cards and
+  their self-filling bars carry it on their own.
+- **The bureau band** ("Average", "Very Good") now sits inside the score panel, opposite the
+  "Credit score" label, instead of under the page title. It describes the number, so it lives
+  with the number. Carlos writes Elena's as "Below Average / Thin File"; only the part before
+  the slash is shown, because the pill has to stay one line.
+
+### The Review sheet, rebuilt
+
+The user's note: the credit-scoring lecture ("Repayment history is the biggest thing in your
+score") was the wrong voice. The advice and the Westpac provenance were the right voice.
+
+- The `why` sentence is **gone** from the sheet. It still exists in `bills.json` and still
+  renders on the informational `keep` / `no_offer` cards, which have no action.
+- The sheet now opens with a **compact header**: the brand tile, the finding's label, the
+  `provider · plan` line, and the amount on the right. It reads like a row from the app that
+  expanded, which is the point.
+- The evidence sits in a soft grey block with a **"What we saw"** eyebrow.
+- The advice is a **callout**, tinted with the hero colour, icon on the left, 16px sentence.
+  It is now the loudest thing after the header, because it is the only thing the customer
+  has to act on.
+- The Westpac line stays at the foot: `Westpac transaction history · 17 Nov 2026`.
+- The secondary action reads **Not now** instead of Dismiss.
+
+### The dragon was off centre
+
+Measured, not guessed: the silhouette's bounding box sat at **51.9%** of the frame, with an
+11.3% left margin against 7.5% right, because the bounding box includes the wings and the
+camera is at a 20° yaw. `tools/render-dragon.mjs` now renders once, measures the opaque
+silhouette (alpha > 200, which excludes the contact shadow), pans the camera along its own
+right vector by the error, and renders again. The output is **49.9%**, and the tool prints
+`centre 51.9% -> 49.9%` on every build.
+
+Audit is now **121 assertions**.
 
 ### The dragon speaks, and only from our data
 
@@ -66,6 +119,55 @@ The audit asserts that the first line matches the real payment, that goal progre
 live, and that no other provider is ever named.
 
 ---
+
+### Four personas, one app
+
+Carlos supplied mock data for four people: Mia (student, BNPL, late card), Marcus (sole
+trader, ATO, commercial enquiries), Elena (thin file, no credit history) and David ($35k of
+limits, wants a mortgage).
+
+- `web/tools/build-personas.js` converts `data/<name>_{transactions,questions,insights}.json`
+  into the schema this app already renders, and writes `personas.js` plus `marcus.html`,
+  `elena.html` and `david.html`, generated from `index.html` so the shell cannot drift.
+- Mia keeps her hand-authored data, because the demo and the audit are tuned against it.
+- **`bureau_explanation` is dropped.** That field is the CCR lecture the team asked us to
+  remove from the UI. The `summary` is what the Review sheet shows, followed by advice.
+- **`estimated_score_delta` and `projected_score_after_plan` are not shown as promises.** The
+  projection becomes a range with an assumption, same rule as Mia's forecast.
+- The plan is the same three goals for everyone and only the targets change, derived from
+  each person's `credit_repayment`, `late_payment` and `*_enquiry` flags. Mia's BNPL goals
+  stay, because she is the only person with BNPL.
+- State is scoped per persona, so the four demos never share XP.
+
+The Review sheet also lost the credit-scoring lecture and gained a `detail` paragraph, which
+is where a persona's own `summary` lands.
+
+### Credit accounts, with the institution's own logo
+
+The Score tab used to show BNPL only. It now lists **every credit facility the person
+actually repays**, because that is what a lender sees:
+
+| Person | Accounts |
+|---|---|
+| Mia | Westpac Credit Card (late), Afterpay, Zip |
+| Marcus | Westpac Credit Card (late), Toyota Finance loan, business overdraft |
+| Elena | none, which is the point of her persona |
+| David | Westpac Credit Card, Westpac Car Loan, ANZ |
+
+- Rows come from transaction flags, not a hand-written list: `bnpl`, `credit_repayment`,
+  `credit_facility`, `late_payment`. A bureau search (`*_enquiry`) is deliberately excluded,
+  because an enquiry is not an account.
+- Each row carries the institution's own mark on a white tile: the Westpac W for Westpac
+  products, fetched logos for Afterpay, Zip, Toyota, ANZ and Plenti. `fetch-logos.mjs` now
+  decodes BMP-only `.ico` files, which is how ANZ is served.
+- `monthly` is the average commitment over the transaction window, so the row reads
+  `$5,519/mo` for Marcus and `$91.67/mo` for Mia. The list sorts by it.
+- `status` drives a chip: amber **Late**, green **On time**.
+- Elena gets a written empty state instead of a blank list: "Nothing to repay yet. That is
+  why your file is thin, and why the first small limit matters."
+- Tapping any row opens the movements sheet filtered to that institution.
+
+Audit is now **140 assertions**, including the four persona pages.
 
 ## 4. What changed before that (v3)
 
@@ -95,7 +197,7 @@ live, and that no other provider is ever named.
 
 ---
 
-## 5. Where the data comes from
+## 7. Where the data comes from
 
 | Tier | Source | In the app |
 |---|---|---|

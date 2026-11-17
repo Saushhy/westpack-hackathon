@@ -1,0 +1,77 @@
+{
+  "customer_persona": "Marcus",
+  "credit_score": {
+    "provider": "Equifax Australia Commercial & Consumer (Mocked)",
+    "scale_max": 1200,
+    "current_score": 670,
+    "current_band": "Good",
+    "projected_score_after_plan": 780,
+    "projected_band": "Very Good",
+    "timeframe_months": 3,
+    "disclaimer": "Marcus operates as a Director with personal guarantees on business facilities. His score is impacted by personal credit card trade utilization spikes and the late payment following his Q1 ATO BAS obligation."
+  },
+  "key_insights": [
+    {
+      "id": "ins_m001",
+      "title": "Late Credit Card Repayment Post-BAS Drain (2 Nov)",
+      "category": "Repayment History (CCR)",
+      "severity": "critical",
+      "summary": "Your Westpac Business Card payment was 2 days past due ($8,450 balance) right after a $12,450 ATO tax debit.",
+      "bureau_explanation": "Because business credit cards for proprietary limited entities commonly carry a Director Personal Guarantee, negative repayment history flags register against your personal Equifax consumer file, undermining personal credit standing.",
+      "related_transaction_ids": ["tx_m056", "tx_m057", "tx_m061", "tx_m062"]
+    },
+    {
+      "id": "ins_m002",
+      "title": "$14,750 Trade Supplier Stacking on Revolving Credit",
+      "category": "Credit Utilisation & Working Capital",
+      "severity": "high",
+      "summary": "You are funding 30-day wholesale materials (Rexel, Middy's, NHP) through your personal revolving card limit rather than structured trade finance.",
+      "bureau_explanation": "Sustained card utilisation above 50% lowers your credit rating and signals cash-flow latency to automated bank risk engines.",
+      "related_transaction_ids": ["tx_m003", "tx_m012", "tx_m022", "tx_m028", "tx_m043", "tx_m047", "tx_m048"]
+    },
+    {
+      "id": "ins_m003",
+      "title": "Commercial Credit Bureau Inquiry Recorded (29 Oct)",
+      "category": "Commercial Enquiries",
+      "severity": "medium",
+      "summary": "A trade credit assessment inquiry from illion was logged for wholesale terms.",
+      "bureau_explanation": "Multiple trade credit inquiries within a short timeframe signal to commercial credit providers that the business may be experiencing liquidity challenges.",
+      "related_transaction_ids": ["tx_m058"]
+    },
+    {
+      "id": "ins_m004",
+      "title": "Irregular Commingling & Owner Drawings ($12,500 Total)",
+      "category": "Serviceability & Remuneration Structure",
+      "severity": "medium",
+      "summary": "Variable transfers to personal accounts make personal income verification harder for mortgage underwriters.",
+      "bureau_explanation": "Formalizing regular wage disbursements rather than irregular lump-sum drawings strengthens personal borrowing serviceability assessments under APRA guidelines.",
+      "related_transaction_ids": ["tx_m005", "tx_m013", "tx_m023", "tx_m033", "tx_m044", "tx_m052", "tx_m065"]
+    }
+  ],
+  "recommended_goals": [
+    {
+      "goal_id": "goal_m001",
+      "title": "Activate Automated ATO Tax Provisioning Sweep",
+      "target_metric": "Sweep 15% of all client revenue into a locked sub-account to guarantee zero late fees on BAS dates",
+      "xp_reward": 220,
+      "coin_reward": 85,
+      "estimated_score_delta": 55
+    },
+    {
+      "goal_id": "goal_m002",
+      "title": "Migrate Trade Spend to 30-Day Wholesale Account",
+      "target_metric": "Reduce card utilization by transferring $10k+ material spend to direct trade credit terms",
+      "xp_reward": 180,
+      "coin_reward": 70,
+      "estimated_score_delta": 35
+    },
+    {
+      "goal_id": "goal_m003",
+      "title": "Formalise Fortnightly Director Remuneration",
+      "target_metric": "Automate consistent salary drawings to eliminate unverified personal account transfers",
+      "xp_reward": 140,
+      "coin_reward": 50,
+      "estimated_score_delta": 20
+    }
+  ]
+}

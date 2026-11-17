@@ -36,7 +36,9 @@ scene.add(new THREE.HemisphereLight(0xdfe7f5, 0x6d7480, 0.32));
 
 const camera = new THREE.PerspectiveCamera(30, 1, 0.01, 100);
 
-const gltf = await new GLTFLoader().loadAsync("/assets/dragon/dragon.glb");
+const gltf = await new GLTFLoader().loadAsync(
+  new URLSearchParams(location.search).get("model") || "/assets/dragon/dragon.glb"
+);
 const model = gltf.scene;
 model.traverse((o) => {
   if (o.isMesh) {
@@ -85,7 +87,7 @@ shadow.position.y = 0.004;
 scene.add(shadow);
 
 /**
- * fill: how much of the frame height the dragon takes (0.45 baby -> 0.92 adult)
+ * fill: how much of the frame the dragon takes (0.6 smaller -> 0.9 hero)
  * yaw: camera angle in degrees, 0 is straight on
  */
 window.renderStage = async (opts = {}) => {
@@ -93,7 +95,10 @@ window.renderStage = async (opts = {}) => {
   const yaw = ((opts.yaw ?? 18) * Math.PI) / 180;
   const pitch = ((opts.pitch ?? 6) * Math.PI) / 180;
 
-  const visible = height / Math.max(0.05, fill);
+  /* The wingspan is wider than the body is tall, so fit the wider axis or the
+     wings clip at the frame edge. */
+  const span = Math.max(size.x, height) * 1.06;
+  const visible = span / Math.max(0.05, fill);
   const dist = visible / 2 / Math.tan((camera.fov * Math.PI) / 360);
   const target = new THREE.Vector3(0, height * 0.5, 0);
 
@@ -103,10 +108,24 @@ window.renderStage = async (opts = {}) => {
     target.z + Math.cos(yaw) * Math.cos(pitch) * dist
   );
   camera.lookAt(target);
+
+  /* Centre the silhouette, not the bounding box. The wings and tail make the
+     bounding box asymmetric, and at an angle the dragon visibly sits to one
+     side. shiftX is a fraction of the frame width, positive pans the camera
+     right so the subject moves left. */
+  const shiftX = opts.shiftX || 0;
+  if (shiftX) {
+    camera.updateMatrixWorld();
+    const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+    const dx = shiftX * visible;
+    camera.position.addScaledVector(right, dx);
+    target.addScaledVector(right, dx);
+    camera.lookAt(target);
+  }
   camera.updateProjectionMatrix();
 
   renderer.render(scene, camera);
-  return { height, dist, fill };
+  return { height, dist, fill, visible };
 };
 
 window.__ready = true;

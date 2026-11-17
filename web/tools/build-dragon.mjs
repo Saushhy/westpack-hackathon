@@ -19,7 +19,7 @@
 import { writeFileSync, mkdirSync, existsSync } from "node:fs";
 import obj2gltf from "obj2gltf";
 import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import sharp from "sharp";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -31,8 +31,15 @@ const tmp = join(process.env.TEMP || process.env.TMP || ".", "opencode", "dragon
 mkdirSync(outDir, { recursive: true });
 mkdirSync(tmp, { recursive: true });
 
-const OBJ = join(srcDir, "base.obj");
-const OUT = join(outDir, "dragon.glb");
+/* The adult model will arrive as a second object, so both the source and the
+   output are overridable:
+     npm run build:dragon -- --src adult.obj --out adult.glb */
+const arg = (name, fallback) => {
+  const i = process.argv.indexOf("--" + name);
+  return i > 0 && process.argv[i + 1] ? process.argv[i + 1] : fallback;
+};
+const OBJ = resolve(srcDir, arg("src", "base.obj"));
+const OUT = resolve(outDir, arg("out", "dragon.glb"));
 for (const f of [OBJ, join(srcDir, "texture_diffuse.png"), join(srcDir, "texture_normal.png")]) {
   if (!existsSync(f)) {
     console.error("Missing source art: " + f);

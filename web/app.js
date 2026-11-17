@@ -1,7 +1,13 @@
 "use strict";
 
-const { bills, rewards } = window.DATA;
-const LS_KEY = "credit-dragon:state";
+/* A persona page sets data-persona on <body>. index.html is Mia, whose data is
+   hand-authored in data/bills.json. The other pages load personas.js, generated
+   from Carlos's mock data. */
+const PERSONA = (document.body.dataset.persona || "").toLowerCase();
+const PACK = (PERSONA && window.PERSONAS && window.PERSONAS[PERSONA]) || null;
+const { bills, rewards } = PACK || window.DATA;
+const TX = (PACK && PACK.transactions) || (window.DATA && window.DATA.transactions) || [];
+const LS_KEY = "credit-dragon:state" + (PACK ? ":" + PERSONA : "");
 const STATE_VERSION = 2;
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -385,15 +391,15 @@ function sheetKeyHandler(e) {
 function openSheet(opts) {
   const root = $("#modal-root");
   if (!root) return;
+  const head =
+    opts.head || '<h2 class="gel-sheet-title" id="sheet-title">' + opts.title + "</h2>";
   root.innerHTML =
     '<div class="gel-sheet-overlay" onclick="if (event.target === this) closeSheet()">' +
     '<div class="gel-sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">' +
     '<button class="gel-sheet-close" type="button" aria-label="Close" onclick="closeSheet()">' +
     ico("close") +
     "</button>" +
-    '<h2 class="gel-sheet-title" id="sheet-title">' +
-    opts.title +
-    "</h2>" +
+    head +
     '<div class="gel-sheet-body">' +
     opts.body +
     "</div>" +
@@ -519,29 +525,62 @@ function doneCopy(bill) {
   return "Noted.";
 }
 
-/* The sheet: evidence, why it matters, the one action. */
+/* The sheet: what we saw, what to do about it, and where it came from.
+   No lecture about credit scoring. The advice is the point. */
 function openInsight(id) {
   const bill = bills.bills.find((b) => b.id === id);
   if (!bill) return;
   const copy = ACTION_COPY[bill.action_type] || ACTION_COPY.track;
 
+  const head = `
+    <div class="gel-sheet-head">
+      ${adorn(bill)}
+      <div class="gel-sheet-head-body">
+        <h2 class="gel-sheet-title" id="sheet-title">${bill.label}</h2>
+        <p class="gel-sheet-sub">${bill.provider} · ${bill.plan}</p>
+      </div>
+      ${
+        bill.current_amount
+          ? `<div class="gel-sheet-head-end">
+               <span class="gel-money gel-money--sm">${fmtAUD(bill.current_amount)}</span>${moneyUnit(
+                 bill.billing_period
+               )}
+             </div>`
+          : ""
+      }
+    </div>`;
+
   const body = `
-    <div class="gel-evidence">${evidenceRows(bill)}</div>
-    <p class="gel-note" style="margin-top:14px">${bill.why}</p>
-    ${bill.advice ? `<p class="gel-note gel-note--warn" style="margin-top:6px">${bill.advice}</p>` : ""}
+    <div class="gel-evidence-card">
+      <span class="gel-evidence-eyebrow">What we saw</span>
+      ${evidenceRows(bill)}
+    </div>
+    ${bill.detail ? `<p class="gel-detail">${bill.detail}</p>` : ""}
+    ${
+      bill.advice
+        ? `<div class="gel-callout">
+             ${ico(copy.icon)}
+             <p class="gel-callout-text">${bill.advice}</p>
+           </div>`
+        : ""
+    }
     ${sourceLink(bill)}
     <div class="gel-verified" style="margin-top:14px">
       ${ico("check")}
-      ${bill.verification ? bill.verification.source + " · " + fmtDate(bill.verification.checked_at) : "From your transactions"}
+      ${
+        bill.verification
+          ? bill.verification.source + " · " + fmtDate(bill.verification.checked_at)
+          : "From your transactions"
+      }
     </div>`;
 
   const actions = `
     <button class="gel-btn-primary gel-btn-block" type="button" onclick="actFromSheet('${bill.id}')">
       ${ico(copy.icon)} ${copy.label}
     </button>
-    <button class="gel-btn-text" type="button" onclick="dismissFromSheet('${bill.id}')">Dismiss</button>`;
+    <button class="gel-btn-text" type="button" onclick="dismissFromSheet('${bill.id}')">Not now</button>`;
 
-  openSheet({ title: bill.label, body, actions });
+  openSheet({ title: bill.label, head, body, actions });
 }
 
 function actFromSheet(id) {
@@ -581,7 +620,7 @@ function insightCard(bill) {
         <span class="gel-muted">${bill.finding || ""}</span>
       </div>
       <button class="gel-row-link" type="button" onclick="openInsight('${bill.id}')">
-        <span>How we know this</span>${ico("arrow-right")}
+        <span>Review</span>${ico("arrow-right")}
       </button>
     </article>`;
 }
@@ -607,39 +646,43 @@ function insightsSummary() {
   const feesAvoided = (bills.totals && bills.totals.fees_avoided) || 0;
 
   return `
-    <section class="gel-panel">
-      <div class="gel-panel-head">
-        <span class="gel-panel-title">What we found</span>
+    <section class="gel-found">
+      <div class="gel-found-top">
+        <span class="gel-found-eyebrow">What we found</span>
         <span class="gel-badge gel-badge--faint">Last 3 months</span>
       </div>
-      <div class="gel-panel-body">
-        <div class="gel-counts">
-          <div class="gel-count"><span class="gel-count-val">${credit}</span><span class="gel-count-label">affect your score</span></div>
-          <div class="gel-count"><span class="gel-count-val">${cash}</span><span class="gel-count-label">free up cash</span></div>
-          <div class="gel-count"><span class="gel-count-val">${fees}</span><span class="gel-count-label">avoid a fee</span></div>
+      <div class="gel-found-stats">
+        <div class="gel-found-stat">
+          <span class="gel-found-num">${credit}</span>
+          <span class="gel-found-label">affect your score</span>
         </div>
-        <div class="gel-hr"></div>
-        <div class="gel-kv">
-          <span class="gel-kv-k">Cash you could free</span>
-          <span class="gel-kv-v gel-money--good">${fmtAUD(cashFree)} a month</span>
+        <div class="gel-found-stat">
+          <span class="gel-found-num">${cash}</span>
+          <span class="gel-found-label">free up cash</span>
         </div>
-        <div class="gel-kv">
-          <span class="gel-kv-k">Fees you could avoid</span>
-          <span class="gel-kv-v">${fmtAUD(feesAvoided)} a month</span>
+        <div class="gel-found-stat">
+          <span class="gel-found-num">${fees}</span>
+          <span class="gel-found-label">avoid a fee</span>
         </div>
-        <p class="gel-note" style="margin-top:10px">Repayment history matters most. Everything else is smaller.</p>
       </div>
+      <div class="gel-found-money">
+        <div class="gel-money-tile gel-money-tile--good">
+          <span class="gel-money-tile-label">Cash you could free</span>
+          <span class="gel-money-tile-value">${fmtAUD(cashFree)}</span>
+          <span class="gel-money-tile-unit">a month</span>
+        </div>
+        <div class="gel-money-tile">
+          <span class="gel-money-tile-label">Fees you could avoid</span>
+          <span class="gel-money-tile-value">${fmtAUD(feesAvoided)}</span>
+          <span class="gel-money-tile-unit">a month</span>
+        </div>
+      </div>
+      <p class="gel-found-note">Repayment history matters most. Everything else is smaller.</p>
     </section>`;
 }
 
 function renderInsights() {
   const order = { remind: 0, protect: 1, track: 2, keep: 3, no_offer: 4 };
-  const open = bills.bills.filter(
-    (b) =>
-      isActionable(b) &&
-      state.bills[b.id]?.status !== "done" &&
-      state.bills[b.id]?.status !== "dismissed"
-  ).length;
 
   const cards = bills.bills
     .slice()
@@ -653,7 +696,6 @@ function renderInsights() {
     <div class="gel-screen-head">
       <div>
         <h1 class="gel-title">Insights</h1>
-        <p class="gel-muted">${open} ${open === 1 ? "pattern" : "patterns"} to look at</p>
       </div>
     </div>
     ${insightsSummary()}
@@ -672,9 +714,9 @@ const monthLabel = (ym) =>
 
 function movementsFor(match) {
   const re = new RegExp(match, "i");
-  return ((window.DATA && window.DATA.transactions) || [])
-    .filter((t) => re.test(t.merchant || "") || re.test(t.description || ""))
-    .sort((a, b) => (a.date < b.date ? 1 : -1));
+  return TX.filter((t) => re.test(t.merchant || "") || re.test(t.description || "")).sort((a, b) =>
+    a.date < b.date ? 1 : -1
+  );
 }
 
 function openMovements(name, match) {
@@ -757,14 +799,35 @@ function daysSinceNewFacility() {
   return Math.max(0, Math.round(ms / 86400000));
 }
 
+/* Persona goals read flags from that person's own transactions, so the same
+   three goals work for a student with BNPL and a business owner with an ATO
+   bill. */
+function onTimeRepayments() {
+  const repay = TX.filter((t) => (t.flags || []).includes("credit_repayment"));
+  return repay.filter((t) => !(t.flags || []).includes("late_payment")).length;
+}
+
+function daysSinceLastEnquiry() {
+  const rows = TX.filter((t) => (t.flags || []).some((f) => /enquiry/i.test(f)));
+  if (!rows.length) return 999; // no applications at all: nothing to wait out
+  const last = rows.map((t) => t.date).sort().pop();
+  return Math.max(
+    0,
+    Math.round((new Date(TODAY + "T00:00:00") - new Date(last + "T00:00:00")) / 86400000)
+  );
+}
+
 function goalValue(g) {
   if (g.source === "checkin") return checkinsInWindow();
   if (g.source === "bnpl_on_time") return bnplPaidOnTime();
   if (g.source === "no_new_bnpl") return daysSinceNewFacility();
+  if (g.source === "on_time") return onTimeRepayments();
+  if (g.source === "no_new_credit") return daysSinceLastEnquiry();
   return 0;
 }
 
-const goalPct = (g) => Math.min(100, (goalValue(g) / g.target) * 100);const goalDone = (g) => state.goals[g.id]?.status === "completed";
+const goalPct = (g) => Math.min(100, (goalValue(g) / g.target) * 100);
+const goalDone = (g) => state.goals[g.id]?.status === "completed";
 
 /* Called after any award and once at boot: a goal completes itself, and the
    XP follows it. Returns the award results so the caller can celebrate. */
@@ -782,8 +845,6 @@ function syncGoals() {
 }
 
 function renderGoals() {
-  const done = rewards.goals.filter(goalDone).length;
-
   const cards = rewards.goals
     .map((g) => {
       const complete = goalDone(g);
@@ -812,10 +873,8 @@ function renderGoals() {
     <div class="gel-screen-head">
       <div>
         <h1 class="gel-title">Your plan</h1>
-        <p class="gel-muted">${done} of ${rewards.goals.length} done</p>
       </div>
     </div>
-    <p class="gel-note" style="margin-bottom:12px">These fill in on their own. We check your transactions, not a tick box.</p>
     ${cards}`;
 }
 
@@ -827,43 +886,86 @@ function renderGoals() {
    history. The detail lives in a sheet so the screen stays calm.
    ========================================================================== */
 
-function bnplRow(p) {
+/* ---------- credit accounts ----------
+   Cards, BNPL and loans, straight from the transaction file. The logo is the
+   institution's own mark; without one the tile falls back to a GEL icon. */
+const fmtMoneyShort = (n) =>
+  n >= 1000 ? "$" + Math.round(n).toLocaleString("en-AU") : fmtAUD(n);
+
+function accountRow(a) {
+  const late = a.status === "late";
+  const icon = a.kind === "card" ? "card" : a.kind === "bnpl" ? "shopping-bag" : "house";
   return `
-    <button class="gel-row-link gel-row-link--tile" type="button"
-            onclick="openMovements('${p.name}', '${p.match}')">
-      <span class="gel-adorn gel-adorn--brand">
-        <img class="gel-brand-img" src="${p.logo}" alt="" loading="lazy"
-             data-icon="shopping-bag" onerror="brandFallback(this)">
-      </span>
+    <button class="gel-acc" type="button" onclick="openMovements('${a.name}', '${a.match}')">
+      ${
+        a.logo
+          ? `<span class="gel-adorn gel-adorn--brand">
+               <img class="gel-brand-img" src="${a.logo}" alt="" loading="lazy"
+                    data-icon="${icon}" onerror="brandFallback(this)">
+             </span>`
+          : `<span class="gel-adorn">${ico(icon)}</span>`
+      }
       <span class="gel-cell-body">
-        <span class="gel-move-name">${p.name}</span>
-        <span class="gel-muted">Next payment ${fmtAUD(p.amount_due)} on ${fmtDate(p.next_due)}</span>
+        <span class="gel-acc-name">${a.name}</span>
+        <span class="gel-acc-kind">${a.kind_label} · ${a.note}</span>
       </span>
-      ${ico("arrow-right")}
+      <span class="gel-acc-end">
+        <span class="gel-acc-amount">${fmtMoneyShort(a.monthly)}<span class="gel-acc-unit">/mo</span></span>
+        <span class="gel-acc-status ${late ? "is-late" : "is-ok"}">${late ? "Late" : "On time"}</span>
+      </span>
     </button>`;
 }
 
+function creditAccounts(cf) {
+  const accounts = cf.accounts || [];
+  if (!accounts.length) {
+    return `
+      <section class="gel-cell">
+        <div class="gel-row-between">
+          <span class="gel-label">Credit accounts</span>
+          <span class="gel-badge gel-badge--faint">None</span>
+        </div>
+        <div class="gel-acc-empty">
+          ${ico("card")}
+          <p class="gel-acc-empty-text">Nothing to repay yet. That is why your file is thin, and why the first small limit matters.</p>
+        </div>
+      </section>`;
+  }
+  return `
+    <section class="gel-cell">
+      <div class="gel-row-between">
+        <span class="gel-label">Credit accounts</span>
+        <span class="gel-badge gel-badge--faint">${accounts.length} open</span>
+      </div>
+      <div style="margin-top:6px">${accounts
+        .slice()
+        .sort((a, b) => b.monthly - a.monthly)
+        .map(accountRow)
+        .join("")}</div>
+    </section>`;
+}
+
+/* Five titles at a glance, each one expanding in place to explain itself.
+   A native <details> so it works with the keyboard and without JavaScript. */
 function openFactors() {
+  const factors = rewards.credit_factors || [];
   const body =
-    (rewards.credit_factors || [])
-      .map((f) => {
-        const up = f.direction === "up";
-        return `<div class="gel-factor-row" style="margin-bottom:16px">
-          <span class="gel-factor-arrow ${up ? "is-up" : "is-down"}">${up ? "↑" : "↓"}</span>
-          <div class="gel-factor-body">
-            <div class="gel-row-between">
-              <span class="gel-move-name">${f.label}</span>
-              <span class="gel-badge gel-badge--faint">${f.impact}</span>
-            </div>
-            <p class="gel-muted" style="margin:2px 0 0">${f.what}</p>
-          </div>
-        </div>`;
-      })
+    '<div class="gel-facts">' +
+    factors
+      .map(
+        (f) => `<details class="gel-fact">
+          <summary class="gel-fact-row">
+            <span class="gel-fact-title">${f.label}</span>
+            <span class="gel-fact-icon">${ico("add-circle")}</span>
+          </summary>
+          <div class="gel-fact-body"><p class="gel-fact-text">${f.what}</p></div>
+        </details>`
+      )
       .join("") +
-    '<p class="gel-note">Direction only. Nobody can promise you points.</p>';
+    "</div>";
 
   openSheet({
-    title: "What moves your score",
+    title: "How your score is built",
     body,
     actions: '<button class="gel-btn-ghost" type="button" onclick="closeSheet()">Close</button>'
   });
@@ -873,14 +975,11 @@ function renderScore() {
   const score = bills.score || {};
   const cf = bills.credit_file || {};
   const forecast = score.forecast || {};
-  const bnpl = cf.bnpl || {};
-  const providers = bnpl.providers || [];
 
   return `
     <div class="gel-screen-head">
       <div>
-        <h1 class="gel-title">Your score</h1>
-        <p class="gel-muted">${score.consent ? "Shared with your consent" : ""}</p>
+        <h1 class="gel-title">${bills.persona ? "Your score, " + bills.persona : "Your score"}</h1>
       </div>
       <span class="gel-badge gel-badge--hero">${score.source || "Equifax"}</span>
     </div>
@@ -888,11 +987,11 @@ function renderScore() {
     <section class="gel-panel gel-score-hero">
       <div class="gel-panel-head">
         <span class="gel-panel-title">Credit score</span>
+        ${score.band ? `<span class="gel-band">${score.band}</span>` : ""}
       </div>
       <div class="gel-panel-body">
         <div class="gel-score-num">${score.value != null ? fmtWhole(score.value) : ""}<span class="gel-score-max">/${score.max != null ? fmtWhole(score.max) : ""}</span></div>
         <p class="gel-muted" style="margin:4px 0 0">Updated ${score.refreshed_at ? fmtDate(score.refreshed_at) : ""}</p>
-        ${score.demo_sample ? '<p class="gel-note gel-note--warn" style="margin:6px 0 0">Sample score for this demo.</p>' : ""}
         <div class="gel-hr"></div>
         <div class="gel-forecast">
           <div class="gel-row-between">
@@ -913,17 +1012,10 @@ function renderScore() {
       </div>
     </article>
 
-    <section class="gel-cell">
-      <div class="gel-row-between">
-        <span class="gel-label">Credit you don't see</span>
-        <span class="gel-badge gel-badge--faint">${bnpl.active_facilities || 0} plans</span>
-      </div>
-      <div style="margin-top:6px">${providers.map(bnplRow).join("")}</div>
-      <p class="gel-note" style="margin-top:10px">${bnpl.note || ""}</p>
-    </section>
+    ${creditAccounts(cf)}
 
-    <button class="gel-btn-ghost gel-btn-block" type="button" onclick="openFactors()">
-      What moves your score ${ico("arrow-right")}
+    <button class="gel-row-card" type="button" onclick="openFactors()">
+      <span>How your score is built</span>${ico("arrow-right")}
     </button>`;
 }
 
@@ -973,12 +1065,12 @@ function boot() {
 /* Where each worn item sits on the dragon emoji, per stage (top % of the box). */
 /* Anchors are measured from the rendered PNG silhouettes (see
    tools/render-dragon.mjs), so the hat lands on the head of the real model
-   rather than floating over the old emoji. */
+   rather than floating over the old emoji. The adult values are the emoji
+   defaults until its model is rendered. */
 const WEAR_ANCHOR = {
   egg: { hat: 2, face: 34, neck: 60 },
-  baby: { hat: 20, face: 23, neck: 36 },
-  teen: { hat: 12, face: 16, neck: 33 },
-  adult: { hat: 7, face: 11, neck: 31 }
+  baby: { hat: 5, face: 18, neck: 38 },
+  adult: { hat: 2, face: 36, neck: 60 }
 };
 
 function wearGlyph(emoji, slot, top) {
@@ -1167,9 +1259,15 @@ function renderDragon() {
 
     ${sceneHtml()}
 
-    <button class="gel-btn-primary gel-btn-block" type="button" onclick="openAR()" style="margin-bottom:12px">
-      ${ico("camera")} See it in your room
-    </button>
+    ${
+      stage.id === "egg"
+        ? `<p class="gel-note" style="margin:0 0 12px">Your dragon hatches at ${fmtWhole(
+            nextStage(state.xp_total)?.xp_required ?? 800
+          )} XP. Act on an insight to get there.</p>`
+        : `<button class="gel-btn-primary gel-btn-block" type="button" onclick="openAR()" style="margin-bottom:12px">
+             ${ico("camera")} See it in your room
+           </button>`
+    }
 
     <article class="gel-cell">
       <div class="gel-row-between">

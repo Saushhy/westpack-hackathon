@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en" data-brand="wbc">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Credit Dragon · Marcus · Westpac</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body data-persona="marcus">
+  <div class="stage">
+    <div class="phone">
+      <div class="gel-notch"></div>
+
+      <!-- iOS status bar -->
+      <div class="gel-statusbar">
+        <span id="status-time">9:41</span>
+        <span class="gel-status-icons">
+          <span class="gel-signal"><i></i><i></i><i></i><i></i></span>
+          <span class="gel-battery"><span class="gel-battery-fill"></span></span>
+        </span>
+      </div>
+
+      <!-- GEL Header: white, hairline border, 54px, 12px gutter -->
+      <header class="gel-topbar" id="topbar">
+        <div class="gel-header-main">
+          <div class="gel-brandrow">
+            <img class="gel-logo" src="assets/gel/wbc-logo.svg" alt="Westpac">
+            <span class="gel-wordmark">Westpac</span>
+          </div>
+          <div class="gel-header-end">
+            <span class="gel-coin-pill"><span class="gel-coin"></span><span id="header-coins">0</span></span>
+          </div>
+        </div>
+      </header>
+
+      <main class="gel-screen" id="screen" aria-live="polite"></main>
+
+      <nav class="gel-tabbar" id="tabbar">
+        <button class="gel-tab active" data-tab="score"><span class="gel-ico tab-ico" data-icon="shield"></span>Score</button>
+        <button class="gel-tab" data-tab="insights"><span class="gel-ico tab-ico" data-icon="chat"></span>Insights</button>
+        <button class="gel-tab" data-tab="goals"><span class="gel-ico tab-ico" data-icon="target"></span>Goals</button>
+        <button class="gel-tab" data-tab="dragon"><span class="gel-ico tab-ico" data-icon="paw"></span>Dragon</button>
+        <button class="gel-tab" data-tab="shop"><span class="gel-ico tab-ico" data-icon="shopping-bag"></span>Shop</button>
+      </nav>
+
+      <div class="gel-toast" id="toast" role="status"></div>
+      <div class="gel-ar" id="ar-root" hidden></div>
+      <div id="modal-root"></div>
+    </div>
+  </div>
+
+  <script src="./data.js"></script>
+  <script src="./personas.js"></script>
+  <script src="./icons.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

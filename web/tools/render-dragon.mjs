@@ -12,6 +12,7 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, join, extname, normalize } from "node:path";
+import { tmpdir } from "node:os";
 import sharp from "sharp";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -59,19 +60,45 @@ page.on("console", (m) => {
 await page.goto(`http://127.0.0.1:${port}/tools/render/dragon.html`);
 await page.waitForFunction(() => window.__ready === true, null, { timeout: 20000 });
 
-/* Egg stays the emoji: the model is a dragon, not an egg. The other three are
-   the same dragon framed larger, so it visibly grows with the score. */
+/* Three stages total: egg (emoji), baby (this model), adult (the next model,
+   still to be supplied). Rendered from the same camera rig so they match. */
 const STAGES = [
-  { id: "baby", fill: 0.62, yaw: 22, pitch: 7 },
-  { id: "teen", fill: 0.78, yaw: 20, pitch: 6 },
-  { id: "adult", fill: 0.9, yaw: 16, pitch: 5 }
+  { id: "baby", model: "/assets/dragon/dragon.glb", fill: 0.9, yaw: 20, pitch: 6 }
 ];
 
+/* Horizontal centre of the opaque silhouette, as a percentage of the frame.
+   Alpha above 200 so the soft contact shadow is not counted. */
+async function silhouetteCentre(file) {
+  const { data, info } = await sharp(file).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  let left = info.width;
+  let right = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i + 3] <= 200) continue;
+    const x = (i / 4) % info.width;
+    if (x < left) left = x;
+    if (x > right) right = x;
+  }
+  return right > left ? ((left + right) / 2 / info.width) * 100 : 50;
+}
+
 for (const s of STAGES) {
-  const info = await page.evaluate((o) => window.renderStage(o), s);
+  await page.goto(`http://127.0.0.1:${port}/tools/render/dragon.html?model=${encodeURIComponent(s.model)}`);
+  await page.waitForFunction(() => window.__ready === true, null, { timeout: 20000 });
+
+  // Pass 1: where does the silhouette actually land?
+  await page.evaluate((o) => window.renderStage({ ...o, shiftX: 0 }), s);
+  await page.waitForTimeout(120);
+  const probe = join(tmpdir(), "opencode", "dragon", s.id + "-probe.png");
+  await page.locator("#stage").screenshot({ path: probe, omitBackground: true });
+  const before = await silhouetteCentre(probe);
+
+  // Pass 2: pan the camera so it is centred, then keep that frame.
+  const shiftX = (before - 50) / 100;
+  const info = await page.evaluate((o) => window.renderStage(o), { ...s, shiftX });
   await page.waitForTimeout(120);
   const file = join(outDir, s.id + ".png");
   await page.locator("#stage").screenshot({ path: file, omitBackground: true });
+  const after = await silhouetteCentre(file);
 
   /* Objective check for the "too bright / washed out" problem: how much of the
      dragon is clipping, and how bright is it on average. */
@@ -92,6 +119,7 @@ for (const s of STAGES) {
   const blownPct = n ? ((blown / n) * 100).toFixed(1) : "-";
   console.log(
     `${s.id.padEnd(6)} fill ${s.fill}  dist ${info.dist.toFixed(2)}u  ` +
+      `centre ${before.toFixed(1)}% -> ${after.toFixed(1)}%  ` +
       `lum ${meanLum}/255  clipping ${blownPct}%  -> assets/dragon/${s.id}.png`
   );
 }

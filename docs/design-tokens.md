@@ -119,7 +119,7 @@ fill to `currentColor` and inlines them as SVG — that is how they inherit the 
 
 ```bash
 cd web
-npm run audit     # 96 assertions against GEL values, computed in a real browser
+npm run audit     # 115 assertions against GEL values, computed in a real browser
 ```
 
 Then open `web/gel-reference.html` — real GEL component markup — and compare it with

@@ -310,6 +310,16 @@
   }
   .gel-panel-body { padding: 18px; }           /* p-3 */
 
+  /* the bureau band, sitting opposite "Credit score" so it belongs to the
+     number rather than to the page */
+  .gel-band {
+    font-size: 12px; font-weight: 700; line-height: 1;
+    padding: 5px 9px; border-radius: 999px;
+    background: rgba(255, 255, 255, 0.18);
+    color: var(--text-mono);
+    white-space: nowrap;
+  }
+
   /* ================= Buttons (GEL Button) =============================== */
   .gel-btn-primary,
   .gel-btn-ghost {
@@ -514,8 +524,9 @@
   .gel-sheet-actions {
     flex: none;
     display: flex; flex-direction: column; gap: 6px;
-    padding: 6px 30px 30px;        /* GEL buttonWrapper: -mt-2 px-7 pb-7 */
-    border-top: 1px solid var(--border-muted-soft);
+    /* No top rule: the sheet's own rounded top and shadow already say "here is
+       the end". The extra padding keeps the buttons off the content instead. */
+    padding: 14px 30px 30px;
   }
   .gel-sheet-close {
     position: absolute; top: 12px; right: 12px;
@@ -524,6 +535,65 @@
     border-radius: var(--rounded-md);
   }
   .gel-sheet-close:active { background: var(--surface-muted-faint); }
+
+  /* Compact sheet header: brand tile, label, provider, amount on the right.
+     This is what makes it look like an expanded row from the app rather than
+     a generic modal. */
+  .gel-sheet-head {
+    flex: none;
+    display: flex; align-items: center; gap: 12px;
+    padding: 18px 54px 14px 30px;
+  }
+  .gel-sheet-head .gel-adorn { width: 44px; height: 44px; }
+  .gel-sheet-head .gel-adorn .gel-ico { width: 22px; height: 22px; }
+  .gel-sheet-head .gel-brand-img { width: 24px; height: 24px; }
+  .gel-sheet-head-body { flex: 1 1 auto; min-width: 0; }
+  .gel-sheet-head .gel-sheet-title {
+    padding: 0; font-size: 20px; line-height: 1.2;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .gel-sheet-sub {
+    margin: 3px 0 0; font-size: 13px; line-height: 1.3; color: var(--text-muted);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .gel-sheet-head-end { flex: none; display: flex; align-items: baseline; gap: 2px; }
+  .gel-sheet-head-end .gel-money { font-size: 18px; }
+
+  /* the facts, in a soft block instead of a bare table */
+  .gel-evidence-card {
+    background: var(--surface-muted-faint);
+    border-radius: var(--rounded-2xl);
+    padding: 12px 14px 4px;
+  }
+  .gel-evidence-eyebrow {
+    display: block;
+    font-family: var(--font-brand), var(--font-family-sans);
+    font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+  }
+  .gel-evidence-card .gel-kv { padding: 9px 0; }
+  .gel-evidence-card .gel-kv:last-child { padding-bottom: 10px; }
+  .gel-evidence-card .gel-kv-v { font-size: var(--typography-body-size-10); }
+
+  /* the recommendation, as a callout rather than a paragraph */
+  .gel-callout {
+    display: flex; align-items: flex-start; gap: 10px;
+    margin-top: 12px; padding: 12px 14px;
+    border-radius: var(--rounded-2xl);
+    background: var(--surface-hero-faint);
+  }
+  .gel-callout .gel-ico { width: 18px; height: 18px; flex: none; margin-top: 2px; color: var(--text-hero); }
+  .gel-callout-text {
+    margin: 0; font-size: var(--typography-body-size-10); line-height: 1.45;
+    color: var(--text-heading);
+  }
+
+  /* what we saw, in the finding's own words */
+  .gel-detail {
+    margin: 12px 0 0; font-size: var(--typography-body-size-10);
+    line-height: 1.5; color: var(--text-body);
+  }
 
   /* key/value summary rows (GEL list pattern: hairline between rows) */
   .gel-kv {
@@ -582,22 +652,32 @@
     100% { transform: scale(1.1) rotate(24deg); opacity: 0; }
   }
 
-  /* ================= tappable row (opens a sheet) ======================= */
+  /* ================= "Review" button under a finding ====================
+     A quiet full-width button, not a text link. It is the only way into the
+     evidence, so it should look pressable. */
   .gel-row-link {
-    display: flex; align-items: center; justify-content: space-between; gap: 12px;
-    width: 100%; margin-top: 12px; padding: 11px 0 0;
-    border: 0; border-top: 1px solid var(--border-muted-soft);
-    background: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    width: 100%; height: 38px; margin-top: 12px;
+    border: 1px solid var(--border-muted-soft); border-radius: var(--rounded-lg);
+    background: var(--surface-muted-faint); cursor: pointer;
     font-family: inherit; font-size: var(--typography-body-size-10); font-weight: 700;
-    color: var(--text-link); text-align: left;
+    color: var(--text-heading);
+    transition: background 0.15s var(--ease), border-color 0.15s var(--ease);
   }
-  .gel-row-link .gel-ico { width: 18px; height: 18px; flex: none; }
+  .gel-row-link:hover { background: var(--surface-muted-pale); border-color: var(--border-muted); }
+  .gel-row-link:active { background: var(--surface-muted-pale); }
+  .gel-row-link .gel-ico { width: 18px; height: 18px; flex: none; color: var(--text-muted); }
+
+  /* the row variant inside the Score card keeps the list look */
   .gel-row-link--tile {
-    margin-top: 0; padding: 12px 0; border-top: 1px solid var(--border-muted-soft);
-    color: var(--text-body);
+    height: auto; margin-top: 0; padding: 12px 0;
+    justify-content: flex-start; text-align: left;
+    border: 0; border-top: 1px solid var(--border-muted-soft);
+    border-radius: 0; background: none; color: var(--text-body);
   }
+  .gel-row-link--tile:hover { background: none; border-color: var(--border-muted-soft); }
   .gel-row-link--tile:first-of-type { border-top: 0; }
-  .gel-row-link--tile .gel-cell-body { gap: 2px; min-width: 0; }
+  .gel-row-link--tile .gel-cell-body { gap: 2px; min-width: 0; flex: 1 1 auto; }
   .gel-move-name {
     font-family: var(--font-brand), var(--font-family-sans);
     font-size: 16px; font-weight: 700; color: var(--text-heading);
@@ -712,11 +792,6 @@
     flex: none; text-align: right;
     display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
   }
-
-  .gel-fact { display: flex; gap: 10px; margin-top: 14px; }
-  .gel-fact-ico { flex: none; color: var(--text-muted); margin-top: 1px; }
-  .gel-fact-ico .gel-ico { width: 18px; height: 18px; }
-  .gel-fact p { margin: 0; font-size: var(--typography-body-size-10); line-height: 1.5; color: var(--text-muted); }
 
   /* ================= review sheet content =============================== */
   .gel-review-list { display: flex; flex-direction: column; }
@@ -885,15 +960,150 @@
     margin-top: 4px;
   }
 
-  /* three counts + the two dollar figures that used to sit in a bucket strip */
-  .gel-counts { display: flex; gap: 18px; }
-  .gel-count { display: flex; flex-direction: column; gap: 2px; }
-  .gel-count-val {
+  /* ================= "What we found" summary card ========================
+     Flat card, no navy band: an eyebrow, three figures, then the two dollar
+     totals as tinted tiles. Reads as a dashboard, not a table. */
+  .gel-found {
+    border: 1px solid var(--border-muted-soft);
+    border-radius: var(--rounded-3xl);
+    background: var(--background-white);
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .gel-found-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .gel-found-eyebrow {
     font-family: var(--font-brand), var(--font-family-sans);
-    font-size: 24px; line-height: 1; font-weight: 700; color: var(--text-heading);
+    font-size: 12px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .gel-found-stats {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+    margin-top: 14px;
+  }
+  .gel-found-stat { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .gel-found-num {
+    font-family: var(--font-brand), var(--font-family-sans);
+    font-size: 30px; line-height: 1; font-weight: 700; color: var(--text-heading);
     font-variant-numeric: tabular-nums;
   }
-  .gel-count-label { font-size: 12px; color: var(--text-muted); line-height: 1.2; }
+  .gel-found-label { font-size: 12px; color: var(--text-muted); line-height: 1.25; }
+
+  .gel-found-money { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+  .gel-money-tile {
+    display: flex; flex-direction: column;
+    border: 1px solid var(--border-muted-soft); border-radius: var(--rounded-2xl);
+    background: var(--surface-muted-faint); padding: 10px 12px;
+  }
+  .gel-money-tile--good { background: var(--surface-success-faint); border-color: var(--border-success-mild); }
+  .gel-money-tile-label {
+    font-size: 11px; line-height: 1.3; color: var(--text-muted);
+    min-height: 29px;
+  }
+  .gel-money-tile--good .gel-money-tile-label { color: var(--text-success); }
+  .gel-money-tile-value {
+    font-family: var(--font-brand), var(--font-family-sans);
+    font-size: 22px; line-height: 1.1; font-weight: 700; color: var(--text-heading);
+    font-variant-numeric: tabular-nums;
+  }
+  .gel-money-tile--good .gel-money-tile-value { color: var(--text-success); }
+  .gel-money-tile-unit { font-size: 11px; color: var(--text-muted); }
+
+  .gel-found-note { font-size: 12px; line-height: 1.4; color: var(--text-muted); margin: 12px 0 0; }
+
+  /* ================= big tappable row (opens a sheet) ================== */
+  .gel-row-card {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    width: 100%; min-height: 52px; padding: 0 16px; margin-bottom: 12px;
+    border: 1px solid var(--border-muted-soft); border-radius: var(--rounded-2xl);
+    background: var(--background-white); cursor: pointer; font-family: inherit;
+    font-size: var(--typography-body-size-10); font-weight: 700; color: var(--text-heading);
+    text-align: left;
+  }
+  .gel-row-card:hover { background: var(--surface-muted-faint); }
+  .gel-row-card .gel-ico { width: 18px; height: 18px; color: var(--text-muted); flex: none; }
+
+  /* the five factors: a title each, expanding in place to explain itself */
+  .gel-facts { margin: 0; }
+  .gel-fact { display: block; border-top: 1px solid var(--border-muted-soft); }
+  .gel-fact:first-child { border-top: 0; }
+  .gel-fact-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 14px 0; cursor: pointer; list-style: none;
+  }
+  .gel-fact-row::-webkit-details-marker { display: none; }
+  .gel-fact-row:focus-visible { outline: 2px solid var(--text-link); outline-offset: 2px; border-radius: var(--rounded-md); }
+  .gel-fact-title {
+    font-family: var(--font-brand), var(--font-family-sans);
+    font-size: 20px; line-height: 1.25; font-weight: 700; color: var(--text-heading);
+  }
+  /* the plus, as a soft circular control rather than a bare glyph */
+  .gel-fact-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    flex: none; width: 30px; height: 30px; border-radius: 50%;
+    background: var(--surface-muted-faint); color: var(--text-heading);
+    transition: transform 0.24s var(--ease), background 0.2s var(--ease);
+  }
+  .gel-fact-icon .gel-ico { width: 18px; height: 18px; }
+  .gel-fact[open] .gel-fact-icon {
+    transform: rotate(45deg);
+    background: var(--surface-hero-faint);
+  }
+  /* <details> hides its own content when closed, so the reveal is an animation
+     on open rather than a height transition. It stays honest to measure. */
+  .gel-fact[open] .gel-fact-body { animation: gel-fact-in 0.24s var(--ease); }
+  @keyframes gel-fact-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: none; }
+  }
+  .gel-fact-text {
+    margin: 0; padding: 0 24px 16px 0;
+    font-size: var(--typography-body-size-10); line-height: 1.5; color: var(--text-muted);
+  }
+
+  /* ================= credit accounts ==================================== */
+  .gel-acc {
+    display: flex; align-items: center; gap: 12px;
+    width: 100%; padding: 12px 0; border: 0;
+    border-top: 1px solid var(--border-muted-soft);
+    background: none; cursor: pointer; text-align: left; font-family: inherit;
+  }
+  .gel-acc:first-of-type { border-top: 0; padding-top: 6px; }
+  .gel-acc .gel-adorn { width: 40px; height: 40px; }
+  .gel-acc .gel-adorn .gel-ico { width: 20px; height: 20px; }
+  .gel-acc .gel-brand-img { width: 22px; height: 22px; }
+  .gel-acc .gel-cell-body { flex: 1 1 auto; min-width: 0; gap: 2px; }
+  .gel-acc-name {
+    font-family: var(--font-brand), var(--font-family-sans);
+    font-size: 16px; font-weight: 700; color: var(--text-heading);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .gel-acc-kind {
+    font-size: 12px; color: var(--text-muted); line-height: 1.3;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .gel-acc-end { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+  .gel-acc-amount {
+    font-family: var(--font-brand), var(--font-family-sans);
+    font-size: 16px; font-weight: 700; color: var(--text-heading);
+    font-variant-numeric: tabular-nums;
+  }
+  .gel-acc-unit { font-size: 11px; font-weight: 500; color: var(--text-muted); margin-left: 1px; }
+  .gel-acc-status {
+    font-size: 11px; font-weight: 700; line-height: 1;
+    padding: 3px 6px; border-radius: var(--rounded-sm); border: 1px solid transparent;
+  }
+  .gel-acc-status.is-late {
+    background: var(--surface-warning-faint); color: var(--text-warning);
+    border-color: var(--border-warning-mild);
+  }
+  .gel-acc-status.is-ok {
+    background: var(--surface-success-faint); color: var(--text-success);
+    border-color: var(--border-success-mild);
+  }
+
+  .gel-acc-empty { display: flex; align-items: flex-start; gap: 10px; margin-top: 10px; }
+  .gel-acc-empty .gel-ico { width: 20px; height: 20px; color: var(--text-muted); flex: none; margin-top: 2px; }
+  .gel-acc-empty-text { margin: 0; font-size: 13px; line-height: 1.45; color: var(--text-muted); }
 
   .gel-forecast {
     background: var(--surface-hero-faint); border-radius: var(--rounded-md); padding: 12px;
@@ -918,15 +1128,6 @@
   }
 
   .gel-factor-list { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
-  .gel-factor-row { display: flex; gap: 10px; align-items: flex-start; }
-  .gel-factor-arrow {
-    flex: 0 0 auto; width: 26px; height: 26px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 16px; font-weight: 700; line-height: 1;
-  }
-  .gel-factor-arrow.is-up { background: var(--surface-success-faint); color: var(--text-success); }
-  .gel-factor-arrow.is-down { background: var(--surface-warning-faint); color: var(--text-warning); }
-  .gel-factor-body { flex: 1 1 auto; min-width: 0; }
 
   /* goals: bar + the "next check" line, never a button */
   .gel-progress-note {
