@@ -649,6 +649,22 @@ await page.waitForTimeout(900);
   );
   check("No dashes in what it says", "clean", spoken.join(" "), dashFree(spoken.join(" ")));
 
+  // The hop must stay in place: the wrap is centred with translateX(-50%).
+  await page.waitForTimeout(500);
+  const beforeHop = await page.evaluate(() => {
+    const r = document.querySelector("#dragon-art").getBoundingClientRect();
+    return { cx: Math.round(r.left + r.width / 2), top: Math.round(r.top) };
+  });
+  await page.locator(".gel-scene").click();
+  await page.waitForTimeout(180);
+  const midHop = await page.evaluate(() => {
+    const r = document.querySelector("#dragon-art").getBoundingClientRect();
+    return { cx: Math.round(r.left + r.width / 2), top: Math.round(r.top) };
+  });
+  check("The hop lifts the dragon", ">0", String(beforeHop.top - midHop.top) + "px", beforeHop.top - midHop.top > 0);
+  check("And does not slide it sideways", "0px", String(Math.abs(midHop.cx - beforeHop.cx)) + "px", Math.abs(midHop.cx - beforeHop.cx) === 0);
+  await page.waitForTimeout(500);
+
   await page.locator('.gel-tab[data-tab="shop"]').click();
   await page.waitForTimeout(300);
   const shop = await page.evaluate(() => ({

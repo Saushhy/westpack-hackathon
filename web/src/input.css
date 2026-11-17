@@ -870,11 +870,13 @@
     border-radius: var(--rounded-2xl); margin-bottom: 12px;
     background: var(--surface-hero-faint);
     cursor: pointer; user-select: none;
+    display: flex; align-items: center; justify-content: center;
   }
   .gel-scene--mini { height: 190px; }
   .gel-evo-scene {
     position: relative; height: 200px; border-radius: var(--rounded-2xl);
     background: var(--surface-hero-faint); overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
   }
   .gel-scene[data-scene="lava"] { background: linear-gradient(#2a0a08 0%, #5a150d 55%, #a63a18 100%); }
   .gel-scene[data-scene="stars"] { background: linear-gradient(#0e0c2b 0%, #1f1c4f 100%); }
@@ -908,8 +910,10 @@
     to { transform: translateY(-10px); opacity: 0; }
   }
 
+  /* the scene centres the dragon with flex, so nothing depends on a transform
+     and the hop cannot drift sideways */
   .gel-dragon-wrap {
-    position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
+    position: relative;
     width: 180px; height: 180px;
     display: flex; align-items: flex-end; justify-content: center;
   }
@@ -945,11 +949,13 @@
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-4px); }
   }
+  /* the wrap no longer relies on a translate for centring, so the hop is a
+     pure vertical movement */
   @keyframes dragon-hop {
     0% { transform: translateY(0) scale(1, 1); }
     35% { transform: translateY(-16px) scale(1.04, 0.9); }
     70% { transform: translateY(2px) scale(0.96, 1.04); }
-    100% { transform: none; }
+    100% { transform: translateY(0) scale(1, 1); }
   }
 
   .gel-bubble {
