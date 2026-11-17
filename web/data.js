@@ -5,7 +5,7 @@ window.DATA = {
     "persona": "Mia",
     "currency": "AUD",
     "as_of": "2026-11-17",
-    "data_notice": "Sample data for a hackathon demo. The dragon reads Westpac's own transaction data, finds the habits that move an Australian credit score, and rewards acting on them. It never recommends switching providers.",
+    "data_notice": "Sample data for a hackathon demo. The dragon reads Westpac's own transaction data, finds the habits that move an Australian credit score, and rewards acting on them. It can suggest considering a cheaper plan against a brand-free Australian average, but never names a provider.",
     "score": {
       "value": 612,
       "scale": "equifax_au",
@@ -22,6 +22,11 @@ window.DATA = {
         ],
         "horizon_months": 3,
         "assumption": "you keep repayments on time and make no new BNPL applications."
+      },
+      "bill_check": {
+        "upside_points": 20,
+        "basis": "AI estimate from mia_insights.json (bills goal), not a promise",
+        "assumption": "you take the cheaper plan, put the saving on your card and keep every repayment on time."
       }
     },
     "credit_file": {
@@ -103,7 +108,15 @@ window.DATA = {
         "bill_id": "bill_gym",
         "risk": "high",
         "reason": "A $34 debit lands Thursday. Payday is Friday.",
-        "action": "Set a protected balance so it clears."
+        "action": "Move $40 into a savings buffer so it clears."
+      },
+      "debt_target": {
+        "name": "Westpac Flex Card",
+        "balance": 1800,
+        "repayment_monthly": 150,
+        "sample_balance": true,
+        "note": "Repayment and rate are from Mia's data. The balance is a sample for this demo.",
+        "rate_pa": 19.99
       }
     },
     "payday": {
@@ -112,8 +125,8 @@ window.DATA = {
     },
     "totals": {
       "recurring_monthly": 216.97,
-      "potential_cash_freed_monthly": 63,
-      "potential_cash_freed_annual": 756,
+      "potential_cash_freed_monthly": 42,
+      "potential_cash_freed_annual": 504,
       "fees_avoided": 19
     },
     "bills": [
@@ -254,7 +267,7 @@ window.DATA = {
         ],
         "confidence": "high",
         "action_type": "protect",
-        "advice": "Set a protected balance before Thursday.",
+        "advice": "Move $40 into a savings buffer before Thursday.",
         "verification": {
           "checked_at": "2026-11-17",
           "source": "Westpac transaction history"
@@ -285,7 +298,7 @@ window.DATA = {
         "id": "bill_phone",
         "category": "mobile",
         "factor": "cash",
-        "evidence_tier": "gov_benchmark",
+        "evidence_tier": "market_average",
         "savings_status": "potential",
         "icon": "phone",
         "logo": "assets/brands/vodafone.png",
@@ -306,38 +319,39 @@ window.DATA = {
         ],
         "confidence": "high",
         "action_type": "track",
-        "advice": "We don't pick a provider. Check the market yourself.",
+        "advice": "Consider a cheaper plan with another provider. We don't name one: compare the market yourself.",
         "benchmark": {
-          "low": 35,
-          "high": 45,
-          "source": "ACCC price monitoring",
-          "source_url": "https://www.accc.gov.au/consumers",
-          "checked_at": "2026-11-17",
-          "note": "Most 40 to 50GB plans sit at $35 to $45 a month."
+          "key": "mobile",
+          "average_monthly": 47,
+          "lines": 1,
+          "label": "Average Australian phone bill",
+          "source": "Canstar, average phone bill 2026",
+          "source_url": "https://www.canstar.com.au/mobile-phone/average-mobile-phone-bill/",
+          "checked_at": "2026-11-17"
         },
         "verification": {
           "checked_at": "2026-11-17",
-          "source": "ACCC price monitoring"
+          "source": "Canstar, average phone bill 2026"
         },
-        "savings_monthly": 54,
-        "savings_annual": 648,
+        "savings_monthly": 42,
+        "savings_annual": 504,
         "why": "Cash, not credit. Cheaper phone means repayments are safer.",
         "requires_approval": false,
         "xp": 40,
         "coins": 20,
-        "finding": "You pay more than most for data.",
+        "finding": "You pay $42 a month more than the average.",
         "evidence": [
           {
             "k": "Charged",
             "v": "5 Sep, 5 Oct, 5 Nov"
           },
           {
-            "k": "Average",
+            "k": "You pay",
             "v": "$89.00 a month"
           },
           {
-            "k": "Market",
-            "v": "$35 to $45"
+            "k": "Australian average",
+            "v": "$47.00 a month"
           }
         ]
       },
@@ -345,8 +359,8 @@ window.DATA = {
         "id": "bill_internet",
         "category": "internet",
         "factor": "cash",
-        "evidence_tier": "provider_price",
-        "savings_status": "potential",
+        "evidence_tier": "westpac_transactions",
+        "savings_status": "none",
         "icon": "desktop",
         "logo": "assets/brands/aussiebroadband.png",
         "label": "Home internet",
@@ -371,20 +385,20 @@ window.DATA = {
           "checked_at": "2026-11-17",
           "source": "Westpac transaction history"
         },
-        "savings_monthly": 9,
-        "savings_annual": 108,
+        "savings_monthly": 0,
+        "savings_annual": 0,
         "why": "Cash, not credit. Less spent means less pressure.",
         "requires_approval": false,
         "xp": 40,
         "coins": 20,
-        "finding": "Your provider has a cheaper tier.",
+        "finding": "Your share of a plan split with housemates.",
         "evidence": [
           {
             "k": "Charged",
             "v": "13 Sep, 13 Oct, 13 Nov"
           },
           {
-            "k": "Average",
+            "k": "Your share",
             "v": "$68.00 a month"
           }
         ]
@@ -677,7 +691,7 @@ window.DATA = {
       },
       {
         "id": "protected_balance",
-        "label": "Protected a debit at risk",
+        "label": "Covered a debit at risk",
         "xp": 60,
         "coins": 40,
         "cap": {
@@ -2005,6 +2019,113 @@ window.DATA = {
       "amount": 81.2,
       "type": "debit",
       "flags": []
+    }
+  ],
+  "questions": [
+    {
+      "id": "q_001",
+      "question": "You had 5 BNPL payments in October across Afterpay and Zip ($204.95 total). Were these planned purchases or covering a cash-flow gap?",
+      "why_asking": "Why am I asking? Between 3 Oct and 31 Oct, you made 4 Afterpay payments (ASOS & Mecca) plus a $49.95 Zip Pay payment.",
+      "related_transaction_ids": [
+        "tx_047",
+        "tx_053",
+        "tx_066",
+        "tx_071",
+        "tx_072",
+        "tx_083"
+      ],
+      "answer_options": [
+        "Planned purchases, I just like splitting payments",
+        "Covering a cash shortfall before payday",
+        "Impulse buys during mid-semester stress",
+        "Skip question"
+      ],
+      "impact": "High Impact: Stacking multiple BNPL plans ties up ~$205 of your monthly income and increases the risk of missed credit repayments or new credit enquiries on your Equifax file."
+    },
+    {
+      "id": "q_002",
+      "question": "Your Westpac Flex Card repayment was 3 days late on 12 Oct (costing a $15 late fee), even though you paid on time in Sep and Nov. Would auto-pay on payday help?",
+      "why_asking": "Why am I asking? You paid on time on 9 Sep and 9 Nov, but your 12 Oct payment was 3 days late after a busy weekend in Burleigh.",
+      "related_transaction_ids": [
+        "tx_020",
+        "tx_056",
+        "tx_058",
+        "tx_090"
+      ],
+      "answer_options": [
+        "Yes, align auto-repay with my Friday payday",
+        "Send me a push notification 48h before",
+        "It was a one-off oversight",
+        "Skip question"
+      ],
+      "impact": "Critical Impact: Under Australian Comprehensive Credit Reporting (CCR), on-time credit card repayment history is reported monthly and is the #1 driver of your credit score."
+    },
+    {
+      "id": "q_003",
+      "question": "Your Goodlife Gym debit bounced on Thursday 15 Oct, just 1 day before payday, costing $19 in bank and gym fees. Want to keep a small buffer in savings so the next debit clears?",
+      "why_asking": "Why am I asking? Your $34 gym debit failed on 15 Oct (triggering a $9 Westpac fee and $10 Goodlife fee), right before your $950 pay arrived on 16 Oct.",
+      "related_transaction_ids": [
+        "tx_063",
+        "tx_064",
+        "tx_065",
+        "tx_068"
+      ],
+      "answer_options": [
+        "Yes, open a Westpac savings buffer and move $40 in each payday",
+        "Alert me if my balance is too low before a debit",
+        "I'll sort it out myself",
+        "Skip question"
+      ],
+      "impact": "Medium-High Impact: Your Goodlife contract and debit date stay as they are. A $40 buffer you can move into your everyday account means the debit clears in a tight week, so you avoid dishonour fees and the membership never falls behind."
+    },
+    {
+      "id": "q_004",
+      "question": "You transferred $100 to savings twice, but had to pull $130 back out right before payday—and spent $175.60 on Uber Eats. Want to set a 'Pre-Payday Buffer'?",
+      "why_asking": "Why am I asking? You withdrew $50 (16 Sep) and $80 (1 Oct) from your Westpac Life Savings right before payday while ordering 6 Uber Eats deliveries.",
+      "related_transaction_ids": [
+        "tx_004",
+        "tx_022",
+        "tx_027",
+        "tx_032",
+        "tx_042",
+        "tx_045",
+        "tx_054",
+        "tx_077",
+        "tx_088"
+      ],
+      "answer_options": [
+        "Yes, lock a $100 repayment buffer in Westpac Life",
+        "Set a $40/fortnight takeaway cap during exams",
+        "Keep my transfers as they are",
+        "Skip question"
+      ],
+      "impact": "Indirect Impact: Keeping a dedicated $100 buffer in your account ensures mid-week bills and credit repayments never bounce."
+    },
+    {
+      "id": "q_005",
+      "question": "You're paying $89/mo for Vodafone, $68/mo for NBN, and $59.97/mo across 4 streaming apps. Want to set this money aside each month so every bill is covered?",
+      "why_asking": "Why am I asking? From Aug to Nov, you paid $216.97/month on recurring telco, internet, and overlapping streaming subscriptions (Netflix, Stan, Disney+, Spotify).",
+      "related_transaction_ids": [
+        "tx_015",
+        "tx_021",
+        "tx_023",
+        "tx_024",
+        "tx_025",
+        "tx_049",
+        "tx_055",
+        "tx_059",
+        "tx_060",
+        "tx_061",
+        "tx_070",
+        "tx_085"
+      ],
+      "answer_options": [
+        "Yes, move $217 a month into a Westpac bills buffer",
+        "Show my bills and their due dates in one place",
+        "No thanks, my bills are fine as they are",
+        "Skip question"
+      ],
+      "impact": "Indirect Impact: Your plans with these providers are your contracts, so they stay as they are. Setting the money aside in Westpac means each bill is already covered when it is due, which keeps cash free for your Flex Card and BNPL repayments."
     }
   ]
 };

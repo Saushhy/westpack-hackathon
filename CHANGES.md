@@ -22,7 +22,8 @@ There is no "switch provider", no promoted brand, and no manual "mark as done".
 ## 2. The rules that shape the UI
 
 1. **No brand the customer does not already pay.** Naming Afterpay, Zip, Vodafone, Netflix
-   or Goodlife is their own data. Recommending anyone else is promotion, so we do not.
+   or Goodlife is their own data. Recommending anyone else is promotion, so we do not. The
+   Bill check may suggest *a* cheaper provider against an average, but never names one.
 2. **The AI never claims a saving.** A finding is *potential* until the transaction shows it
    happened.
 3. **The score is the ground truth, XP comes from behaviour.** Nobody can promise points, so
@@ -190,6 +191,130 @@ numbers and actions instead of essays, which is what made the score tab feel des
 than generated.
 
 Audit is now **165 assertions**.
+
+### Onboarding: the first run, from Carlos's questions
+
+The web app now opens with the journey the brief always described (AI scan, then
+personalised questions) before the tabs. It reads `data/<name>_questions.json`, so all
+four personas get their own five questions with no new data.
+
+1. **Welcome.** "Hi Mia. Meet your credit dragon." Three promises: your data stays with
+   Westpac, every question says why, nothing happens without you. **Let's start** or
+   **Not now** (skips the whole flow).
+2. **Scan.** The egg wobbles while four lines tick in. Every number is counted from the
+   persona's own transactions: "Reading 100 transactions", "Checking 3 credit repayments,
+   1 late", "Finding 10 buy now, pay later payments". Elena gets "No credit repayments
+   yet", which is her story.
+3. **Questions, one per screen.** Progress dots, an impact chip, the question, a
+   **Why we ask** block with the actual transactions behind it (looked up by
+   `related_transaction_ids`), the answer options and **Skip this question**.
+4. **Done.** How many were answered and the XP and coins earned, then **See my score**.
+
+Rules kept:
+
+- Answering earns the existing `question_answered` action (25 XP, 10 coins, capped at 5 a
+  month). Skipping earns nothing. If an answer crosses a stage, the evolution dialog is
+  held until the flow ends so it does not interrupt a question.
+- Carlos's `impact` sentence is the bureau lecture we took out of the Review sheet, so only
+  its level ("High", "Critical") shows, as a chip. "Why am I asking?" is stripped because
+  the eyebrow already says it. Dashes in his copy become commas, so the dash lint holds.
+- It shows once per persona (`state.onboarded`). Answers are kept in `state.answers`.
+  **Replay welcome** on the Dragon tab opens it again; **Reset demo** clears everything.
+- `build-data.js` now adds Mia's questions to `data.js`, and looks for her transactions in
+  `data/mia_transactions.json` too. On `main` the root copy was gone, so `npm run
+  build:data` had stopped working.
+- GEL's `check` icon is a cheque, so the onboarding draws its own tick.
+
+Demo numbers: answering all five adds 125 XP and 50 coins (550 to 675 before Insights,
+then about 995 after them; the egg still hatches during Insights). Tap **Not now** and the
+old 550 to 870 path is unchanged. The audit and screenshot scripts set
+`window.CD_SKIP_ONBOARDING` so their journey stays the same, and a new block walks the
+onboarding itself. Audit was then **184 assertions**.
+
+### Westpac only acts on Westpac
+
+A service the customer has with another company is their contract with that company.
+The bank cannot move a debit date, hold a payment, cancel, switch, negotiate or close
+anything outside Westpac. What it can do is move the customer's own money. So when a
+payment could fail because the money is not there, the AI now suggests a **Westpac
+savings buffer**: top it up on payday, move it across before the debit.
+
+Questions rewritten (Carlos's files, his facts and "why" kept):
+
+| Persona | Was | Now |
+|---|---|---|
+| Mia q_003 | "Shift this debit to Fridays", "Move my Goodlife debit", "Cancel Goodlife" | Keep a buffer: "Open a Westpac savings buffer and move $40 in each payday" |
+| Mia q_005 | "Want your Dragon to negotiate cheaper plans?", "Switch my phone plan" | Set the $217 a month aside in a Westpac bills buffer, or see bills and due dates in one place |
+| Marcus qm_005 | "Review refinancing", "Westpac Commercial Asset Finance lower rates" | See how the Toyota loan affects borrowing capacity, reminder before the final repayment |
+| Marcus qm_004 | "Flag charges for my bookkeeper" | "Flag personal charges on my business account so I can review them" |
+| Elena qe_002 | "Connect utility reporting", "Request refund of my deposit" | Add the on-time payments to her Westpac payment summary, or a reminder so she can ask Origin herself |
+| Elena qe_003 | "Switch to a postpaid plan once eligible" | A $21 a month Westpac savings goal so yearly bills are covered |
+| David qd_001 | "Close ANZ card" | Lower the Westpac limit only. ANZ is his to change with ANZ |
+| David qd_004 | "Optimise", "consolidate telco", "pause streaming", "review health cover" | Set the $876 a month aside in a Westpac bills buffer, or see bills in one place |
+
+Also:
+
+- Mia's gym insight now says **Set up buffer** instead of Protect balance ("Move $40 into a
+  savings buffer before Thursday"). Ids (`protect`, `protected_balance`) are unchanged.
+- Insight titles and `recommended_goals` that promised outside changes are reworded
+  (Elena's deposit "Reclaimable", Mia's "Shift Gym Billing Date", David's "close ANZ").
+- All four `*_generate_credit_plan.py` prompts gain a **WESTPAC-ONLY ACTIONS** rule, so
+  a regenerated file does not bring these back.
+- The audit checks every question in all four files for outside-contract actions, and that
+  the gym question offers the savings buffer. Audit is now **189 assertions**.
+- Not changed: the iOS app (`ios/CreditDragon`) still has `reschedule_dd` and the bill
+  negotiator with switching offers in its own JSON and Swift. Shawn needs to align it.
+
+### Bill check: the bill negotiator, brand-free
+
+For a utility the customer already pays (phone, home internet), the AI compares the
+price with an **Australian average** and suggests they **consider a cheaper plan with a
+different provider**, without naming or linking one. The Review sheet then shows:
+
+1. **You pay vs Australian average**, with the source of the average.
+2. **Potential saving** a month and what it **adds up to** in a year.
+3. **Put it toward your debt**: months to clear the debt now vs with the saving, how many
+   months sooner, and the interest saved (monthly interest at the card's own rate). If the
+   data has no balance, it shows the yearly amount added to the repayment instead.
+4. **What it could do for your score**: forecast now vs with this plan, as a range with its
+   assumption. The top of the range rises by the AI pipeline's own estimate for its bills
+   goal (`estimated_score_delta` in `<name>_insights.json`). "An estimate, not a promise."
+
+| Person | Bill | Pays | Average | Saving | Debt |
+|---|---|---|---|---|---|
+| Mia | Mobile | $89.00 | $47.00 | $42.00 a month, $504 a year | Flex Card $1,800 (sample) at 19.99%: 14 months to 11, about $51 less interest. Score 635 to 650 becomes 635 to 670 |
+| David | NBN 250 | $129.00 | $93.61 (NBN 500, as fast or faster) | $35.39 | Together $42.39 a month, $508.68 a year toward his Westpac Car Loan. Score 830 to 860 becomes 830 to 875 |
+| David | Mobile, 4 lines | $195.00 | $188.00 | $7.00 | (as above) |
+
+Averages live in **`data/benchmarks.json`** (brand-free):
+
+- Mobile: Canstar's average Australian phone bill for 2026, about **$47** a month across all
+  plan types (prepaid about $30).
+- NBN by speed tier: TechRadar's averages from Sept 2025: NBN 25 **$73.11**, 50 **$87.57**,
+  100 **$93.34**, 500 **$93.61**, 1000 **$118.18**. NBN 250 is compared with NBN 500,
+  which is as fast or faster.
+
+Rules kept:
+
+- No provider is named or linked as a destination. Only the customer's own provider shows,
+  because it is their data. The audit fails if another telco's name appears in the sheet.
+- A saving stays **potential** until a transaction shows it. Nothing is switched for the
+  customer, and the contract stays theirs to change.
+- Bills at or below the average get no Bill check. Business plans are skipped, because the
+  averages are for households. Mia's internet is her share of a split plan, so it is not
+  compared.
+- `build-personas.js` builds Bill checks from the transactions (description gives the
+  tier and the number of lines, the most common charge is the monthly price, and a 365-day
+  prepaid is spread across months). Mia's is in `data/bills.json`.
+- Mia's card **balance of $1,800 is a sample** for the demo. The repayment ($150) and the
+  rate (19.99% p.a.) come from her data. Replace it with a real balance when one exists.
+- The generator prompts now allow this suggestion, on the same terms.
+- The insights summary's "Cash you could free" is now **$42.00** for Mia (was $63, which
+  came from the old $35 to $45 range and an internet tier change).
+- Audit is now **201 assertions**.
+
+**Re-check the averages before you present them.** They are from Canstar and TechRadar
+pages read on 17 Nov 2026.
 
 ## 4. What changed before that (v3)
 

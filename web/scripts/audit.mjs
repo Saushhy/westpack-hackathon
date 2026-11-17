@@ -11,6 +11,7 @@
 import { chromium } from "playwright-core";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { readFileSync } from "node:fs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const webRoot = join(__dirname, "..");
@@ -20,6 +21,10 @@ const EDGE = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
 const errors = [];
 const browser = await chromium.launch({ executablePath: EDGE, headless: true });
 const page = await browser.newPage({ viewport: { width: 480, height: 980 } });
+/* The journey checks below start from the app itself, so the first-run welcome
+   is switched off here and walked on its own in the ONBOARDING block. */
+const skipOnboarding = (pg) => pg.addInitScript(() => { window.CD_SKIP_ONBOARDING = true; });
+await skipOnboarding(page);
 page.on("console", (m) => {
   if (m.type() !== "error") return;
   // Intentional: Naomi's dragon/shop PNGs are not committed yet, so the emoji
@@ -381,7 +386,7 @@ await page.waitForTimeout(900);
   check("Accordions replaced by sheets", "0", String(ins.details), ins.details === 0);
   check("Rows carry the full description again", "present", /Late|Bounced|Three services/.test(ins.rowText) ? "present" : "missing", /Late|Bounced|Three services/.test(ins.rowText));
   check("Cash and fees are separated", "present", ins.body.includes("free up cash") && ins.body.includes("avoid a fee") ? "present" : "missing", ins.body.includes("free up cash") && ins.body.includes("avoid a fee"));
-  check("Cash freed figure is shown", "$63.00", ins.body.includes("$63.00") ? "$63.00" : "missing", ins.body.includes("$63.00"));
+  check("Cash freed figure is shown", "$42.00", ins.body.includes("$42.00") ? "$42.00" : "missing", ins.body.includes("$42.00"));
   check("No 'switch provider' language", "clean", /switch to/i.test(ins.body) ? "switch" : "clean", !/switch to/i.test(ins.body));
   check("No competitor brand (Belong/Optus/Telstra)", "clean", /Belong|Optus|Telstra/i.test(ins.body) ? "found" : "clean", !/Belong|Optus|Telstra/i.test(ins.body));
   check("Rows stay one line of identity", "present", ins.rowText.length > 0 ? "present" : "missing", ins.rowText.length > 0);
@@ -774,6 +779,7 @@ await page.waitForTimeout(900);
 // ============================ personas from Carlos's data ============================
 {
   const p3 = await browser.newPage({ viewport: { width: 480, height: 980 } });
+  await skipOnboarding(p3);
   const perrs = [];
   p3.on("pageerror", (e) => perrs.push(e.message));
   p3.on("console", (m) => {
@@ -865,6 +871,133 @@ await page.waitForTimeout(900);
   check("GEL reference FlexiCell radius 8px", "8px", ref.cell, ref.cell === "8px");
   check("GEL reference Badge height 20px", "20px", ref.badge, ref.badge === "20px");
   await p2.close();
+}
+
+// ============================ Bill check ============================
+/* The AI compares a utility with a brand-free Australian average, shows the
+   saving a month and a year, how much sooner it clears a debt, and a score
+   range with its assumption. It never names a provider to move to. */
+{
+  const OTHER_TELCOS =
+    /\b(telstra|optus|tpg|boost|amaysim|belong|dodo|kogan|superloop|spintel|tangerine|felix|lebara|iinet|exetel|moose|aldi mobile|circles)\b/i;
+  const openCheck = async (pg, label) => {
+    await pg.locator('.gel-tab[data-tab="insights"]').click();
+    await pg.waitForTimeout(300);
+    /* Insight cards are tappable as a whole. */
+    await pg.locator(".gel-bill--tap").filter({ hasText: label }).first().click();
+    await pg.waitForTimeout(500);
+    return (await pg.locator(".gel-sheet").innerText()).replace(/\s+/g, " ");
+  };
+
+  const p5 = await browser.newPage({ viewport: { width: 480, height: 980 } });
+  await skipOnboarding(p5);
+  await p5.goto(fileUrl("index.html"));
+  await p5.evaluate(() => localStorage.clear());
+  await p5.reload();
+  await p5.waitForTimeout(800);
+  const mia = await openCheck(p5, "Mobile plan");
+  check("Bill check shows the Australian average", "$47.00", mia, /Australian average \$47\.00/.test(mia));
+  check("Bill check shows the saving a month", "$42.00 a month", mia, /Potential saving \$42\.00 a month/.test(mia));
+  check("Bill check shows the saving a year", "$504.00 a year", mia, /\$504\.00 a year/.test(mia));
+  check("Bill check suggests another provider without naming one", "We don't name one", mia, /different provider\. We don't name one/.test(mia));
+  check("Bill check never names another telco", "none", (mia.match(OTHER_TELCOS) || ["none"])[0], !OTHER_TELCOS.test(mia));
+  check("Bill check clears the card sooner", "3 months sooner", mia, /14 months .* 11 months .*3 months sooner/.test(mia));
+  check("Bill check shows the score range and says it is an estimate", "635 to 670", mia, /635 to 650 .*635 to 670/.test(mia) && /estimate, not a promise/.test(mia));
+  check("Bill check copy has no dashes", "no dashes", mia, dashFree(mia));
+  await p5.close();
+
+  const p6 = await browser.newPage({ viewport: { width: 480, height: 980 } });
+  await skipOnboarding(p6);
+  await p6.goto(fileUrl("david.html"));
+  await p6.waitForTimeout(800);
+  const dav = await openCheck(p6, "Home internet");
+  check("Persona bill check is built from transactions", "$129.00 vs $93.61", dav, /\$129\.00 .*Australian average \$93\.61/.test(dav));
+  check("Two bill checks add up together", "$42.39 a month", dav, /\$42\.39 a month, \$508\.68 a year/.test(dav));
+  check("No balance in the data: yearly amount, not a payoff date", "$508.68 a year", dav, /\$508\.68 a year on top of your \$620\.00/.test(dav));
+  check("Persona bill check never names another telco", "none", (dav.match(OTHER_TELCOS) || ["none"])[0], !OTHER_TELCOS.test(dav));
+  await p6.close();
+}
+
+// ============================ Westpac-only actions ============================
+/* A service with another company is the customer's contract with them. The
+   bank can move its own money, so no question may offer to change a debit date,
+   cancel, switch, negotiate, refinance or close anything outside Westpac. */
+{
+  const OUTSIDE =
+    /\b(move|shift|change|resched\w*)\b[^.?]*\bdebit\b|negotiat|\bswitch\b|\bcancel\b|refinanc|\bclose\b[^.?]*\b(anz|card)\b|\bpause\b[^.?]*\b(stan|disney|streaming|subscription|plan)|consolidat|cheaper (phone|nbn|plans)|request refund/i;
+  for (const name of ["mia", "marcus", "elena", "david"]) {
+    const qs = JSON.parse(readFileSync(join(__dirname, "..", "..", "data", name + "_questions.json"), "utf8"));
+    const bad = [];
+    for (const q of qs) {
+      for (const text of [q.question, ...(q.answer_options || [])]) if (OUTSIDE.test(text)) bad.push(q.id + ": " + text);
+    }
+    check("No " + name + " question acts on another company's contract", "none", bad.join(" | ") || "none", bad.length === 0);
+  }
+  const mia = JSON.parse(readFileSync(join(__dirname, "..", "..", "data", "mia_questions.json"), "utf8"));
+  const gym = mia.find((q) => /goodlife/i.test(q.question));
+  check(
+    "Gym question offers a Westpac savings buffer",
+    "savings buffer",
+    gym ? gym.answer_options[0] : "missing",
+    !!gym && /westpac savings buffer/i.test(gym.answer_options[0])
+  );
+}
+
+// ============================ onboarding ============================
+{
+  const p4 = await browser.newPage({ viewport: { width: 480, height: 980 } });
+  const oerrs = [];
+  p4.on("pageerror", (e) => oerrs.push(e.message));
+  await p4.goto(fileUrl("index.html"));
+  await p4.evaluate(() => localStorage.clear());
+  await p4.reload();
+  await p4.waitForTimeout(900);
+
+  const st = () => p4.evaluate(() => JSON.parse(localStorage.getItem("credit-dragon:state") || "null"));
+  check("Onboarding opens on first run", "1", String(await p4.locator("#onboard").count()), (await p4.locator("#onboard").count()) === 1);
+  const hello = await p4.locator(".ob-title").innerText();
+  check("Welcome greets the persona", "Hi Mia...", hello, /^Hi Mia\b/.test(hello));
+  check("Welcome offers Not now", "1", String(await p4.locator('[data-ob="skip-all"]').count()), (await p4.locator('[data-ob="skip-all"]').count()) === 1);
+
+  await p4.locator('[data-ob="start"]').click();
+  await p4.waitForTimeout(400);
+  const scan = await p4.locator(".ob-checks").innerText();
+  check("Scan counts the real transactions", "Reading 100 transactions", scan, /Reading 100 transactions/.test(scan));
+  await p4.waitForTimeout(3600);
+
+  const xp0 = (await st()).xp_total;
+  let asked = 0, why = 0, txRows = 0, dashes = 0, skipBtn = 0;
+  while ((await p4.locator(".ob-q").count()) > 0 && asked < 10) {
+    const body = await p4.locator("#onboard").innerText();
+    if (!dashFree(body)) dashes++;
+    if (/why we ask/i.test(body) && !/Why am I asking/.test(body)) why++;
+    txRows += await p4.locator(".ob-tx").count();
+    skipBtn += await p4.locator('[data-ob="skip"]').count();
+    if (asked === 2) await p4.locator('[data-ob="skip"]').click();
+    else await p4.locator('[data-ob="answer"]').first().click();
+    await p4.waitForTimeout(900);
+    asked++;
+  }
+  check("Five questions from data/mia_questions.json", "5", String(asked), asked === 5);
+  check("Every question says why, without the prefix", "5", String(why), why === 5);
+  check("Every question can be skipped", "5", String(skipBtn), skipBtn === 5);
+  check("Why we ask lists the real transactions", ">0", String(txRows), txRows > 0);
+  check("Onboarding copy has no dashes", "0", String(dashes), dashes === 0);
+
+  const s1 = await st();
+  check("4 answers earn 4 x 25 XP", String(xp0 + 100), String(s1.xp_total), s1.xp_total === xp0 + 100);
+  check("A skip is saved as skipped", "skipped", String(s1.answers.q_003), s1.answers.q_003 === "skipped");
+  const done = await p4.locator(".ob-done").innerText();
+  check("Done screen shows what was earned", "+100 XP", done.replace(/\s+/g, " "), /\+100 XP/.test(done.replace(/\s+/g, " ")));
+
+  await p4.locator('[data-ob="finish"]').click();
+  await p4.waitForTimeout(500);
+  check("Finishing lands on the Score tab", "score", await p4.locator(".gel-tab.active").getAttribute("data-tab"), (await p4.locator(".gel-tab.active").getAttribute("data-tab")) === "score");
+  await p4.reload();
+  await p4.waitForTimeout(800);
+  check("Onboarding does not reopen", "0", String(await p4.locator("#onboard").count()), (await p4.locator("#onboard").count()) === 0);
+  check("No runtime errors in onboarding", "0", String(oerrs.length), oerrs.length === 0);
+  await p4.close();
 }
 
 await browser.close();

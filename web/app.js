@@ -165,7 +165,9 @@ function initialState() {
     /* wardrobe: equipped[slot] = shop item id (hat / face / neck / home) */
     shop: { owned: [], equipped: { hat: null, face: null, neck: null, home: null }, feeds: 0, fed_at: null },
     awarded: [],
-    ledger: []
+    ledger: [],
+    answers: {}, // onboarding: question id -> chosen option, or "skipped"
+    onboarded: false
   };
 }
 
@@ -183,6 +185,8 @@ function normalise(s) {
   s.shop.equipped = Object.assign({}, base.shop.equipped, s.shop.equipped || {});
   s.shop.feeds = s.shop.feeds || 0;
   s.shop.fed_at = s.shop.fed_at || null;
+  s.answers = s.answers || {};
+  if (s.onboarded === undefined) s.onboarded = false;
   return s;
 }
 
@@ -528,19 +532,184 @@ function dismissInsight(id) {
 
 const ACTION_COPY = {
   remind: { label: "Set a reminder", icon: "notification" },
-  protect: { label: "Protect balance", icon: "shield" },
+  protect: { label: "Set up buffer", icon: "shield" },
   track: { label: "Track this", icon: "check" }
 };
 
 function doneCopy(bill) {
   if (bill.action_type === "remind") return "Reminder set. Your next repayment should land on time.";
-  if (bill.action_type === "protect") return "Protected balance set for Thu 19 Nov.";
+  if (bill.action_type === "protect") return "Savings buffer set. $40 moves in on payday, ready for Thursday.";
   if (bill.action_type === "track") return "We're watching this and will report back.";
   return "Noted.";
 }
 
 /* The sheet: what we saw, what to do about it, and where it came from.
    No lecture about credit scoring. The advice is the point. */
+/* ==========================================================================
+   BILL CHECK
+   --------------------------------------------------------------------------
+   For a utility (phone, home internet) the AI compares what the customer pays
+   with a brand-free Australian average (data/benchmarks.json), then shows:
+
+     1. the potential saving a month, and what it adds up to in a year
+     2. how much sooner that saving would clear an existing Westpac debt
+     3. what it could mean for the score forecast
+
+   Rules: no provider is ever named or linked as the place to go. The saving is
+   "potential" until a transaction proves it. The score effect is a range with
+   its assumption, from the AI pipeline's own estimate, never a promise.
+   ========================================================================== */
+
+/* Months to clear a balance at a fixed monthly payment, with monthly interest.
+   Returns Infinity when the payment does not cover the interest. */
+function monthsToClear(balance, payment, ratePa) {
+  if (!balance || !payment) return Infinity;
+  const r = (ratePa || 0) / 100 / 12;
+  if (!r) return balance / payment;
+  const x = (r * balance) / payment;
+  if (x >= 1) return Infinity;
+  return -Math.log(1 - x) / Math.log(1 + r);
+}
+
+function payoffPlan(saving) {
+  const d = bills.credit_file && bills.credit_file.debt_target;
+  if (!d || !saving) return null;
+  if (!d.balance) {
+    return { name: d.name, perYear: saving * 12, repayment: d.repayment_monthly, noBalance: true };
+  }
+  const now = monthsToClear(d.balance, d.repayment_monthly, d.rate_pa);
+  const withSaving = monthsToClear(d.balance, d.repayment_monthly + saving, d.rate_pa);
+  if (!isFinite(now) || !isFinite(withSaving)) return null;
+  const nowM = Math.ceil(now);
+  const newM = Math.ceil(withSaving);
+  const interestNow = d.repayment_monthly * now - d.balance;
+  const interestNew = (d.repayment_monthly + saving) * withSaving - d.balance;
+  return {
+    name: d.name,
+    balance: d.balance,
+    sample: !!d.sample_balance,
+    rate: d.rate_pa,
+    repayment: d.repayment_monthly,
+    nowM,
+    newM,
+    sooner: Math.max(0, nowM - newM),
+    interestSaved: Math.max(0, Math.round(interestNow - interestNew))
+  };
+}
+
+function scoreEffect() {
+  const f = bills.score && bills.score.forecast;
+  const bc = bills.score && bills.score.bill_check;
+  if (!f || !f.range || !bc || !bc.upside_points) return null;
+  return {
+    now: f.range,
+    next: [f.range[0], f.range[1] + bc.upside_points],
+    horizon: f.horizon_months,
+    upside: bc.upside_points,
+    assumption: bc.assumption
+  };
+}
+
+/* All the bill checks for this persona, for the Insights summary. */
+function billChecks() {
+  return bills.bills.filter((b) => b.benchmark && b.benchmark.average_monthly);
+}
+function billCheckSaving(b) {
+  const avg = b.benchmark.average_monthly * (b.benchmark.lines || 1);
+  return Math.max(0, Math.round((b.current_monthly - avg) * 100) / 100);
+}
+
+function billCheckBlock(bill) {
+  const bm = bill.benchmark;
+  const lines = bm.lines || 1;
+  const avg = bm.average_monthly * lines;
+  const saving = billCheckSaving(bill);
+  const perYear = saving * 12;
+
+  const compare = `
+    <div class="bc-compare">
+      <div class="bc-col">
+        <span class="bc-k">You pay</span>
+        <span class="bc-v">${fmtAUD(bill.current_monthly)}</span>
+        <span class="bc-u">a month</span>
+      </div>
+      <div class="bc-col bc-col--avg">
+        <span class="bc-k">Australian average</span>
+        <span class="bc-v">${fmtAUD(avg)}</span>
+        <span class="bc-u">${lines > 1 ? lines + " lines at " + fmtAUD(bm.average_monthly) : "a month"}</span>
+      </div>
+    </div>
+    <p class="bc-source">${bm.label}. Source: ${bm.source}. No provider is recommended.</p>`;
+
+  if (!saving) {
+    return `<section class="bc">
+        <p class="gel-evidence-eyebrow">Bill check</p>
+        ${compare}
+        <div class="gel-callout">${ico("check")}<p class="gel-callout-text">You already pay less than the Australian average. Nothing to change here.</p></div>
+      </section>`;
+  }
+
+  /* Payoff and score use every bill check together, because that is the plan
+     the customer would follow. */
+  const all = billChecks().map(billCheckSaving).filter((x) => x > 0);
+  const total = Math.round(all.reduce((a, x) => a + x, 0) * 100) / 100;
+  const plan = payoffPlan(total);
+  const score = scoreEffect();
+  const together =
+    all.length > 1
+      ? `<p class="bc-step-text bc-together">With your ${all.length - 1} other bill check${all.length > 2 ? "s" : ""}, that is ${fmtAUD(total)} a month, ${fmtAUD(total * 12)} a year.</p>`
+      : "";
+
+  const payoff = !plan
+    ? ""
+    : plan.noBalance
+      ? `<div class="bc-step">
+           <p class="bc-step-title">Put it toward your ${plan.name}</p>
+           <p class="bc-step-text">That is ${fmtAUD(plan.perYear)} a year on top of your ${fmtAUD(plan.repayment)} monthly repayment, so you owe less, sooner.</p>
+         </div>`
+      : `<div class="bc-step">
+           <p class="bc-step-title">Put it toward your ${plan.name}</p>
+           <div class="bc-bars" aria-label="Months to pay off">
+             <div class="bc-bar-row"><span class="bc-bar-k">Now</span><span class="bc-bar"><i style="width:100%"></i></span><span class="bc-bar-v">${plan.nowM} months</span></div>
+             <div class="bc-bar-row"><span class="bc-bar-k">With saving</span><span class="bc-bar bc-bar--good"><i style="width:${Math.round((plan.newM / plan.nowM) * 100)}%"></i></span><span class="bc-bar-v">${plan.newM} months</span></div>
+           </div>
+           <p class="bc-step-text"><b>${plan.sooner} month${plan.sooner === 1 ? "" : "s"} sooner</b>${plan.interestSaved ? ` and about ${fmtAUD(plan.interestSaved)} less interest` : ""}. Based on a ${fmtAUD(plan.balance)} balance${plan.sample ? " (sample)" : ""} at ${plan.rate}% p.a., paying ${fmtAUD(plan.repayment)} plus ${fmtAUD(total)} a month.</p>
+         </div>`;
+
+  const scoreHtml = !score
+    ? ""
+    : `<div class="bc-step">
+         <p class="bc-step-title">What it could do for your score</p>
+         <div class="bc-score">
+           <div><span class="bc-k">Forecast now</span><span class="bc-score-v">${score.now[0]} to ${score.now[1]}</span></div>
+           <span class="bc-arrow">${ico("arrow-right")}</span>
+           <div><span class="bc-k">With this plan</span><span class="bc-score-v bc-score-v--good">${score.next[0]} to ${score.next[1]}</span></div>
+         </div>
+         <p class="bc-step-text">Up to ${score.upside} more points in ${score.horizon} months if ${score.assumption} An estimate, not a promise.</p>
+       </div>`;
+
+  return `<section class="bc">
+      <p class="gel-evidence-eyebrow">Bill check</p>
+      ${compare}
+      <div class="bc-save">
+        <div class="gel-money-tile gel-money-tile--good">
+          <span class="gel-money-tile-label">Potential saving</span>
+          <span class="gel-money-tile-value">${fmtAUD(saving)}</span>
+          <span class="gel-money-tile-unit">a month</span>
+        </div>
+        <div class="gel-money-tile gel-money-tile--good">
+          <span class="gel-money-tile-label">Adds up to</span>
+          <span class="gel-money-tile-value">${fmtAUD(perYear)}</span>
+          <span class="gel-money-tile-unit">a year</span>
+        </div>
+      </div>
+      ${together}
+      <div class="gel-callout">${ico(bill.icon || "receipt")}<p class="gel-callout-text">Consider a cheaper plan with a different provider. We don't name one, so compare the market yourself. Your current contract is yours to change.</p></div>
+      ${payoff}
+      ${scoreHtml}
+    </section>`;
+}
+
 function openInsight(id) {
   const bill = bills.bills.find((b) => b.id === id);
   if (!bill) return;
@@ -561,7 +730,9 @@ function openInsight(id) {
     </div>`;
 
   /* What happened, then what to do about it, then where it came from. The
-     description is shown outright: no disclosure, no label to open. */
+     description is shown outright: no disclosure, no label to open. A utility
+     above the Australian average adds the Bill check after the evidence. */
+  const isCheck = !!(bill.benchmark && bill.benchmark.average_monthly);
   const body = `
     ${
       status === "done"
@@ -573,9 +744,10 @@ function openInsight(id) {
     }
     ${bill.finding ? `<p class="gel-lead">${bill.finding}</p>` : ""}
     ${bill.detail ? `<p class="gel-detail">${bill.detail}</p>` : ""}
-    <div class="gel-evidence-card">${evidenceRows(bill)}</div>
+    <div class="gel-evidence-card">${evidenceRows(isCheck ? { evidence: (bill.evidence || []).filter((r) => r.k === "Charged") } : bill)}</div>
+    ${isCheck ? billCheckBlock(bill) : ""}
     ${
-      bill.advice
+      bill.advice && !isCheck
         ? `<div class="gel-callout">
              ${ico(copy.icon)}
              <p class="gel-callout-text">${bill.advice}</p>
@@ -1144,7 +1316,7 @@ function setProtected() {
   syncGoals();
   save();
   render();
-  toast(ico("shield") + " Protected balance set for Thu 19 Nov");
+  toast(ico("shield") + " Savings buffer set for Thursday");
 }
 
 /* ---------- boot ----------
@@ -1164,6 +1336,7 @@ function boot() {
   syncGoals();
   save();
   render();
+  if (!state.onboarded) openOnboarding();
 }
 
 /* ==========================================================================
@@ -1447,6 +1620,7 @@ function renderDragon() {
       <div style="margin-top:6px">${ledgerHtml}</div>
     </details>
 
+    <button class="gel-btn-ghost gel-btn-block" type="button" onclick="replayOnboarding()" style="margin-bottom:6px">Replay welcome</button>
     <button class="gel-btn-ghost gel-btn-block" type="button" onclick="reset()">Reset demo</button>`;
 }
 
@@ -1757,6 +1931,287 @@ function arWireDrag() {
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && !$("#ar-root")?.hidden) closeAR();
 });
+
+/* ==========================================================================
+   ONBOARDING
+   --------------------------------------------------------------------------
+   The first run, before the tabs: welcome and consent, the scan, then Carlos's
+   personalised questions from data/<name>_questions.json, then into the app.
+
+   - Every question shows why it is asked and the real transactions behind it,
+     looked up by related_transaction_ids, so nothing is asserted without proof.
+   - Every question can be skipped, and so can the whole flow ("Not now").
+   - Answering earns `question_answered` (25 XP, 10 coins, capped at 5 a month),
+     which is the existing action in rewards.json. Skipping earns nothing.
+   - Carlos's `impact` sentence is the bureau lecture the team removed from the
+     Review sheet, so only its level ("High", "Critical") is shown, as a chip.
+   - His copy is passed through calm(), so the no-dash rule still holds.
+   ========================================================================== */
+const QUESTIONS = (PACK ? PACK.questions : window.DATA && window.DATA.questions) || [];
+const PERSON = (PACK && PACK.name) || bills.persona || "there";
+const SKIP_LABEL = /^skip/i;
+/* GEL's "check" icon is a cheque, so the tick is drawn here. */
+const TICK =
+  '<span class="gel-ico"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
+  '<path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
+
+let ob = null; // { step, answered, skipped, xp, coins }
+
+/* House style: no em or en dashes, and no "Why am I asking?" prefix (the
+   eyebrow already says it). */
+function calm(s) {
+  return String(s || "")
+    .replace(/^why am i asking\?\s*/i, "")
+    .replace(/(\w)\u2013(\w)/g, "$1 to $2") // a range like Aug to Nov keeps its meaning
+    .replace(/\s*[\u2013\u2014]\s*/g, ", ")
+    .replace(/\s+,/g, ",");
+}
+
+function impactLevel(q) {
+  const m = String(q.impact || "").match(/^([A-Za-z-]+)/);
+  const word = m ? m[1].replace(/-$/, "") : "";
+  if (!word || /^impact$/i.test(word)) return null;
+  const tone = /critical|crucial|high/i.test(word) ? "warning" : "hero";
+  return { word, tone };
+}
+
+function txById(id) {
+  return TX.find((t) => t.id === id) || null;
+}
+
+function txLine(t) {
+  const debit = t.type !== "credit";
+  return `<li class="ob-tx">
+      <span class="ob-tx-date">${fmtDate(t.date).replace(/ \d{4}$/, "")}</span>
+      <span class="ob-tx-name">${calm(t.merchant || t.description)}</span>
+      <span class="ob-tx-amt ${debit ? "" : "ob-tx-amt--in"}">${debit ? "" : "+"}${fmtAUD(Math.abs(t.amount))}</span>
+    </li>`;
+}
+
+function scanFacts() {
+  const flagged = (f) => TX.filter((t) => (t.flags || []).includes(f)).length;
+  const plural = (n, word) => n + " " + word + (n === 1 ? "" : "s");
+  /* Mia's card repayments carry no flag, so the description counts too. */
+  const repay = TX.filter(
+    (t) =>
+      t.type !== "credit" &&
+      ((t.flags || []).some((f) => f === "credit_repayment" || f === "late_payment") ||
+        /credit card/i.test((t.merchant || "") + " " + (t.description || "")))
+  ).length;
+  const late = flagged("late_payment");
+  const bnpl = flagged("bnpl");
+  const enquiries = flagged("credit_enquiry") + flagged("commercial_enquiry");
+  const subs = flagged("subscription");
+  const bounced = flagged("dishonoured");
+  return [
+    `Reading ${TX.length} transactions from the last three months`,
+    repay ? `Checking ${plural(repay, "credit repayment")}${late ? `, ${late} late` : ""}` : "No credit repayments yet",
+    bnpl
+      ? `Finding ${plural(bnpl, "buy now, pay later payment")}`
+      : enquiries
+        ? `Finding ${plural(enquiries, "credit application")}`
+        : `Counting ${plural(subs, "subscription payment")}`,
+    bounced ? `Spotting ${plural(bounced, "payment")} that bounced` : "No bounced payments found"
+  ];
+}
+
+function obDots() {
+  const total = QUESTIONS.length;
+  const at = ob.step - 2; // question index
+  return `<div class="ob-dots" aria-hidden="true">${QUESTIONS.map(
+    (_, i) => `<i class="${i < at ? "done" : i === at ? "on" : ""}"></i>`
+  ).join("")}</div><p class="ob-count">Question ${at + 1} of ${total}</p>`;
+}
+
+function obWelcome() {
+  const egg = rewards.stages[0];
+  return `<div class="ob-pane ob-welcome">
+      <div class="ob-hero">
+        <div class="ob-egg">${imgOrEmoji(egg.image, egg.emoji, egg.name, "ob-egg-img")}</div>
+      </div>
+      <h1 class="ob-title">Hi ${PERSON}. Meet your credit dragon.</h1>
+      <p class="ob-lead">It reads your Westpac transactions and shows how your habits move your credit score. Look after your score and your dragon grows.</p>
+      <ul class="ob-promises">
+        <li>${ico("shield")}<span><b>Your data stays with Westpac.</b> We use the last three months of your own transactions.</span></li>
+        <li>${ico("chat")}<span><b>Every question says why.</b> You can skip any of them.</span></li>
+        <li>${TICK}<span><b>Nothing happens without you.</b> You approve every action.</span></li>
+      </ul>
+      <div class="ob-actions">
+        <button class="gel-btn-primary gel-btn-block" type="button" data-ob="start" onclick="obNext()">Let's start</button>
+        <button class="gel-btn-text" type="button" data-ob="skip-all" onclick="finishOnboarding(true)">Not now</button>
+      </div>
+    </div>`;
+}
+
+function obScan() {
+  return `<div class="ob-pane ob-scan">
+      <div class="ob-hero"><div class="ob-egg ob-egg--wobble">${imgOrEmoji(rewards.stages[0].image, rewards.stages[0].emoji, "", "ob-egg-img")}</div></div>
+      <h1 class="ob-title">Your dragon is studying your last three months</h1>
+      <ul class="ob-checks">${scanFacts()
+        .map((f, i) => `<li style="animation-delay:${0.35 + i * 0.6}s">${TICK}<span>${f}</span></li>`)
+        .join("")}</ul>
+      <div class="gel-bar ob-scanbar"><div class="gel-bar-fill ob-scanfill"></div></div>
+      <p class="gel-muted ob-source">Westpac transaction history · ${fmtDate(TODAY)}</p>
+    </div>`;
+}
+
+function obQuestion(i) {
+  const q = QUESTIONS[i];
+  const lvl = impactLevel(q);
+  const txs = (q.related_transaction_ids || []).map(txById).filter(Boolean).slice(0, 4);
+  const opts = (q.answer_options || []).filter((o) => !SKIP_LABEL.test(o));
+  return `<div class="ob-pane ob-q" data-q="${q.id}">
+      ${obDots()}
+      ${lvl ? `<span class="gel-badge gel-badge--${lvl.tone} ob-impact">${lvl.word} impact</span>` : ""}
+      <h1 class="ob-question">${calm(q.question)}</h1>
+      <div class="gel-evidence ob-why">
+        <p class="gel-evidence-eyebrow">Why we ask</p>
+        <p class="ob-why-text">${calm(q.why_asking)}</p>
+        ${txs.length ? `<ul class="ob-txs">${txs.map(txLine).join("")}</ul>` : ""}
+      </div>
+      <div class="ob-options" role="group" aria-label="Your answer">
+        ${opts
+          .map(
+            (o, j) =>
+              `<button class="ob-option" type="button" data-ob="answer" onclick="obAnswer(${i}, ${j})">${calm(o)}</button>`
+          )
+          .join("")}
+      </div>
+      <button class="gel-btn-text ob-skip" type="button" data-ob="skip" onclick="obSkip(${i})">Skip this question</button>
+    </div>`;
+}
+
+function obDone() {
+  const n = QUESTIONS.length;
+  return `<div class="ob-pane ob-done">
+      <div class="ob-hero"><div class="ob-egg">${imgOrEmoji(rewards.stages[0].image, rewards.stages[0].emoji, "", "ob-egg-img")}</div></div>
+      <h1 class="ob-title">Thanks, ${PERSON}. Your plan is ready.</h1>
+      <p class="ob-lead">${
+        ob.answered
+          ? `You answered ${ob.answered} of ${n}. Your answers shape the insights and goals you see next.`
+          : "You skipped the questions. That is fine, your insights still come from your transactions."
+      }</p>
+      ${
+        ob.xp
+          ? `<div class="ob-earned"><div><b>+${ob.xp}</b><span>XP</span></div><div><b>+${ob.coins}</b><span>coins</span></div></div>`
+          : ""
+      }
+      <p class="gel-muted ob-next">Next: your score, then the habits that move it.</p>
+      <div class="ob-actions">
+        <button class="gel-btn-primary gel-btn-block" type="button" data-ob="finish" onclick="finishOnboarding(false)">See my score</button>
+      </div>
+    </div>`;
+}
+
+function obRender() {
+  const root = $("#onboard");
+  if (!root) return;
+  const last = QUESTIONS.length + 2;
+  let html;
+  if (ob.step === 0) html = obWelcome();
+  else if (ob.step === 1) html = obScan();
+  else if (ob.step < last) html = obQuestion(ob.step - 2);
+  else html = obDone();
+  root.querySelector(".ob-body").innerHTML = html;
+  root.querySelector(".ob-body").scrollTop = 0;
+  root.querySelector(".ob-back").style.visibility = ob.step >= 2 && ob.step < last ? "visible" : "hidden";
+  if (ob.step === 1) {
+    clearTimeout(ob.timer);
+    ob.timer = setTimeout(obNext, 3400);
+  }
+}
+
+function obNext() {
+  if (!ob) return;
+  ob.step += 1;
+  obRender();
+}
+
+function obBack() {
+  if (!ob || ob.step <= 2) return;
+  ob.step -= 1;
+  obRender();
+}
+
+function obAnswer(i, j) {
+  const q = QUESTIONS[i];
+  const opts = (q.answer_options || []).filter((o) => !SKIP_LABEL.test(o));
+  state.answers = state.answers || {};
+  state.answers[q.id] = opts[j];
+  const r = award("question_answered", q.id, "Answered: " + calm(q.question).slice(0, 60));
+  if (r) {
+    ob.xp += r.xp;
+    ob.coins += r.coins;
+    /* Hatching mid-question would bury the moment, so hold it for the end. */
+    if (r.evolved) ob.evolved = { from: ob.evolved ? ob.evolved.from : r.fromStage, to: r.toStage };
+  }
+  ob.answered = Object.values(state.answers).filter((a) => a && a !== "skipped").length;
+  save();
+  const btn = document.querySelectorAll(".ob-option")[j];
+  if (btn) {
+    btn.classList.add("picked");
+    if (r) btn.insertAdjacentHTML("beforeend", `<span class="ob-plus">+${r.xp} XP</span>`);
+  }
+  document.querySelectorAll(".ob-option").forEach((b) => (b.disabled = true));
+  setTimeout(obNext, r ? 650 : 350);
+}
+
+function obSkip(i) {
+  const q = QUESTIONS[i];
+  state.answers = state.answers || {};
+  if (!state.answers[q.id]) state.answers[q.id] = "skipped";
+  save();
+  obNext();
+}
+
+function openOnboarding() {
+  if (window.CD_SKIP_ONBOARDING) return;
+  const phone = $(".phone");
+  if (!phone || $("#onboard")) return;
+  const answered = Object.values(state.answers || {}).filter((a) => a && a !== "skipped").length;
+  ob = { step: 0, answered, xp: 0, coins: 0, timer: null };
+  /* Keep the status bar showing: the welcome is part of the app, not a lock screen. */
+  const bar = $(".gel-statusbar");
+  const top = bar ? bar.offsetTop + bar.offsetHeight : 44;
+  phone.insertAdjacentHTML(
+    "beforeend",
+    `<div class="ob" id="onboard" style="top:${top}px" role="dialog" aria-modal="true" aria-label="Welcome to Credit Dragon">
+       <div class="ob-top">
+         <button class="ob-back" type="button" onclick="obBack()" aria-label="Back">${ico("arrow-right")}</button>
+         <img class="gel-logo" src="${$(".gel-logo") ? $(".gel-logo").getAttribute("src") : ""}" alt="Westpac">
+         <span class="ob-top-end"></span>
+       </div>
+       <div class="ob-body"></div>
+     </div>`
+  );
+  obRender();
+}
+
+function finishOnboarding(skippedAll) {
+  const evolved = ob && ob.evolved;
+  if (ob) clearTimeout(ob.timer);
+  state.onboarded = true;
+  save();
+  const root = $("#onboard");
+  ob = null;
+  if (root) {
+    root.classList.add("leaving");
+    setTimeout(() => root.remove(), 260);
+  }
+  activeTab = "score";
+  document.querySelectorAll("#tabbar .gel-tab").forEach((b) => b.classList.toggle("active", b.dataset.tab === "score"));
+  render();
+  if (evolved) setTimeout(() => showEvolution(evolved.from, evolved.to), 320);
+  else if (!skippedAll && state.ledger.some((e) => e.action === "question_answered")) {
+    toast(coin() + " Plan ready. Your answers are saved.");
+  }
+}
+
+function replayOnboarding() {
+  state.onboarded = false;
+  save();
+  openOnboarding();
+}
 
 /* ---------- shell ---------- */
 let activeTab = "score";

@@ -17,7 +17,7 @@ written to a ledger (see `data-contracts.md` §3).
 | Daily check-in (`daily_checkin`) | 10 | 10 | one per day | Tiny on purpose. It cannot be farmed. |
 | Seven days in a row (`checkin_week`) | 120 | 60 | once per 7-day window | A week of checking turns awareness into habit. |
 | Set a repayment reminder (`reminder_set`) | 100 | 60 | per finding | The step that makes an on-time payment happen. |
-| Protect a debit at risk (`protected_balance`) | 60 | 40 | per finding | Stops a dishonour becoming a black mark. |
+| Cover a debit at risk with a savings buffer (`protected_balance`) | 60 | 40 | per finding | Stops a dishonour becoming a black mark. |
 | Track a money pattern (`insight_tracked`) | 40 | 20 | per finding | Lets us watch it and confirm what happens. |
 | Completed a plan goal (`goal_completed`) | 100 | 60 | per goal | Only fires when the data says it happened. |
 | On-time repayment (`on_time_repayment`) | 150 | 100 | 1 per month | Repayment history is the biggest factor. |

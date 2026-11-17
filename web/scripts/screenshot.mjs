@@ -20,6 +20,7 @@ mkdirSync(OUT, { recursive: true });
 
 const browser = await chromium.launch({ executablePath: EDGE, headless: true });
 const page = await browser.newPage({ viewport: { width: 480, height: 980 } });
+await page.addInitScript(() => { window.CD_SKIP_ONBOARDING = true; });
 await page.goto(fileUrl("index.html"));
 await page.waitForTimeout(800);
 
@@ -122,6 +123,7 @@ await page.waitForTimeout(200);
 let personaShot = 12;
 for (const name of ["marcus", "elena", "david"]) {
   const pp = await browser.newPage({ viewport: { width: 480, height: 980 } });
+  await pp.addInitScript(() => { window.CD_SKIP_ONBOARDING = true; });
   await pp.goto(fileUrl(name + ".html"));
   await pp.waitForTimeout(900);
   const ph = pp.locator(".phone");

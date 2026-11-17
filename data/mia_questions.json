@@ -27,16 +27,16 @@
   },
   {
     "id": "q_003",
-    "question": "Your Goodlife Gym debit bounced on Thursday 15 Oct—just 1 day before payday—costing $19 in combined bank and gym fees. Want to shift this debit to Fridays?",
+    "question": "Your Goodlife Gym debit bounced on Thursday 15 Oct, just 1 day before payday, costing $19 in bank and gym fees. Want to keep a small buffer in savings so the next debit clears?",
     "why_asking": "Why am I asking? Your $34 gym debit failed on 15 Oct (triggering a $9 Westpac fee and $10 Goodlife fee), right before your $950 pay arrived on 16 Oct.",
     "related_transaction_ids": ["tx_063", "tx_064", "tx_065", "tx_068"],
     "answer_options": [
-      "Yes, move my Goodlife debit to Fridays",
-      "Alert me if my balance is too low before Thursdays",
-      "I want to cancel Goodlife anyway",
+      "Yes, open a Westpac savings buffer and move $40 in each payday",
+      "Alert me if my balance is too low before a debit",
+      "I'll sort it out myself",
       "Skip question"
     ],
-    "impact": "Medium-High Impact: Aligning direct debits with your Friday Cotton On pay cycle stops avoidable dishonour fees and prevents unpaid memberships from escalating to debt collectors."
+    "impact": "Medium-High Impact: Your Goodlife contract and debit date stay as they are. A $40 buffer you can move into your everyday account means the debit clears in a tight week, so you avoid dishonour fees and the membership never falls behind."
   },
   {
     "id": "q_004",
@@ -53,15 +53,15 @@
   },
   {
     "id": "q_005",
-    "question": "You're paying $89/mo for Vodafone, $68/mo for NBN, and $59.97/mo across 4 streaming apps. Want your Dragon to negotiate cheaper plans?",
-    "why_asking": "Why am I asking? Across Aug–Nov, you paid $216.97/month on recurring telco, internet, and overlapping streaming subscriptions (Netflix, Stan, Disney+, Spotify).",
+    "question": "You're paying $89/mo for Vodafone, $68/mo for NBN, and $59.97/mo across 4 streaming apps. Want to set this money aside each month so every bill is covered?",
+    "why_asking": "Why am I asking? From Aug to Nov, you paid $216.97/month on recurring telco, internet, and overlapping streaming subscriptions (Netflix, Stan, Disney+, Spotify).",
     "related_transaction_ids": ["tx_015", "tx_021", "tx_023", "tx_024", "tx_025", "tx_049", "tx_055", "tx_059", "tx_060", "tx_061", "tx_070", "tx_085"],
     "answer_options": [
-      "Yes, show me cheaper phone & NBN plans",
-      "Pause Stan & Disney+ and switch my phone plan",
-      "No thanks, I want to keep my current plans",
+      "Yes, move $217 a month into a Westpac bills buffer",
+      "Show my bills and their due dates in one place",
+      "No thanks, my bills are fine as they are",
       "Skip question"
     ],
-    "impact": "Indirect Impact: Cutting ~$75/month from phone, internet, and unused streaming bills frees up $900/year so you can pay down your Flex Card and ditch BNPL."
+    "impact": "Indirect Impact: Your plans with these providers are your contracts, so they stay as they are. Setting the money aside in Westpac means each bill is already covered when it is due, which keeps cash free for your Flex Card and BNPL repayments."
   }
 ]
