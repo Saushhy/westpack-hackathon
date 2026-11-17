@@ -81,15 +81,23 @@ struct Rewards: Codable {
 }
 
 /// The reward events the app can fire, keyed to `rewards.json` action ids.
+///
+/// The credit-coach reframe renamed the bill actions: `bill_switch` became
+/// `saving_verified` and `bill_reschedule` became `protected_balance`, both
+/// keeping their original values. `bill_cancel` has no successor.
 enum RewardAction: String {
+    case dailyCheckin = "daily_checkin"
+    case checkinWeek = "checkin_week"
     case questionAnswered = "question_answered"
     case goalCompleted = "goal_completed"
     case onTimeRepayment = "on_time_repayment"
     case noNewBnplMonth = "no_new_bnpl_month"
-    case billSwitch = "bill_switch"
-    case billCancel = "bill_cancel"
-    case billReschedule = "bill_reschedule"
+    case reminderSet = "reminder_set"
+    case protectedBalance = "protected_balance"
+    case insightTracked = "insight_tracked"
+    case savingVerified = "saving_verified"
     case savingsStreak4wk = "savings_streak_4wk"
+    case shopPurchase = "shop_purchase"
 }
 
 enum RewardsData {

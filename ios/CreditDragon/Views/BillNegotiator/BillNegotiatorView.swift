@@ -281,7 +281,7 @@ struct SwitchConfirmationView: View {
                 .font(WestpacFont.heading(WestpacType.s8))
                 .foregroundColor(.wbcSuccess)
 
-            if let reward = RewardsData.shared.action(.billSwitch) {
+            if let reward = RewardsData.shared.action(.savingVerified) {
                 Text("+\(reward.xp ?? 0) XP  ·  +\(reward.coins ?? 0) coins")
                     .font(WestpacFont.body(WestpacType.s10, weight: .semibold))
                     .foregroundColor(.wbcDance)

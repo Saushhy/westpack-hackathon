@@ -41,6 +41,6 @@ class AppState: ObservableObject {
         guard !switchedBills.contains(bill.id) else { return }
         switchedBills.insert(bill.id)
         totalMonthlySavings += bill.monthlySaving
-        if dragon.award(.billSwitch) { justEvolvedTo = dragon.stage }
+        if dragon.award(.savingVerified) { justEvolvedTo = dragon.stage }
     }
 }
