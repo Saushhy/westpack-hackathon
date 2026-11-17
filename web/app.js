@@ -67,6 +67,17 @@ function disc(label, text, opts) {
   </details>`;
 }
 
+/* A disclosure whose body is markup, not one sentence. */
+function discRaw(label, inner) {
+  return `<details class="gel-disc">
+    <summary class="gel-disc-row">
+      <span class="gel-disc-label">${label}</span>
+      <span class="gel-disc-icon">${ico("add-circle")}</span>
+    </summary>
+    <div class="gel-disc-body">${inner}</div>
+  </details>`;
+}
+
 /* The demo runs on one fixed day so every recording behaves the same. */
 const TODAY = bills.as_of;
 
@@ -550,13 +561,26 @@ function openInsight(id) {
       ${adorn(bill)}
       <div class="gel-sheet-head-body">
         <h2 class="gel-sheet-title" id="sheet-title">${bill.label}</h2>
-        <p class="gel-sheet-sub">${bill.provider}</p>
+        <p class="gel-sheet-sub">${[bill.provider, FACTOR_LABEL[bill.factor]].filter(Boolean).join(" · ")}</p>
       </div>
     </div>`;
 
+  /* What to do, then the proof on request. The finding, the evidence and the
+     provenance all sit inside one disclosure instead of filling the sheet. */
+  const proof = `
+    ${bill.finding ? `<p class="gel-disc-text" style="margin-top:0">${bill.finding}</p>` : ""}
+    ${bill.detail ? `<p class="gel-disc-text">${bill.detail}</p>` : ""}
+    ${evidenceRows(bill)}
+    <div class="gel-verified" style="margin-top:12px">
+      ${ico("check")}
+      ${
+        bill.verification
+          ? bill.verification.source + " · " + fmtDate(bill.verification.checked_at)
+          : "From your transactions"
+      }
+    </div>`;
+
   const body = `
-    <div class="gel-evidence-card">${evidenceRows(bill)}</div>
-    ${bill.detail ? `<p class="gel-detail">${bill.detail}</p>` : ""}
     ${
       bill.advice
         ? `<div class="gel-callout">
@@ -565,15 +589,8 @@ function openInsight(id) {
            </div>`
         : ""
     }
-    ${sourceLink(bill)}
-    <div class="gel-verified" style="margin-top:14px">
-      ${ico("check")}
-      ${
-        bill.verification
-          ? bill.verification.source + " · " + fmtDate(bill.verification.checked_at)
-          : "From your transactions"
-      }
-    </div>`;
+    ${discRaw("How we know", proof)}
+    ${sourceLink(bill)}`;
 
   const actions = `
     <button class="gel-btn-primary gel-btn-block" type="button" onclick="actFromSheet('${bill.id}')">
@@ -613,19 +630,21 @@ function insightCard(bill) {
     ? `<span class="gel-money gel-money--sm">${fmtAUD(bill.current_amount)}</span>${moneyUnit(bill.billing_period)}`
     : "";
 
-  /* A row, not a report. The whole card is the tap target, the way every other
-     list in the app behaves, so there is no repeated Review button. */
+  /* A bank row: what it is, what it costs, and a chevron. The provider, the
+     finding and the evidence all live in the sheet. */
   return `
     <article class="gel-cell gel-bill gel-bill--tap" data-bill="${bill.id}"
-             role="button" tabindex="0" aria-label="${bill.label}. ${bill.finding || ""} Review."
+             role="button" tabindex="0" aria-label="${bill.label}. Review."
              onclick="openInsight('${bill.id}')"
              onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openInsight('${
                bill.id
              }')}">
-      ${billHead(bill, amount)}
-      <div class="gel-tagline">
-        ${factorChip(bill.factor)}
-        <span class="gel-muted gel-tagline-text">${bill.finding || ""}</span>
+      <div class="gel-bill-head">
+        ${adorn(bill)}
+        <div class="gel-cell-body">
+          <div class="gel-bill-title">${bill.label}</div>
+        </div>
+        <div class="gel-bill-amount">${amount}</div>
         ${ico("arrow-right")}
       </div>
     </article>`;

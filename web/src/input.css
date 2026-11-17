@@ -1058,13 +1058,14 @@
   .gel-money-tile--good .gel-money-tile-value { color: var(--text-success); }
   .gel-money-tile-unit { font-size: 11px; color: var(--text-muted); }
 
-  /* the whole card is the tap target, so the finding row carries the chevron */
+  /* the row: title left, amount and chevron right, nothing else */
+  /* the whole row is the tap target */
   .gel-bill--tap { cursor: pointer; transition: background 0.15s var(--ease); }
   .gel-bill--tap:hover { background: var(--surface-muted-faint); }
   .gel-bill--tap:active { background: var(--surface-muted-pale); }
   .gel-bill--tap:focus-visible { outline: 2px solid var(--text-link); outline-offset: 2px; }
-  .gel-tagline-text { flex: 1 1 auto; min-width: 0; }
-  .gel-tagline > .gel-ico { width: 16px; height: 16px; flex: none; color: var(--text-muted); }
+  .gel-bill--tap .gel-bill-head { align-items: center; }
+  .gel-bill--tap .gel-bill-head > .gel-ico { width: 16px; height: 16px; flex: none; color: var(--text-muted); }
 
   /* cards that need nothing, as rows inside one card */
   .gel-status-row {

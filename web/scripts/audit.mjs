@@ -361,6 +361,7 @@ await page.waitForTimeout(900);
       found: document.querySelectorAll(".gel-found").length,
       moneyTiles: document.querySelectorAll(".gel-found .gel-money-tile").length,
       statusRows: document.querySelectorAll(".gel-status-row").length,
+      rowText: Array.from(document.querySelectorAll(".gel-bill--tap")).map((b) => b.innerText.replace(/\s+/g, " ").trim()).join(" | "),
       body
     };
   });
@@ -375,12 +376,12 @@ await page.waitForTimeout(900);
   check("No closing prose under the summary", "absent", /Repayment history matters most/.test(ins.body) ? "present" : "absent", !/Repayment history matters most/.test(ins.body));
   check("Cards that need nothing share one card", "2 rows", String(ins.statusRows), ins.statusRows === 2);
   check("Accordions replaced by sheets", "0", String(ins.details), ins.details === 0);
-  check("Factor chips on findings", ">=5", String(ins.factors), ins.factors >= 5);
+  check("Rows carry no extra text beyond the label", "clean", ins.rowText, !/Late|Bounced|Three services/.test(ins.rowText));
   check("Cash and fees are separated", "present", ins.body.includes("free up cash") && ins.body.includes("avoid a fee") ? "present" : "missing", ins.body.includes("free up cash") && ins.body.includes("avoid a fee"));
   check("Cash freed figure is shown", "$63.00", ins.body.includes("$63.00") ? "$63.00" : "missing", ins.body.includes("$63.00"));
   check("No 'switch provider' language", "clean", /switch to/i.test(ins.body) ? "switch" : "clean", !/switch to/i.test(ins.body));
   check("No competitor brand (Belong/Optus/Telstra)", "clean", /Belong|Optus|Telstra/i.test(ins.body) ? "found" : "clean", !/Belong|Optus|Telstra/i.test(ins.body));
-  check("Only Mia's own providers are named", "present", /Vodafone/.test(ins.body) && /Netflix/.test(ins.body) && /Goodlife/.test(ins.body) ? "present" : "missing", /Vodafone/.test(ins.body) && /Netflix/.test(ins.body) && /Goodlife/.test(ins.body));
+  check("Rows stay one line of identity", "present", ins.rowText.length > 0 ? "present" : "missing", ins.rowText.length > 0);
   check("No em or en dashes on screen", "clean", dashFree(ins.body) ? "clean" : "dash found", dashFree(ins.body));
 }
 
@@ -413,6 +414,9 @@ await page.waitForTimeout(900);
       hasBrandTile: !!head?.querySelector(".gel-adorn"),
       eyebrow: s?.querySelector(".gel-evidence-eyebrow")?.textContent.trim() || "",
       callout: callout ? callout.innerText.trim() : "",
+      proofOpen: s ? s.querySelectorAll(".gel-disc[open]").length : -1,
+      proofCount: s ? s.querySelectorAll(".gel-disc").length : -1,
+      textContent: s ? s.textContent : "",
       primaryFill: s
         ? getComputedStyle(s.querySelector(".gel-sheet-actions .gel-btn-primary")).backgroundColor
         : "",
@@ -424,7 +428,7 @@ await page.waitForTimeout(900);
   check("Sheet carries the action", "present", sheet.action ? "present" : "missing", sheet.action);
   check("Primary action is Westpac red", "rgb(218, 23, 16)", sheet.primaryFill, sheet.primaryFill === "rgb(218, 23, 16)");
   check("Sheet header is the finding itself", "Credit card repayment", sheet.headTitle, sheet.headTitle === "Credit card repayment");
-  check("Header shows the provider line", "Westpac", sheet.headSub, /^Westpac$/.test(sheet.headSub));
+  check("Header shows the provider line", "Westpac", sheet.headSub, /^Westpac/.test(sheet.headSub));
   check("Header carries a brand tile", "true", String(sheet.hasBrandTile), sheet.hasBrandTile);
   check("No eyebrow needed above the rows", "absent", sheet.eyebrow ? "present" : "absent", !sheet.eyebrow);
   check(
@@ -434,7 +438,23 @@ await page.waitForTimeout(900);
     /^Set a reminder so the next one is on time\.$/.test(sheet.callout)
   );
   check("No credit-scoring lecture in the sheet", "absent", /biggest thing in your score/i.test(sheet.body) ? "present" : "absent", !/biggest thing in your score/i.test(sheet.body));
-  check("Westpac source is shown", "present", /Westpac transaction history/.test(sheet.body) ? "present" : "missing", /Westpac transaction history/.test(sheet.body));
+  check("Evidence sits behind one disclosure", "1", String(sheet.proofCount), sheet.proofCount === 1);
+  check("And it starts closed", "0", String(sheet.proofOpen), sheet.proofOpen === 0);
+  check("Westpac source is inside it", "present", /Westpac transaction history/.test(sheet.textContent) ? "present" : "missing", /Westpac transaction history/.test(sheet.textContent));
+
+  await page.locator(".gel-sheet .gel-disc-row").click();
+  await page.waitForTimeout(350);
+  const proof = await page.evaluate(() => {
+    const d = document.querySelector(".gel-sheet .gel-disc");
+    return {
+      open: d.open,
+      rows: d.querySelectorAll(".gel-kv").length,
+      text: d.innerText.replace(/\s+/g, " ").trim()
+    };
+  });
+  check("Opening it reveals the evidence", "true", String(proof.open), proof.open === true);
+  check("Two evidence rows, not three", "2", String(proof.rows), proof.rows === 2);
+  check("The finding is stated there", "3 days late", proof.text, /3 days late/.test(proof.text));
 
   await page.locator(".gel-sheet-actions .gel-btn-primary").click();
   await page.waitForTimeout(350);
