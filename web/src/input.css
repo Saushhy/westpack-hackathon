@@ -524,8 +524,9 @@
   .gel-sheet-actions {
     flex: none;
     display: flex; flex-direction: column; gap: 6px;
-    padding: 6px 30px 30px;        /* GEL buttonWrapper: -mt-2 px-7 pb-7 */
-    border-top: 1px solid var(--border-muted-soft);
+    /* No top rule: the sheet's own rounded top and shadow already say "here is
+       the end". The extra padding keeps the buttons off the content instead. */
+    padding: 14px 30px 30px;
   }
   .gel-sheet-close {
     position: absolute; top: 12px; right: 12px;

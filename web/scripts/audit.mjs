@@ -216,6 +216,9 @@ await page.waitForTimeout(900);
       title: sheet?.querySelector(".gel-sheet-title")?.textContent.trim() || "",
       rows: Array.from(sheet?.querySelectorAll(".gel-fact-list li") || []).map((li) => li.textContent.trim()),
       badges: sheet ? sheet.querySelectorAll(".gel-badge").length : 0,
+      divider: sheet?.querySelector(".gel-sheet-actions")
+        ? getComputedStyle(sheet.querySelector(".gel-sheet-actions")).borderTopWidth
+        : "",
       body: sheet?.innerText || "",
       radius: sheet ? getComputedStyle(sheet).borderTopLeftRadius : null
     };
@@ -232,6 +235,7 @@ await page.waitForTimeout(900);
       factors.rows[4] === "Buy now, pay later"
   );
   check("No impact badges in the sheet", "0", String(factors.badges), factors.badges === 0);
+  check("No rule above the action buttons", "0px", factors.divider, factors.divider === "0px");
   check("No descriptions in the sheet", "absent", /Paying on time\. It matters/.test(factors.body) ? "present" : "absent", !/Paying on time\. It matters/.test(factors.body));
   check("No closing note in the sheet", "absent", /promise you points/.test(factors.body) ? "present" : "absent", !/promise you points/.test(factors.body));
   await page.locator(".gel-sheet-close").click();
