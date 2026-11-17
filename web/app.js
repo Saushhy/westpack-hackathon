@@ -451,7 +451,7 @@ function billHead(bill, trailing) {
       ${adorn(bill)}
       <div class="gel-cell-body">
         <div class="gel-bill-title">${bill.label}</div>
-        <div class="gel-muted">${bill.provider} · ${bill.plan}</div>
+        <div class="gel-muted">${bill.provider}</div>
       </div>
       <div class="gel-bill-amount">${trailing || ""}</div>
     </div>`;
@@ -638,15 +638,6 @@ function insightCard(bill) {
     </article>`;
 }
 
-function billStatusCard(bill) {
-  const label = bill.action_type === "keep" ? "Keeping" : "No change";
-  return `
-    <article class="gel-cell gel-bill is-muted" data-bill="${bill.id}">
-      ${billHead(bill, `<span class="gel-money gel-money--sm gel-money--muted">${fmtAUD(bill.current_amount)}</span>${moneyUnit(bill.billing_period)}`)}
-      <div class="gel-tagline"><span class="gel-badge gel-badge--faint">${label}</span></div>
-    </article>`;
-}
-
 function insightsSummary() {
   const credit = bills.bills.filter((b) => b.factor === "credit" && isActionable(b)).length;
   const cash = bills.bills.filter((b) => b.factor === "cash" && isActionable(b)).length;
@@ -689,20 +680,38 @@ function insightsSummary() {
           <span class="gel-money-tile-unit">a month</span>
         </div>
       </div>
-      <p class="gel-found-note">Repayment history matters most. Everything else is smaller.</p>
     </section>`;
+}
+
+/* Cards that need nothing from you are one row each inside a single card,
+   rather than two full cards that say almost nothing. */
+function statusGroup(list) {
+  if (!list.length) return "";
+  const rows = list
+    .map(
+      (b) => `
+      <div class="gel-status-row" data-bill="${b.id}">
+        <span class="gel-status-name">${b.label}</span>
+        <span class="gel-muted">${b.action_type === "keep" ? "Keeping" : "No change"}</span>
+        <span class="gel-money gel-money--sm gel-money--muted">${fmtAUD(b.current_amount)}</span>
+      </div>`
+    )
+    .join("");
+  return `
+    <article class="gel-cell">
+      <div class="gel-row-between">
+        <span class="gel-label">Nothing to change</span>
+        <span class="gel-badge gel-badge--faint">${list.length}</span>
+      </div>
+      <div style="margin-top:4px">${rows}</div>
+    </article>`;
 }
 
 function renderInsights() {
   const order = { remind: 0, protect: 1, track: 2, keep: 3, no_offer: 4 };
-
-  const cards = bills.bills
-    .slice()
-    .sort((a, b) => order[a.action_type] - order[b.action_type])
-    .map((b) =>
-      b.action_type === "keep" || b.action_type === "no_offer" ? billStatusCard(b) : insightCard(b)
-    )
-    .join("");
+  const sorted = bills.bills.slice().sort((a, b) => order[a.action_type] - order[b.action_type]);
+  const actionable = sorted.filter((b) => isActionable(b));
+  const quiet = sorted.filter((b) => !isActionable(b));
 
   return `
     <div class="gel-screen-head">
@@ -711,7 +720,8 @@ function renderInsights() {
       </div>
     </div>
     ${insightsSummary()}
-    ${cards}`;
+    ${actionable.map(insightCard).join("")}
+    ${statusGroup(quiet)}`;
 }
 
 /* ==========================================================================

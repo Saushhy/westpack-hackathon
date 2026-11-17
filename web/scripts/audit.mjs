@@ -362,6 +362,7 @@ await page.waitForTimeout(900);
       factors: document.querySelectorAll(".gel-factor").length,
       found: document.querySelectorAll(".gel-found").length,
       moneyTiles: document.querySelectorAll(".gel-found .gel-money-tile").length,
+      statusRows: document.querySelectorAll(".gel-status-row").length,
       body
     };
   });
@@ -373,9 +374,10 @@ await page.waitForTimeout(900);
   check("No 'N patterns to look at' subtitle", "absent", ins.body.includes("patterns to look at") ? "present" : "absent", !ins.body.includes("patterns to look at"));
   check("What we found is the new summary card", "1", String(ins.found), ins.found === 1);
   check("The two dollar totals are tiles", "2", String(ins.moneyTiles), ins.moneyTiles === 2);
+  check("No closing prose under the summary", "absent", /Repayment history matters most/.test(ins.body) ? "present" : "absent", !/Repayment history matters most/.test(ins.body));
+  check("Cards that need nothing share one card", "2 rows", String(ins.statusRows), ins.statusRows === 2);
   check("Accordions replaced by sheets", "0", String(ins.details), ins.details === 0);
   check("Factor chips on findings", ">=5", String(ins.factors), ins.factors >= 5);
-  check("Repayment history is named", "present", ins.body.includes("Repayment history") ? "present" : "missing", ins.body.includes("Repayment history"));
   check("Cash and fees are separated", "present", ins.body.includes("free up cash") && ins.body.includes("avoid a fee") ? "present" : "missing", ins.body.includes("free up cash") && ins.body.includes("avoid a fee"));
   check("Cash freed figure is shown", "$63.00", ins.body.includes("$63.00") ? "$63.00" : "missing", ins.body.includes("$63.00"));
   check("No 'switch provider' language", "clean", /switch to/i.test(ins.body) ? "switch" : "clean", !/switch to/i.test(ins.body));

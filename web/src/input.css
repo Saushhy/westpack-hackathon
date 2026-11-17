@@ -1058,7 +1058,15 @@
   .gel-money-tile--good .gel-money-tile-value { color: var(--text-success); }
   .gel-money-tile-unit { font-size: 11px; color: var(--text-muted); }
 
-  .gel-found-note { font-size: 12px; line-height: 1.4; color: var(--text-muted); margin: 12px 0 0; }
+  /* cards that need nothing, as rows inside one card */
+  .gel-status-row {
+    display: flex; align-items: baseline; gap: 8px;
+    padding: 9px 0; border-top: 1px solid var(--border-muted-soft);
+  }
+  .gel-status-row:first-child { border-top: 0; }
+  .gel-status-name { font-size: 14px; font-weight: 600; color: var(--text-body); }
+  .gel-status-row .gel-muted { font-size: 12px; }
+  .gel-status-row .gel-money { margin-left: auto; font-variant-numeric: tabular-nums; }
 
   /* ================= big tappable row (opens a sheet) ================== */
   .gel-row-card {
