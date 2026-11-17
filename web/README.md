@@ -1,53 +1,90 @@
-# Credit Dragon — web prototype (Santiago)
+# Credit Dragon: web prototype (Santiago)
 
-Standalone **HTML + Tailwind** (no framework) prototype of the **bill negotiator** and
-**gamification** (XP, coins, levels, dragon stages, shop). Designed to look like Westpac
-using their real GEL token values.
+Standalone **HTML + Tailwind** (no framework) prototype of a **credit-score coach**. It reads
+Westpac's own transaction data, finds the habits that move an Australian credit score
+(borrowed money, on-time payments, debit risk), and rewards acting on them with XP and coins
+that grow and dress a dragon. There is no bill switching, and no brand the customer does not
+already pay is ever recommended.
+
+It uses the **real Westpac GEL design system**: GEL's own stylesheet, tokens and component
+geometry, compiled locally. See `../docs/design-tokens.md` for the mapping.
+
+> The full product reasoning is in **`../CHANGES.md`**.
 
 ## Run it
 
-Just open `index.html` (double-click). No server, no build, works offline.
+Open `index.html` (double-click). No server, no build, works offline.
 
-- Data loads from `data.js` (auto-generated from `/data/*.json`).
+- Data loads from `data.js`, generated from `/data/*.json` plus Carlos's transactions.
+- Brand logos live in `assets/brands/`, committed so nothing needs the network.
 - State persists in `localStorage` (key `credit-dragon:state`).
 - The **Dragon** tab has a **Reset demo** button.
+- The app runs on a fixed demo clock (`bills.as_of`), so every recording behaves the same.
+
+## Compare against real GEL
+
+Open **`gel-reference.html`** in the same browser. It renders the same components with GEL's
+own utility class strings from `WestpacGEL/GEL-next`. If the two pages differ, the app is the
+one to fix.
 
 ## Rebuild (only after editing source)
 
 ```bash
 npm install            # once
-npm run build:data     # regenerate data.js from ../data/bills.json + ../data/rewards.json
-npm run build:css      # recompile Tailwind: src/input.css -> styles.css
-npm run build          # both
+npm run vendor:gel     # re-download GEL CSS + the Westpac brand font (network)
+npm run fetch:logos    # re-download the 9 brand icons into assets/brands (network)
+npm run build:data     # ../data/*.json + transactions -> data.js
+npm run build:icons    # assets/gel/icons/*.svg -> icons.js (fill -> currentColor)
+npm run build:css      # src/input.css -> styles.css
+npm run build          # data + icons + css
 ```
 
 ## Testing
 
 ```bash
-npm run audit   # headless UI audit: checks colours/radii/typography vs GEL tokens,
-                # icon rendering, overflow, contrast + runs the full demo journey
-npm run shots   # screenshots each screen into %TEMP%\opencode\cd-shots
+npm run audit   # 89 headless assertions: GEL tokens, real font, component geometry, logos,
+                # sheets, movements, the dash lint, and the whole demo journey
+npm run shots   # 10 screenshots into %TEMP%\opencode\cd-shots
 ```
 
-These drive the system **Microsoft Edge** (headless) via `playwright-core`, so no browser
-download is needed. Edit the `EDGE` path in `scripts/*.mjs` if Edge lives elsewhere.
+Both drive the system **Microsoft Edge** (headless) through `playwright-core`, so there is no
+browser download. Edit the `EDGE` path in `scripts/*.mjs` if Edge lives elsewhere.
 
 ## Structure
 
 | File | Purpose |
 |---|---|
-| `index.html` | Shell: phone frame, header, tab bar. |
-| `app.js` | State + gamification logic + rendering. |
+| `index.html` | Shell: phone frame, GEL header, tab bar. |
+| `gel-reference.html` | Real GEL component markup for side-by-side comparison. |
+| `app.js` | State, sheets, gamification logic and rendering. |
 | `data.js` | Generated data (do not edit). |
-| `styles.css` | Compiled Tailwind (committed, works offline). |
-| `src/input.css` | Tailwind source: GEL tokens + theme + component classes. |
-| `gel/tokens.css` | Westpac GEL tokens (vendored, attribution in header). |
-| `tools/build-data.js` | `data/*.json` → `data.js`. |
-| `assets/` | Dragon + shop art (falls back to emoji if missing). |
+| `icons.js` | Generated inline GEL icons (do not edit). |
+| `styles.css` | Compiled Tailwind + GEL (committed, works offline). |
+| `src/input.css` | Source: imports GEL theme, then GEL-accurate component classes. |
+| `gel/src/css/**` | Verbatim copy of GEL's stylesheet source (`npm run vendor:gel`). |
+| `assets/gel/` | Westpac logo and GEL outlined icons. |
+| `assets/brands/` | The 9 provider logos Mia actually pays (`npm run fetch:logos`). |
+| `assets/fonts/` | Westpac Bold v2.007 (proprietary, see the note below). |
+| `tools/vendor-gel.mjs` | Pulls the GEL CSS and font. |
+| `tools/fetch-logos.mjs` | Pulls the brand icons once, picks a real PNG, skips placeholders. |
+| `tools/build-data.js` | `data/*.json` + transactions to `data.js`. |
+| `tools/build-icons.js` | GEL SVGs to `icons.js`. |
 
-## Demo click-path (lands at 1080 XP → Teen dragon)
+> **Font licence:** `assets/fonts/Westpac-Bold-v2.007` is Westpac's proprietary brand font,
+> fetched from westpac.com.au. It is here so the demo renders exactly like the real app for
+> this competition entry. Delete the folder and the `brand-fonts.css` import to fall back to
+> GEL's system font stack.
 
-1. **Bills** → approve phone switch, internet switch, cancel Stan, cancel Disney+, reschedule gym.
-2. **Goals** → complete "Cut $90+ bills", "Pay card on time", "No new BNPL".
-3. **Dragon** → watch it evolve to Teen at 800 XP, then hit Level 6.
-4. **Shop** → spend the ~600 coins (e.g. Lava Lair + Feast).
+> **Logo note:** `assets/brands/` holds each provider's own icon, downloaded once for the
+> demo. They are trademarks of those companies and are used only to identify accounts Mia
+> already holds.
+
+## Demo click-path (550 → 870 XP, Teen dragon)
+
+1. **Score** → 612/1200 (Equifax), forecast 635 to 650, "Your goal: Car loan in 12 months",
+   Afterpay and Zip with the next payment date, and "What moves your score" in a sheet.
+2. **On open** → the daily check-in lands and the seven-day goal completes: 550 XP, 330 coins.
+3. **Insights** → six findings, each a sheet with the evidence and one action. All six take
+   you to 870 XP and 510 coins, and the dragon evolves to Teen partway through.
+4. **Goals** → 1 of 3 done, and no buttons. The other two fill from real payments.
+5. **Dragon / Shop** → spend coins on a hat and a cave and watch the dragon wear them.

@@ -3,19 +3,27 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Credit Dragon bill negotiator + gamification prototype (HTML + Tailwind, no framework).",
+  "description": "Credit Dragon credit-score coach prototype (HTML + Tailwind + the real Westpac GEL theme, no framework).",
   "scripts": {
     "build:css": "tailwindcss -i ./src/input.css -o ./styles.css --minify",
     "build:data": "node ./tools/build-data.js",
     "build:icons": "node ./tools/build-icons.js",
+    "build:dragon": "node ./tools/build-dragon.mjs",
+    "render:dragon": "node ./tools/render-dragon.mjs",
+    "vendor:gel": "node ./tools/vendor-gel.mjs",
+    "fetch:logos": "node ./tools/fetch-logos.mjs",
     "build": "npm run build:data && npm run build:icons && npm run build:css",
     "watch:css": "tailwindcss -i ./src/input.css -o ./styles.css --watch",
     "audit": "node ./scripts/audit.mjs",
-    "shots": "node ./scripts/screenshot.mjs"
+    "shots": "node ./scripts/screenshot.mjs",
+    "start": "node ./tools/serve.mjs"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.1.12",
+    "obj2gltf": "^3.2.0",
     "playwright-core": "^1.65.1",
-    "tailwindcss": "^4.1.12"
+    "sharp": "^0.35.5",
+    "tailwindcss": "^4.1.12",
+    "three": "^0.187.0"
   }
 }

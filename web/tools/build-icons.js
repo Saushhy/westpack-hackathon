@@ -10,7 +10,9 @@ const files = readdirSync(iconsDir).filter((f) => f.endsWith(".svg"));
 const entries = files.map((f) => {
   const name = f.replace("-outlined.svg", "").replace(".svg", "");
   const svg = readFileSync(join(iconsDir, f), "utf8")
-    .replace(/#0000FF/gi, "currentColor")
+    // GEL ships icons with a placeholder fill (#0000FF), but a few use brand
+    // colours (#1F1C4F). Both must become currentColor so icons can be tinted.
+    .replace(/fill="#[0-9a-fA-F]{6}"/g, 'fill="currentColor"')
     .replace(/\s+/g, " ")
     .trim();
   return `  ${JSON.stringify(name)}: ${JSON.stringify(svg)}`;

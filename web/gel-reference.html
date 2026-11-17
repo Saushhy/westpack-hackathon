@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en" data-brand="wbc">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GEL reference — Westpac component spec</title>
+  <link rel="stylesheet" href="./styles.css">
+  <style>
+    /* only page chrome for the reference doc — every component below uses
+       GEL's own utility classes, copied from WestpacGEL/GEL-next source */
+    .doc { max-width: 860px; margin: 0 auto; padding: 32px 24px 96px; }
+    .doc h1 { margin-bottom: 4px; }
+    .doc section { margin-top: 40px; }
+    .doc h2 { margin-bottom: 12px; }
+    .doc pre {
+      background: #f5f5f6; border: 1px solid #dedee1; border-radius: 8px;
+      padding: 12px; font-size: 12px; overflow-x: auto; margin: 12px 0 0;
+    }
+    .doc .caption { color: #706f7c; font-size: 14px; line-height: 1.4; }
+    .doc .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+    .doc .swatch { width: 120px; }
+    .doc .swatch i { display: block; height: 48px; border-radius: 8px; border: 1px solid #dedee1; }
+    .doc .swatch span { font-size: 12px; color: #706f7c; }
+  </style>
+</head>
+<body>
+<div class="doc gelref">
+
+  <h1 class="typography-brand-6">GEL reference</h1>
+  <p class="caption">
+    Real <code>@westpac/style-config</code> theme + GEL's own class strings, straight from
+    <code>WestpacGEL/GEL-next</code>. Use this to compare against the app: if a component here
+    and the same component in the app look different, the app is the one that needs fixing.
+  </p>
+
+  <section>
+    <h2 class="typography-brand-8">Typography scale</h2>
+    <p class="typography-body-6">body-6 · 30px — screen headline</p>
+    <p class="typography-body-7">body-7 · 24px — modal title</p>
+    <p class="typography-body-8">body-8 · 18px — section heading</p>
+    <p class="typography-body-9">body-9 · 16px — body copy, buttons</p>
+    <p class="typography-body-10">body-10 · 14px — secondary, alerts</p>
+    <p class="typography-brand-7" style="font-weight:700">brand-7 · Westpac Bold 24px — brand headings</p>
+  </section>
+
+  <section>
+    <h2 class="typography-brand-8">Colour tokens</h2>
+    <div class="row">
+      <div class="swatch"><i style="background: var(--surface-primary)"></i><span>surface-primary<br>#da1710</span></div>
+      <div class="swatch"><i style="background: var(--surface-hero)"></i><span>surface-hero<br>#1f1c4f</span></div>
+      <div class="swatch"><i style="background: var(--text-body)"></i><span>text-body<br>#161619</span></div>
+      <div class="swatch"><i style="background: var(--text-muted)"></i><span>text-muted<br>#706f7c</span></div>
+      <div class="swatch"><i style="background: var(--border-muted-soft)"></i><span>border-muted-soft<br>#dedee1</span></div>
+      <div class="swatch"><i style="background: var(--surface-success)"></i><span>surface-success<br>#008000</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="typography-brand-8">Button (GEL large / small)</h2>
+    <div class="row">
+      <button class="cursor-pointer items-center justify-center border transition-[background] h-7 rounded-lg px-2.5 typography-body-9 border-border-primary bg-surface-primary text-text-mono font-bold">Primary</button>
+      <button class="cursor-pointer items-center justify-center border transition-[background] h-7 rounded-lg px-2.5 typography-body-9 border-border-muted-soft bg-transparent text-text-body font-bold">Secondary</button>
+      <button class="cursor-pointer items-center justify-center border transition-[background] h-5 rounded-sm px-1.5 typography-body-10 border-border-primary bg-surface-primary text-text-mono font-bold">Small</button>
+    </div>
+    <pre>h-7 rounded-lg px-2.5 typography-body-9 border-border-primary bg-surface-primary text-text-mono</pre>
+    <p class="caption">h-7 = 42px because GEL's spacing base is 0.375rem (6px), not 4px.</p>
+  </section>
+
+  <section>
+    <h2 class="typography-brand-8">FlexiCell (list row)</h2>
+    <div class="flexi relative flex rounded-2xl border border-border-muted-soft bg-background-white mb-2 gap-2 p-2">
+      <div class="flex flex-none items-center justify-center size-12 rounded-full bg-surface-hero-faint text-surface-hero">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="8"/></svg>
+      </div>
+      <div class="flex flex-1 flex-col gap-1 overflow-x-clip">
+        <span class="typography-body-9 font-bold text-text-heading">Mobile plan</span>
+        <span class="typography-body-10 text-text-muted">Vodafone · $89/mo</span>
+      </div>
+      <div class="flex flex-none flex-col items-end gap-1">
+        <span class="badge inline-block h-[1.25rem] rounded-sm px-1 text-[0.75rem] border leading-[1.125rem] border-border-success-mild bg-surface-success-faint text-text-success">Save $25</span>
+      </div>
+    </div>
+    <pre>rounded-2xl border border-border-muted-soft bg-background-white mb-2 gap-2 p-2 → 8px radius, 12px padding, 12px gap</pre>
+  </section>
+
+  <section>
+    <h2 class="typography-brand-8">Panel — hero look</h2>
+    <div class="overflow-hidden rounded-2xl border border-border-hero bg-background-white text-text-body">
+      <div class="px-2 py-[0.625rem] bg-surface-hero text-text-mono typography-body-10 font-bold">Savings found</div>
+      <div class="p-3 typography-body-9">$92.99 / month</div>
+    </div>
+    <pre>rounded-2xl border-border-hero · header bg-surface-hero text-text-mono px-2 py-[0.625rem]</pre>
+  </section>
+
+  <section>
+    <h2 class="typography-brand-8">Alert — box look</h2>
+    <div class="flex typography-body-10 border-y p-3 border-border-info-mild bg-surface-info-faint text-text-info">
+      <span class="flex-1">You made 4 Afterpay payments in October.</span>
+    </div>
+    <pre>border-y p-3 typography-body-10 border-border-info-mild bg-surface-info-faint text-text-info</pre>
+  </section>
+
+  <section>
+    <h2 class="typography-brand-8">ProgressBar — skinny + default</h2>
+    <div class="box-border w-full overflow-hidden border border-border-muted-soft bg-background-white p-[0.0625rem] h-[0.625rem] rounded-full mb-2">
+      <div class="box-border h-full overflow-hidden bg-surface-hero rounded-full" style="width:64%"></div>
+    </div>
+    <div class="box-border w-full overflow-hidden border border-border-muted-soft bg-background-white p-[0.0625rem] h-4 rounded-full">
+      <div class="box-border h-full overflow-hidden bg-surface-hero text-right leading-tight rounded-full flex items-center justify-end" style="width:64%">
+        <span class="mx-2 my-0 typography-body-10 font-bold text-text-mono">64%</span>
+      </div>
+    </div>
+    <pre>h-4 rounded-full border-border-muted-soft p-[0.0625rem] · innerBar bg-surface-hero</pre>
+  </section>
+
+  <section>
+    <h2 class="typography-brand-8">Modal dialog</h2>
+    <div class="relative flex max-w-full flex-col rounded-3xl bg-background-white text-text-body outline-none" style="width:360px">
+      <h3 class="pt-9 pb-4 px-5 typography-body-7 font-bold">Your dragon evolved</h3>
+      <p class="px-5 pb-6 typography-body-9">Teen dragon reached 800 XP.</p>
+      <div class="flex gap-1 px-5 pb-5">
+        <button class="h-7 rounded-lg px-2.5 typography-body-9 border border-border-primary bg-surface-primary text-text-mono font-bold">Continue</button>
+      </div>
+    </div>
+    <pre>rounded-3xl · title pt-9 pb-4 typography-body-7 font-bold · backdrop bg-black/65</pre>
+  </section>
+
+  <section>
+    <h2 class="typography-brand-8">Where these values come from</h2>
+    <p class="caption">
+      <code>packages/style-config/src/css/themes/theme-wbc.css</code> (colour + font tokens) ·
+      <code>packages/style-config/src/css/shared/typography.css</code> (type scale) ·
+      <code>packages/style-config/src/css/shared/layout.css</code> (<code>--spacing: 0.375rem</code>) ·
+      <code>packages/ui/src/components/*/\*.styles.ts</code> (component geometry).
+      Re-pull with <code>npm run vendor:gel</code>.
+    </p>
+  </section>
+
+</div>
+</body>
+</html>
