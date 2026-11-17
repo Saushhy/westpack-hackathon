@@ -1,11 +1,12 @@
 import Foundation
 
+/// The four-stage ladder is app-owned and deliberately NOT read from
+/// `rewards.json`. The contract was cut to three stages (egg 0, baby 800,
+/// adult 1500) while the app ships four. Reading thresholds from it would
+/// leave `teen` with no entry and a 0 threshold, which silently mis-stages
+/// the dragon — a 320 XP pet would read as Dragon L1 instead of Hatched.
 enum DragonStage: String, Codable, CaseIterable {
     case egg, baby, teen, adult
-
-    private var spec: Rewards.Stage? {
-        RewardsData.shared.stages.first { $0.id == rawValue }
-    }
 
     /// Product naming, not the contract's: Egg → Hatched → Dragon L1 → Dragon L2.
     var displayName: String {
@@ -18,12 +19,21 @@ enum DragonStage: String, Codable, CaseIterable {
     }
 
     var emoji: String {
-        spec?.emoji ?? "🥚"
+        switch self {
+        case .egg: return "🥚"
+        case .baby: return "🐣"
+        case .teen: return "🐲"
+        case .adult: return "🐉"
+        }
     }
 
-    /// From `rewards.json`: egg 0 → baby 250 → teen 800 → adult 1500.
     var xpThreshold: Int {
-        spec?.xpRequired ?? 0
+        switch self {
+        case .egg: return 0
+        case .baby: return 250
+        case .teen: return 800
+        case .adult: return 1500
+        }
     }
 
     var nextStage: DragonStage? {
