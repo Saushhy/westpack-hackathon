@@ -943,7 +943,6 @@
     font-size: 16px; font-weight: 700; color: var(--text-heading); margin-top: 4px;
   }
   .gel-shop-price { display: flex; align-items: baseline; gap: 2px; margin-top: 2px; }
-  .gel-shop-desc { font-size: 12px; color: var(--text-muted); line-height: 1.35; min-height: 32px; margin: 4px 0 10px; }
 
   /* ================= score / credit trajectory ========================== */
   .gel-score-hero .gel-panel-body { padding-top: 6px; }
@@ -1022,43 +1021,44 @@
   .gel-row-card:hover { background: var(--surface-muted-faint); }
   .gel-row-card .gel-ico { width: 18px; height: 18px; color: var(--text-muted); flex: none; }
 
-  /* the five factors: a title each, expanding in place to explain itself */
-  .gel-facts { margin: 0; }
-  .gel-fact { display: block; border-top: 1px solid var(--border-muted-soft); }
-  .gel-fact:first-child { border-top: 0; }
-  .gel-fact-row {
+  /* ================= disclosure (title, then the explanation) ===========
+     One component used everywhere a card would otherwise carry a paragraph:
+     goals, shop items, and the score factors. Native <details>, so it works
+     with the keyboard and without JavaScript. */
+  .gel-disc { display: block; margin-top: 10px; border-top: 1px solid var(--border-muted-soft); }
+  .gel-disc-row {
     display: flex; align-items: center; justify-content: space-between; gap: 12px;
-    padding: 14px 0; cursor: pointer; list-style: none;
+    padding: 10px 0 0; cursor: pointer; list-style: none;
   }
-  .gel-fact-row::-webkit-details-marker { display: none; }
-  .gel-fact-row:focus-visible { outline: 2px solid var(--text-link); outline-offset: 2px; border-radius: var(--rounded-md); }
-  .gel-fact-title {
-    font-family: var(--font-brand), var(--font-family-sans);
-    font-size: 20px; line-height: 1.25; font-weight: 700; color: var(--text-heading);
-  }
-  /* the plus, as a soft circular control rather than a bare glyph */
-  .gel-fact-icon {
+  .gel-disc-row::-webkit-details-marker { display: none; }
+  .gel-disc-row:focus-visible { outline: 2px solid var(--text-link); outline-offset: 2px; border-radius: var(--rounded-md); }
+  .gel-disc-label { font-size: 13px; font-weight: 700; color: var(--text-link); }
+  .gel-disc-icon {
     display: inline-flex; align-items: center; justify-content: center;
-    flex: none; width: 30px; height: 30px; border-radius: 50%;
+    flex: none; width: 24px; height: 24px; border-radius: 50%;
     background: var(--surface-muted-faint); color: var(--text-heading);
     transition: transform 0.24s var(--ease), background 0.2s var(--ease);
   }
-  .gel-fact-icon .gel-ico { width: 18px; height: 18px; }
-  .gel-fact[open] .gel-fact-icon {
-    transform: rotate(45deg);
-    background: var(--surface-hero-faint);
-  }
-  /* <details> hides its own content when closed, so the reveal is an animation
-     on open rather than a height transition. It stays honest to measure. */
-  .gel-fact[open] .gel-fact-body { animation: gel-fact-in 0.24s var(--ease); }
-  @keyframes gel-fact-in {
+  .gel-disc-icon .gel-ico { width: 15px; height: 15px; }
+  .gel-disc[open] .gel-disc-icon { transform: rotate(45deg); background: var(--surface-hero-faint); }
+  .gel-disc[open] .gel-disc-body { animation: gel-disc-in 0.24s var(--ease); }
+  @keyframes gel-disc-in {
     from { opacity: 0; transform: translateY(-4px); }
     to { opacity: 1; transform: none; }
   }
-  .gel-fact-text {
-    margin: 0; padding: 0 24px 16px 0;
-    font-size: var(--typography-body-size-10); line-height: 1.5; color: var(--text-muted);
+  .gel-disc-text { margin: 8px 0 2px; font-size: 13px; line-height: 1.5; color: var(--text-muted); }
+
+  /* the large variant, for the list of score factors */
+  .gel-discs .gel-disc:first-child { border-top: 0; }
+  .gel-disc--lg { margin-top: 0; }
+  .gel-disc--lg .gel-disc-row { padding: 14px 0; }
+  .gel-disc--lg .gel-disc-label {
+    font-family: var(--font-brand), var(--font-family-sans);
+    font-size: 20px; line-height: 1.25; font-weight: 700; color: var(--text-heading);
   }
+  .gel-disc--lg .gel-disc-icon { width: 30px; height: 30px; }
+  .gel-disc--lg .gel-disc-icon .gel-ico { width: 18px; height: 18px; }
+  .gel-disc--lg .gel-disc-text { padding: 0 24px 16px 0; font-size: var(--typography-body-size-10); }
 
   /* ================= credit accounts ==================================== */
   .gel-acc {

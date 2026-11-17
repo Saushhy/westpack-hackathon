@@ -54,6 +54,19 @@ function ico(name) {
   return '<span class="gel-ico">' + svg + "</span>";
 }
 
+/* One disclosure, used wherever a card would otherwise carry a paragraph:
+   goals, shop items, and the score factors. Native <details>. */
+function disc(label, text, opts) {
+  const cls = "gel-disc" + (opts && opts.lg ? " gel-disc--lg" : "");
+  return `<details class="${cls}">
+    <summary class="gel-disc-row">
+      <span class="gel-disc-label">${label}</span>
+      <span class="gel-disc-icon">${ico("add-circle")}</span>
+    </summary>
+    <div class="gel-disc-body"><p class="gel-disc-text">${text}</p></div>
+  </details>`;
+}
+
 /* The demo runs on one fixed day so every recording behaves the same. */
 const TODAY = bills.as_of;
 
@@ -630,7 +643,6 @@ function billStatusCard(bill) {
   return `
     <article class="gel-cell gel-bill is-muted" data-bill="${bill.id}">
       ${billHead(bill, `<span class="gel-money gel-money--sm gel-money--muted">${fmtAUD(bill.current_amount)}</span>${moneyUnit(bill.billing_period)}`)}
-      <p class="gel-note" style="margin-top:8px">${bill.why}</p>
       <div class="gel-tagline"><span class="gel-badge gel-badge--faint">${label}</span></div>
     </article>`;
 }
@@ -857,7 +869,6 @@ function renderGoals() {
               ${complete ? "Done" : value + " of " + g.target}
             </span>
           </div>
-          <p class="gel-muted" style="margin:4px 0 0">${g.description}</p>
           <div class="gel-bar gel-bar--skinny" style="margin-top:10px">
             <div class="gel-bar-fill" style="width:${fmtPct(goalPct(g))}"></div>
           </div>
@@ -865,6 +876,7 @@ function renderGoals() {
             <span class="gel-muted">${complete ? "Completed" : "Next check " + g.next_check}</span>
             <span class="gel-muted">+${g.xp} XP</span>
           </div>
+          ${disc("Why this one", g.description)}
         </article>`;
     })
     .join("");
@@ -945,23 +957,12 @@ function creditAccounts(cf) {
     </section>`;
 }
 
-/* Five titles at a glance, each one expanding in place to explain itself.
-   A native <details> so it works with the keyboard and without JavaScript. */
+/* Five titles at a glance, each one expanding in place to explain itself. */
 function openFactors() {
   const factors = rewards.credit_factors || [];
   const body =
-    '<div class="gel-facts">' +
-    factors
-      .map(
-        (f) => `<details class="gel-fact">
-          <summary class="gel-fact-row">
-            <span class="gel-fact-title">${f.label}</span>
-            <span class="gel-fact-icon">${ico("add-circle")}</span>
-          </summary>
-          <div class="gel-fact-body"><p class="gel-fact-text">${f.what}</p></div>
-        </details>`
-      )
-      .join("") +
+    '<div class="gel-discs">' +
+    factors.map((f) => disc(f.label, f.what, { lg: true })).join("") +
     "</div>";
 
   openSheet({
@@ -1353,7 +1354,7 @@ function renderShop() {
             <span class="gel-money gel-money--sm">${fmtWhole(item.cost)}</span>
             ${coin()}
           </div>
-          <p class="gel-shop-desc">${item.description}</p>
+          ${disc("What it is", item.description)}
           ${shopCta(item)}
         </article>`;
     })

@@ -211,7 +211,7 @@ await page.waitForTimeout(900);
   await page.waitForTimeout(400);
   const factors = await page.evaluate(() => {
     const sheet = document.querySelector(".gel-sheet");
-    const rows = Array.from(sheet?.querySelectorAll(".gel-fact") || []);
+    const rows = Array.from(sheet?.querySelectorAll(".gel-disc") || []);
     const contentVis = (d) => {
       try {
         return getComputedStyle(d, "::details-content").contentVisibility;
@@ -222,8 +222,8 @@ await page.waitForTimeout(900);
     return {
       open: !!sheet,
       title: sheet?.querySelector(".gel-sheet-title")?.textContent.trim() || "",
-      rows: rows.map((d) => d.querySelector(".gel-fact-title").textContent.trim()),
-      icons: rows.filter((d) => !!d.querySelector(".gel-fact-icon svg")).length,
+      rows: rows.map((d) => d.querySelector(".gel-disc-label").textContent.trim()),
+      icons: rows.filter((d) => !!d.querySelector(".gel-disc-icon svg")).length,
       openCount: rows.filter((d) => d.open).length,
       hidden: rows.map(contentVis),
       badges: sheet ? sheet.querySelectorAll(".gel-badge").length : 0,
@@ -257,13 +257,13 @@ await page.waitForTimeout(900);
   check("No rule above the action buttons", "0px", factors.divider, factors.divider === "0px");
 
   // Expand one: the description has to appear, and close again.
-  await page.locator(".gel-fact-row").first().click();
+  await page.locator(".gel-disc-row").first().click();
   await page.waitForTimeout(400);
   const expanded = await page.evaluate(() => {
-    const first = document.querySelector(".gel-fact");
-    const row = first.querySelector(".gel-fact-row").getBoundingClientRect();
-    const body = first.querySelector(".gel-fact-body").getBoundingClientRect();
-    const icon = first.querySelector(".gel-fact-icon");
+    const first = document.querySelector(".gel-disc");
+    const row = first.querySelector(".gel-disc-row").getBoundingClientRect();
+    const body = first.querySelector(".gel-disc-body").getBoundingClientRect();
+    const icon = first.querySelector(".gel-disc-icon");
     const vis = (() => {
       try {
         return getComputedStyle(first, "::details-content").contentVisibility;
@@ -273,7 +273,7 @@ await page.waitForTimeout(900);
     })();
     return {
       open: first.open,
-      text: first.querySelector(".gel-fact-text").textContent.trim(),
+      text: first.querySelector(".gel-disc-text").textContent.trim(),
       visible: vis,
       rotated: getComputedStyle(icon).transform,
       iconRadius: getComputedStyle(icon).borderRadius,
@@ -301,10 +301,10 @@ await page.waitForTimeout(900);
     expanded.bodyLeft === expanded.rowLeft
   );
 
-  await page.locator(".gel-fact-row").first().click();
+  await page.locator(".gel-disc-row").first().click();
   await page.waitForTimeout(400);
   const collapsed = await page.evaluate(() => {
-    const first = document.querySelector(".gel-fact");
+    const first = document.querySelector(".gel-disc");
     const vis = (() => {
       try {
         return getComputedStyle(first, "::details-content").contentVisibility;
@@ -472,6 +472,7 @@ await page.waitForTimeout(900);
       cards: document.querySelectorAll(".gel-goal").length,
       buttons: document.querySelectorAll("#screen button").length,
       bars: Array.from(document.querySelectorAll(".gel-goal .gel-bar-fill")).map((b) => b.style.width),
+      discs: document.querySelectorAll(".gel-goal .gel-disc").length,
       doneBadge:
         document.querySelector('.gel-goal[data-goal="goal_checkin"] .gel-badge')?.textContent.trim() || "",
       body
@@ -484,6 +485,13 @@ await page.waitForTimeout(900);
   check("No explanatory note above the cards", "absent", /fill in on their own/.test(g.body) ? "present" : "absent", !/fill in on their own/.test(g.body));
   check("Goal 1 shows the Done badge", "Done", g.doneBadge, g.doneBadge === "Done");
   check("Goal 2 shows 2 of 4 instalments", "2 of 4", g.body.includes("2 of 4") ? "2 of 4" : "missing", g.body.includes("2 of 4"));
+  check("Each goal hides its explanation behind a disclosure", "3", String(g.discs), g.discs === 3);
+  check(
+    "Goal explanations are not on the card",
+    "absent",
+    /re-reads your transactions/.test(g.body) ? "present" : "absent",
+    !/re-reads your transactions/.test(g.body)
+  );
   check("Goal 3 shows 27 of 30 days", "27 of 30", g.body.includes("27 of 30") ? "27 of 30" : "missing", g.body.includes("27 of 30"));
   check("Bars reflect the data", "100%,50%,90%", g.bars.join(","), g.bars.join(",") === "100%,50%,90%");
   check("Next check is stated", "present", /Next check/.test(g.body) ? "present" : "missing", /Next check/.test(g.body));
@@ -542,6 +550,20 @@ await page.waitForTimeout(900);
 
   await page.locator('.gel-tab[data-tab="shop"]').click();
   await page.waitForTimeout(300);
+  const shop = await page.evaluate(() => ({
+    items: document.querySelectorAll(".gel-shop-item").length,
+    discs: document.querySelectorAll(".gel-shop-item .gel-disc").length,
+    body: document.querySelector("#screen").innerText
+  }));
+  check("Shop keeps its tiles", ">=8", String(shop.items), shop.items >= 8);
+  check("Every shop tile hides its blurb behind a disclosure", String(shop.items), String(shop.discs), shop.discs === shop.items);
+  check(
+    "Shop blurbs are not on the tiles",
+    "absent",
+    /hops and asks for more/.test(shop.body) ? "present" : "absent",
+    !/hops and asks for more/.test(shop.body)
+  );
+
   const cap = page.locator('.gel-shop-item[data-item="item_cap"] button', { hasText: "Buy" });
   if ((await cap.count()) > 0) {
     await cap.click();
