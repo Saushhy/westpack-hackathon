@@ -635,6 +635,9 @@
     background: var(--surface-hero-faint);
   }
   .gel-callout .gel-ico { width: 18px; height: 18px; flex: none; margin-top: 2px; color: var(--text-hero); }
+  .gel-callout--done { background: var(--surface-success-faint); }
+  .gel-callout--done .gel-ico { color: var(--text-success); }
+  .gel-callout--done .gel-callout-text { color: var(--text-success); }
   .gel-callout-text {
     margin: 0; font-size: var(--typography-body-size-10); line-height: 1.45;
     color: var(--text-heading);
@@ -1089,14 +1092,17 @@
   .gel-bill--tap .gel-bill-head > .gel-ico { width: 16px; height: 16px; flex: none; color: var(--text-muted); }
 
   /* cards that need nothing, as rows inside one card */
-  .gel-status-row {
-    display: flex; align-items: baseline; gap: 8px;
-    padding: 9px 0; border-top: 1px solid var(--border-muted-soft);
-  }
+  .gel-status-row { border-top: 1px solid var(--border-muted-soft); }
   .gel-status-row:first-child { border-top: 0; }
+  .gel-status-tap {
+    display: flex; align-items: baseline; gap: 8px; width: 100%;
+    padding: 9px 0; border: 0; background: none; cursor: pointer;
+    font-family: inherit; text-align: left;
+  }
+  .gel-status-tap .gel-ico { width: 15px; height: 15px; flex: none; color: var(--text-muted); align-self: center; }
   .gel-status-name { font-size: 14px; font-weight: 600; color: var(--text-body); }
-  .gel-status-row .gel-muted { font-size: 12px; }
-  .gel-status-row .gel-money { margin-left: auto; font-variant-numeric: tabular-nums; }
+  .gel-status-tap .gel-muted { font-size: 12px; }
+  .gel-status-tap .gel-money { margin-left: auto; font-variant-numeric: tabular-nums; }
 
   /* ================= big tappable row (opens a sheet) ================== */
   .gel-row-card {

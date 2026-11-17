@@ -464,7 +464,7 @@ await page.waitForTimeout(900);
 
   // Work through the remaining findings.
   for (let i = 0; i < 6; i++) {
-    const link = page.locator(".gel-bill--tap").first();
+    const link = page.locator(".gel-bill--tap:not(.is-done):not(.is-muted)").first();
     if ((await link.count()) === 0) break;
     await link.click();
     await page.waitForTimeout(250);
@@ -483,6 +483,38 @@ await page.waitForTimeout(900);
   check("The dragon hatched into a baby (>= 800 XP)", "baby", st.xp_total >= 800 ? "baby" : "still an egg", st.xp_total >= 800);
   check("No duplicate awards", "0 dups", new Set(st.awarded).size === st.awarded.length ? "0 dups" : "dups", new Set(st.awarded).size === st.awarded.length);
   check("Exactly one goal completed (the daily one)", "1", String(Object.keys(st.goals).length), Object.keys(st.goals).length === 1);
+
+  // Anything finished has to stay readable, not become a dead end.
+  await page.locator(".gel-bill--tap.is-done").first().click();
+  await page.waitForTimeout(350);
+  const doneSheet = await page.evaluate(() => {
+    const s = document.querySelector(".gel-sheet");
+    return {
+      open: !!s,
+      body: s?.innerText || "",
+      primary: !!s?.querySelector(".gel-sheet-actions .gel-btn-primary"),
+      close: !!s?.querySelector(".gel-sheet-actions .gel-btn-ghost")
+    };
+  });
+  check("A finished finding still opens", "present", doneSheet.open ? "present" : "missing", doneSheet.open);
+  check("It shows what was done", "present", /Reminder set|Protected balance|watching this/.test(doneSheet.body) ? "present" : "missing", /Reminder set|Protected balance|watching this/.test(doneSheet.body));
+  check("And offers no action, only Close", "no primary", doneSheet.primary ? "primary" : "no primary", doneSheet.primary === false && doneSheet.close);
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(200);
+
+  await page.locator(".gel-status-tap").first().click();
+  await page.waitForTimeout(350);
+  const keepSheet = await page.evaluate(() => {
+    const s = document.querySelector(".gel-sheet");
+    return {
+      title: s?.querySelector(".gel-sheet-title")?.textContent.trim() || "",
+      primary: !!s?.querySelector(".gel-sheet-actions .gel-btn-primary")
+    };
+  });
+  check("A 'nothing to change' row opens too", "present", keepSheet.title || "missing", keepSheet.title.length > 0);
+  check("It also has no action", "no primary", keepSheet.primary ? "primary" : "no primary", keepSheet.primary === false);
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(200);
 }
 
 // ============================ goals tab ============================

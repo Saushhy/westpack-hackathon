@@ -546,6 +546,11 @@ function openInsight(id) {
   if (!bill) return;
   const copy = ACTION_COPY[bill.action_type] || ACTION_COPY.track;
 
+  /* Only a finding that still needs something offers the action. Anything
+     already done, dismissed, or informational opens read only. */
+  const status = state.bills[bill.id]?.status;
+  const canAct = isActionable(bill) && status !== "done" && status !== "dismissed";
+
   const head = `
     <div class="gel-sheet-head">
       ${adorn(bill)}
@@ -558,6 +563,14 @@ function openInsight(id) {
   /* What happened, then what to do about it, then where it came from. The
      description is shown outright: no disclosure, no label to open. */
   const body = `
+    ${
+      status === "done"
+        ? `<div class="gel-callout gel-callout--done">
+             ${ico("check")}
+             <p class="gel-callout-text">${doneCopy(bill)}</p>
+           </div>`
+        : ""
+    }
     ${bill.finding ? `<p class="gel-lead">${bill.finding}</p>` : ""}
     ${bill.detail ? `<p class="gel-detail">${bill.detail}</p>` : ""}
     <div class="gel-evidence-card">${evidenceRows(bill)}</div>
@@ -579,11 +592,12 @@ function openInsight(id) {
       }
     </div>`;
 
-  const actions = `
-    <button class="gel-btn-primary gel-btn-block" type="button" onclick="actFromSheet('${bill.id}')">
-      ${ico(copy.icon)} ${copy.label}
-    </button>
-    <button class="gel-btn-text" type="button" onclick="dismissFromSheet('${bill.id}')">Not now</button>`;
+  const actions = canAct
+    ? `<button class="gel-btn-primary gel-btn-block" type="button" onclick="actFromSheet('${bill.id}')">
+         ${ico(copy.icon)} ${copy.label}
+       </button>
+       <button class="gel-btn-text" type="button" onclick="dismissFromSheet('${bill.id}')">Not now</button>`
+    : '<button class="gel-btn-ghost gel-btn-block" type="button" onclick="closeSheet()">Close</button>';
 
   openSheet({ title: bill.label, head, body, actions });
 }
@@ -602,12 +616,22 @@ function insightCard(bill) {
   const st = state.bills[bill.id]?.status;
 
   if (st === "dismissed")
-    return `<article class="gel-cell gel-bill is-muted" data-bill="${bill.id}">
+    return `<article class="gel-cell gel-bill is-muted gel-bill--tap" data-bill="${bill.id}"
+             role="button" tabindex="0" aria-label="${bill.label}. Dismissed. Review."
+             onclick="openInsight('${bill.id}')"
+             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openInsight('${
+               bill.id
+             }')}">
       ${billHead(bill, `<span class="gel-badge gel-badge--faint">Dismissed</span>`)}
     </article>`;
 
   if (st === "done")
-    return `<article class="gel-cell gel-bill is-done" data-bill="${bill.id}">
+    return `<article class="gel-cell gel-bill is-done gel-bill--tap" data-bill="${bill.id}"
+             role="button" tabindex="0" aria-label="${bill.label}. Done. Review."
+             onclick="openInsight('${bill.id}')"
+             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openInsight('${
+               bill.id
+             }')}">
       ${billHead(bill, `<span class="gel-badge gel-badge--success">Done</span>`)}
       <div class="gel-hr"></div>
       <p class="gel-note gel-note--good">${doneCopy(bill)}</p>
@@ -688,9 +712,12 @@ function statusGroup(list) {
     .map(
       (b) => `
       <div class="gel-status-row" data-bill="${b.id}">
-        <span class="gel-status-name">${b.label}</span>
-        <span class="gel-muted">${b.action_type === "keep" ? "Keeping" : "No change"}</span>
-        <span class="gel-money gel-money--sm gel-money--muted">${fmtAUD(b.current_amount)}</span>
+        <button class="gel-status-tap" type="button" onclick="openInsight('${b.id}')">
+          <span class="gel-status-name">${b.label}</span>
+          <span class="gel-muted">${b.action_type === "keep" ? "Keeping" : "No change"}</span>
+          <span class="gel-money gel-money--sm gel-money--muted">${fmtAUD(b.current_amount)}</span>
+          ${ico("arrow-right")}
+        </button>
       </div>`
     )
     .join("");
