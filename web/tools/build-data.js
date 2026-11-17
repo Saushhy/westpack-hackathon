@@ -16,7 +16,11 @@ const rewards = JSON.parse(readFileSync(join(dataDir, "rewards.json"), "utf8"));
 
 /* Carlos owns the transactions. They live at the repo root today and should move
    to /data later, so look in both places and never break whichever is true. */
-const txCandidates = [join(dataDir, "transactions.json"), join(root, "mia_transactions.json")];
+const txCandidates = [
+  join(dataDir, "transactions.json"),
+  join(dataDir, "mia_transactions.json"),
+  join(root, "mia_transactions.json")
+];
 const txPath = txCandidates.find((p) => existsSync(p));
 if (!txPath) {
   console.error("No transaction file found. Looked in:\n  " + txCandidates.join("\n  "));
@@ -25,7 +29,12 @@ if (!txPath) {
 const rawTx = JSON.parse(readFileSync(txPath, "utf8"));
 const transactions = Array.isArray(rawTx) ? rawTx : rawTx.transactions || [];
 
-const body = `window.DATA = ${JSON.stringify({ bills, rewards, transactions }, null, 2)};\n`;
+/* Carlos's onboarding questions for Mia. Same root-or-/data rule as above. */
+const qCandidates = [join(dataDir, "mia_questions.json"), join(dataDir, "questions.json"), join(root, "mia_questions.json")];
+const qPath = qCandidates.find((p) => existsSync(p));
+const questions = qPath ? JSON.parse(readFileSync(qPath, "utf8")) : [];
+
+const body = `window.DATA = ${JSON.stringify({ bills, rewards, transactions, questions }, null, 2)};\n`;
 const output = banner + body;
 
 const check = process.argv.includes("--check");

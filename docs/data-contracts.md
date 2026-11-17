@@ -82,7 +82,7 @@ There is deliberately no forecast history in the UI.
 | action_type | Button in the sheet | Action id | XP |
 |---|---|---|---|
 | `remind` | Set a reminder | `reminder_set` | 100 |
-| `protect` | Protect balance | `protected_balance` | 60 |
+| `protect` | Set up buffer | `protected_balance` | 60 |
 | `track` | Track this | `insight_tracked` | 40 |
 | `keep` / `no_offer` | none | none | 0 |
 
@@ -90,6 +90,15 @@ There is deliberately no forecast history in the UI.
 enforces the dash rule on every screen.
 
 ---
+
+### Bill check fields
+
+- `bills[].benchmark`: `{ key, average_monthly, lines, label, source, source_url, checked_at }`
+  from `data/benchmarks.json`. Present only on a utility above the average.
+- `credit_file.debt_target`: `{ name, balance, repayment_monthly, rate_pa?, sample_balance? }`.
+  `balance: null` means the app shows the yearly amount instead of a payoff date.
+- `score.bill_check`: `{ upside_points, basis, assumption }`. The forecast range's top rises
+  by `upside_points`. Absent: no score line.
 
 ## 2. `data/rewards.json`
 
@@ -136,6 +145,8 @@ Top level: `version`, `currency`, `credit_factors[]`, `starting_state`, `actions
     "feeds": 0,
     "fed_at": null
   },
+  "answers": { "q_001": "Planned purchases, I just like splitting payments", "q_003": "skipped" },
+  "onboarded": true,
   "awarded": ["2026-11-17:daily_checkin", "..."],
   "ledger": [
     { "ts": "...", "action": "reminder_set", "source_id": "bill_card", "xp": 100, "coins": 60, "reason": "Credit card repayment" }
@@ -147,6 +158,8 @@ Top level: `version`, `currency`, `credit_factors[]`, `starting_state`, `actions
 - `checkins[]` holds ISO local dates. `checkinsInWindow()` counts the last 7.
 - `goals[id].status` is `"completed"`. Only `syncGoals()` may set it.
 - `awarded[]` idempotency key is `"{source_id}:{action_id}"`.
+- `answers[question_id]` is the chosen option from `<name>_questions.json`, or `"skipped"`.
+- `onboarded` is set when the welcome is finished or skipped with Not now.
 - Derived, never stored: `level`, `stage`.
 
 ---

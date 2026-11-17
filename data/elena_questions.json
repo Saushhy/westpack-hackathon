@@ -14,28 +14,28 @@
   },
   {
     "id": "qe_002",
-    "question": "You paid a $250 upfront deposit to Origin Energy because you lacked local credit history. Want us to connect on-time utility reporting?",
+    "question": "You paid a $250 upfront deposit to Origin Energy because you lacked local credit history, and you have paid every bill on time since. Want a record of that from your Westpac history?",
     "why_asking": "Why am I asking? On 3 Sep you paid a $250 security deposit to Origin Energy, and you have paid every monthly power bill on time since.",
     "related_transaction_ids": ["tx_e014", "tx_e044", "tx_e066"],
     "answer_options": [
-      "Yes, request refund of my $250 deposit after 90 days",
-      "Show me how utility accounts are reported in Australia",
+      "Yes, add these on-time payments to my Westpac payment summary",
+      "Remind me in 90 days so I can ask Origin about my deposit",
       "Leave it as is",
       "Skip question"
     ],
-    "impact": "High Impact: Energy retailers in Australia hold deposits for thin-file customers. Proving 3 consecutive months of on-time banking history allows Westpac's AI to prompt you to reclaim your $250 deposit."
+    "impact": "Medium Impact: Your deposit is part of your agreement with Origin, so only you and Origin can change it. A clear on-time record from your Westpac history is something you can show them, or a future landlord or lender."
   },
   {
     "id": "qe_003",
-    "question": "You paid $250 upfront for a 365-day Optus prepaid SIM. Would you prefer switching to a postpaid mobile plan once your score is established?",
+    "question": "You paid $250 upfront for a 365-day Optus prepaid SIM. Want to set a little aside each month so big yearly payments like this are always covered?",
     "why_asking": "Why am I asking? On 22 Aug you made an upfront annual payment to Optus rather than taking out a standard monthly postpaid contract.",
     "related_transaction_ids": ["tx_e003", "tx_e071"],
     "answer_options": [
-      "Yes, I want a monthly phone plan once eligible",
-      "No, I prefer prepaid so I never overspend",
+      "Yes, start a Westpac savings goal of $21 a month for yearly bills",
+      "No, paying upfront works for me",
       "Skip question"
     ],
-    "impact": "Medium Impact: Postpaid telco contracts report positive repayment data to Australian credit bureaus under CCR. Once your credit footprint exists, postpaid plans can act as a secondary score builder."
+    "impact": "Low Impact: Your Optus plan is your choice and stays as it is. A small monthly saving means the next annual payment is already there when it is due."
   },
   {
     "id": "qe_004",

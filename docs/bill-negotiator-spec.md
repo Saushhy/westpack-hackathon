@@ -42,7 +42,7 @@ Contents, in order:
 3. `advice`, one short line, in the warning colour.
 4. A neutral source link when there is one (ACCC market band, or the customer's own provider).
 5. A verified line: `Westpac transaction history · 17 Nov 2026`.
-6. Actions: the primary button (**Set a reminder** / **Protect balance** / **Track this**),
+6. Actions: the primary button (**Set a reminder** / **Set up buffer** / **Track this**),
    then a **Dismiss** text button.
 
 ## 4. After acting
@@ -52,7 +52,7 @@ The card switches to a Done state with a short confirmation:
 | action_type | Done copy |
 |---|---|
 | `remind` | "Reminder set. Your next repayment should land on time." |
-| `protect` | "Protected balance set for Thu 19 Nov." |
+| `protect` | "Savings buffer set. $40 moves in on payday, ready for Thursday." |
 | `track` | "We're watching this and will report back." |
 
 Awards: `reminder_set` 100 XP / 60 coins, `protected_balance` 60 / 40, `insight_tracked`

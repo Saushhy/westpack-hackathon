@@ -116,6 +116,10 @@ What is converted:
 
 ## Demo click-path (550 → 870 XP, the egg hatches into the baby dragon)
 
+0. **Welcome** (first run only) → Let's start, a scan built from the real transactions,
+   then Carlos's five questions with "Why we ask" and the transactions behind each one.
+   Answering all five adds 125 XP and 50 coins. **Not now** skips straight to the app.
+   **Replay welcome** on the Dragon tab shows it again.
 1. **Score** → 612/1200 (Equifax), forecast 635 to 650, "Your goal: Car loan in 12 months",
    Afterpay and Zip with the next payment date, and "What moves your score" in a sheet.
 2. **On open** → the daily check-in lands and the seven-day goal completes: 550 XP, 330 coins.
