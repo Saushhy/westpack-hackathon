@@ -1,7 +1,7 @@
 # Credit Dragon: Idea Summary
 
-**Team:** [Team name]  |  **University:** Griffith University
-**Members:** Shawn, Carlos, Santiago, Naomi (add full names)
+**Team:** NCKS Solutions  |  **University:** Griffith University
+**Members:** Carlos Torres Palop, Shawn Datta, Santiago Parada, Naomi Numbabus
 **Theme:** AI and what it means for banking
 
 ## What we are trying to achieve
