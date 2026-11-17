@@ -67,17 +67,6 @@ function disc(label, text, opts) {
   </details>`;
 }
 
-/* A disclosure whose body is markup, not one sentence. */
-function discRaw(label, inner) {
-  return `<details class="gel-disc">
-    <summary class="gel-disc-row">
-      <span class="gel-disc-label">${label}</span>
-      <span class="gel-disc-icon">${ico("add-circle")}</span>
-    </summary>
-    <div class="gel-disc-body">${inner}</div>
-  </details>`;
-}
-
 /* The demo runs on one fixed day so every recording behaves the same. */
 const TODAY = bills.as_of;
 
@@ -566,22 +555,12 @@ function openInsight(id) {
       </div>
     </div>`;
 
-  /* What to do, then the proof on request. The finding, the evidence and the
-     provenance all sit inside one disclosure instead of filling the sheet. */
-  const proof = `
-    ${bill.finding ? `<p class="gel-disc-text" style="margin-top:0">${bill.finding}</p>` : ""}
-    ${bill.detail ? `<p class="gel-disc-text">${bill.detail}</p>` : ""}
-    ${evidenceRows(bill)}
-    <div class="gel-verified" style="margin-top:12px">
-      ${ico("check")}
-      ${
-        bill.verification
-          ? bill.verification.source + " · " + fmtDate(bill.verification.checked_at)
-          : "From your transactions"
-      }
-    </div>`;
-
+  /* What happened, then what to do about it, then where it came from. The
+     description is shown outright: no disclosure, no label to open. */
   const body = `
+    ${bill.finding ? `<p class="gel-lead">${bill.finding}</p>` : ""}
+    ${bill.detail ? `<p class="gel-detail">${bill.detail}</p>` : ""}
+    <div class="gel-evidence-card">${evidenceRows(bill)}</div>
     ${
       bill.advice
         ? `<div class="gel-callout">
@@ -590,8 +569,15 @@ function openInsight(id) {
            </div>`
         : ""
     }
-    ${discRaw("Dragon review", proof)}
-    ${sourceLink(bill)}`;
+    ${sourceLink(bill)}
+    <div class="gel-verified" style="margin-top:14px">
+      ${ico("check")}
+      ${
+        bill.verification
+          ? bill.verification.source + " · " + fmtDate(bill.verification.checked_at)
+          : "From your transactions"
+      }
+    </div>`;
 
   const actions = `
     <button class="gel-btn-primary gel-btn-block" type="button" onclick="actFromSheet('${bill.id}')">

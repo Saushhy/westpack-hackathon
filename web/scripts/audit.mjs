@@ -449,24 +449,9 @@ await page.waitForTimeout(900);
     /^Set a reminder so the next one is on time\.$/.test(sheet.callout)
   );
   check("No credit-scoring lecture in the sheet", "absent", /biggest thing in your score/i.test(sheet.body) ? "present" : "absent", !/biggest thing in your score/i.test(sheet.body));
-  check("Evidence sits behind one disclosure", "1", String(sheet.proofCount), sheet.proofCount === 1);
-  check("The disclosure speaks as the dragon", "Dragon review", sheet.proofLabel, sheet.proofLabel === "Dragon review");
-  check("And it starts closed", "0", String(sheet.proofOpen), sheet.proofOpen === 0);
-  check("Westpac source is inside it", "present", /Westpac transaction history/.test(sheet.textContent) ? "present" : "missing", /Westpac transaction history/.test(sheet.textContent));
-
-  await page.locator(".gel-sheet .gel-disc-row").click();
-  await page.waitForTimeout(350);
-  const proof = await page.evaluate(() => {
-    const d = document.querySelector(".gel-sheet .gel-disc");
-    return {
-      open: d.open,
-      rows: d.querySelectorAll(".gel-kv").length,
-      text: d.innerText.replace(/\s+/g, " ").trim()
-    };
-  });
-  check("Opening it reveals the evidence", "true", String(proof.open), proof.open === true);
-  check("Two evidence rows, not three", "2", String(proof.rows), proof.rows === 2);
-  check("The finding is stated there", "3 days late", proof.text, /3 days late/.test(proof.text));
+  check("The description is shown outright", "3 days late", sheet.body, /Paid 3 days late on 12 Oct\./.test(sheet.body));
+  check("No disclosure left in the sheet", "0", String(sheet.proofCount), sheet.proofCount === 0);
+  check("Westpac source is shown", "present", /Westpac transaction history/.test(sheet.body) ? "present" : "missing", /Westpac transaction history/.test(sheet.body));
 
   await page.locator(".gel-sheet-actions .gel-btn-primary").click();
   await page.waitForTimeout(350);
