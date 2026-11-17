@@ -362,6 +362,8 @@ await page.waitForTimeout(900);
       moneyTiles: document.querySelectorAll(".gel-found .gel-money-tile").length,
       statusRows: document.querySelectorAll(".gel-status-row").length,
       rowText: Array.from(document.querySelectorAll(".gel-bill--tap")).map((b) => b.innerText.replace(/\s+/g, " ").trim()).join(" | "),
+      tags: Array.from(document.querySelectorAll(".gel-bill--tap .gel-factor")).map((t) => t.textContent.trim()),
+      tagColours: new Set(Array.from(document.querySelectorAll(".gel-bill--tap .gel-factor")).map((t) => getComputedStyle(t).color)).size,
       body
     };
   });
@@ -376,12 +378,20 @@ await page.waitForTimeout(900);
   check("No closing prose under the summary", "absent", /Repayment history matters most/.test(ins.body) ? "present" : "absent", !/Repayment history matters most/.test(ins.body));
   check("Cards that need nothing share one card", "2 rows", String(ins.statusRows), ins.statusRows === 2);
   check("Accordions replaced by sheets", "0", String(ins.details), ins.details === 0);
-  check("Rows carry no extra text beyond the label", "clean", ins.rowText, !/Late|Bounced|Three services/.test(ins.rowText));
+  check("Rows carry the full description again", "present", /Late|Bounced|Three services/.test(ins.rowText) ? "present" : "missing", /Late|Bounced|Three services/.test(ins.rowText));
   check("Cash and fees are separated", "present", ins.body.includes("free up cash") && ins.body.includes("avoid a fee") ? "present" : "missing", ins.body.includes("free up cash") && ins.body.includes("avoid a fee"));
   check("Cash freed figure is shown", "$63.00", ins.body.includes("$63.00") ? "$63.00" : "missing", ins.body.includes("$63.00"));
   check("No 'switch provider' language", "clean", /switch to/i.test(ins.body) ? "switch" : "clean", !/switch to/i.test(ins.body));
   check("No competitor brand (Belong/Optus/Telstra)", "clean", /Belong|Optus|Telstra/i.test(ins.body) ? "found" : "clean", !/Belong|Optus|Telstra/i.test(ins.body));
   check("Rows stay one line of identity", "present", ins.rowText.length > 0 ? "present" : "missing", ins.rowText.length > 0);
+  check(
+    "Every row is tagged to one of the three counts",
+    "6 tags",
+    ins.tags.join(", "),
+    ins.tags.length === 6 && ins.tags.every((t) => /^(Score|Cash|Fee)$/i.test(t))
+  );
+  check("Tags use a colour each", "3", String(ins.tagColours), ins.tagColours === 3);
+  check("The tags are the factor chips", "6 chips", String(ins.factors), ins.factors === 6);
   check("No em or en dashes on screen", "clean", dashFree(ins.body) ? "clean" : "dash found", dashFree(ins.body));
 }
 
@@ -416,6 +426,7 @@ await page.waitForTimeout(900);
       callout: callout ? callout.innerText.trim() : "",
       proofOpen: s ? s.querySelectorAll(".gel-disc[open]").length : -1,
       proofCount: s ? s.querySelectorAll(".gel-disc").length : -1,
+      proofLabel: s?.querySelector(".gel-disc-label")?.textContent.trim() || "",
       textContent: s ? s.textContent : "",
       primaryFill: s
         ? getComputedStyle(s.querySelector(".gel-sheet-actions .gel-btn-primary")).backgroundColor
@@ -439,6 +450,7 @@ await page.waitForTimeout(900);
   );
   check("No credit-scoring lecture in the sheet", "absent", /biggest thing in your score/i.test(sheet.body) ? "present" : "absent", !/biggest thing in your score/i.test(sheet.body));
   check("Evidence sits behind one disclosure", "1", String(sheet.proofCount), sheet.proofCount === 1);
+  check("The disclosure speaks as the dragon", "Dragon review", sheet.proofLabel, sheet.proofLabel === "Dragon review");
   check("And it starts closed", "0", String(sheet.proofOpen), sheet.proofOpen === 0);
   check("Westpac source is inside it", "present", /Westpac transaction history/.test(sheet.textContent) ? "present" : "missing", /Westpac transaction history/.test(sheet.textContent));
 

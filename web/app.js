@@ -116,8 +116,9 @@ function adorn(bill) {
   return brandTile(bill.logo, BILL_ICON[bill.id] || "receipt");
 }
 
-/* The three-bucket label a change feeds: credit score / cash freed / fees avoided. */
-const FACTOR_LABEL = { cash: "Cash", fees: "Fees", credit: "Credit", none: "" };
+/* The tag word doubles as the label in the sheet header, and matches the three
+   counts in the summary exactly: affect your score / free up cash / avoid a fee. */
+const FACTOR_LABEL = { cash: "Cash", fees: "Fee", credit: "Score", none: "" };
 function factorChip(factor) {
   if (!factor || factor === "none") return "";
   return `<span class="gel-factor gel-factor--${factor}">${FACTOR_LABEL[factor] || factor}</span>`;
@@ -589,7 +590,7 @@ function openInsight(id) {
            </div>`
         : ""
     }
-    ${discRaw("How we know", proof)}
+    ${discRaw("Dragon review", proof)}
     ${sourceLink(bill)}`;
 
   const actions = `
@@ -630,21 +631,19 @@ function insightCard(bill) {
     ? `<span class="gel-money gel-money--sm">${fmtAUD(bill.current_amount)}</span>${moneyUnit(bill.billing_period)}`
     : "";
 
-  /* A bank row: what it is, what it costs, and a chevron. The provider, the
-     finding and the evidence all live in the sheet. */
+  /* The fuller card: logo, what it is, who provides it, the one line that
+     explains it, and the tag that ties it to the summary counts. */
   return `
     <article class="gel-cell gel-bill gel-bill--tap" data-bill="${bill.id}"
-             role="button" tabindex="0" aria-label="${bill.label}. Review."
+             role="button" tabindex="0" aria-label="${bill.label}. ${bill.finding || ""} Review."
              onclick="openInsight('${bill.id}')"
              onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openInsight('${
                bill.id
              }')}">
-      <div class="gel-bill-head">
-        ${adorn(bill)}
-        <div class="gel-cell-body">
-          <div class="gel-bill-title">${bill.label}</div>
-        </div>
-        <div class="gel-bill-amount">${amount}</div>
+      ${billHead(bill, amount)}
+      <div class="gel-tagline">
+        ${factorChip(bill.factor)}
+        <span class="gel-muted gel-tagline-text">${bill.finding || ""}</span>
         ${ico("arrow-right")}
       </div>
     </article>`;
@@ -668,15 +667,15 @@ function insightsSummary() {
       </div>
       <div class="gel-found-stats">
         <div class="gel-found-stat">
-          <span class="gel-found-num">${credit}</span>
+          <span class="gel-found-num gel-found-num--credit">${credit}</span>
           <span class="gel-found-label">affect your score</span>
         </div>
         <div class="gel-found-stat">
-          <span class="gel-found-num">${cash}</span>
+          <span class="gel-found-num gel-found-num--cash">${cash}</span>
           <span class="gel-found-label">free up cash</span>
         </div>
         <div class="gel-found-stat">
-          <span class="gel-found-num">${fees}</span>
+          <span class="gel-found-num gel-found-num--fees">${fees}</span>
           <span class="gel-found-label">avoid a fee</span>
         </div>
       </div>

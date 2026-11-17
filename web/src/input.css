@@ -1037,6 +1037,10 @@
     font-variant-numeric: tabular-nums;
   }
   .gel-found-label { font-size: 12px; color: var(--text-muted); line-height: 1.25; }
+  /* each count matches the tag colour used on the rows below */
+  .gel-found-num--credit { color: var(--text-hero); }
+  .gel-found-num--cash { color: var(--text-success); }
+  .gel-found-num--fees { color: var(--text-warning); }
 
   .gel-found-money { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
   .gel-money-tile {
