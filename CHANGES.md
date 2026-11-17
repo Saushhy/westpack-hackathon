@@ -116,6 +116,55 @@ live, and that no other provider is ever named.
 
 ---
 
+### Four personas, one app
+
+Carlos supplied mock data for four people: Mia (student, BNPL, late card), Marcus (sole
+trader, ATO, commercial enquiries), Elena (thin file, no credit history) and David ($35k of
+limits, wants a mortgage).
+
+- `web/tools/build-personas.js` converts `data/<name>_{transactions,questions,insights}.json`
+  into the schema this app already renders, and writes `personas.js` plus `marcus.html`,
+  `elena.html` and `david.html`, generated from `index.html` so the shell cannot drift.
+- Mia keeps her hand-authored data, because the demo and the audit are tuned against it.
+- **`bureau_explanation` is dropped.** That field is the CCR lecture the team asked us to
+  remove from the UI. The `summary` is what the Review sheet shows, followed by advice.
+- **`estimated_score_delta` and `projected_score_after_plan` are not shown as promises.** The
+  projection becomes a range with an assumption, same rule as Mia's forecast.
+- The plan is the same three goals for everyone and only the targets change, derived from
+  each person's `credit_repayment`, `late_payment` and `*_enquiry` flags. Mia's BNPL goals
+  stay, because she is the only person with BNPL.
+- State is scoped per persona, so the four demos never share XP.
+
+The Review sheet also lost the credit-scoring lecture and gained a `detail` paragraph, which
+is where a persona's own `summary` lands.
+
+### Credit accounts, with the institution's own logo
+
+The Score tab used to show BNPL only. It now lists **every credit facility the person
+actually repays**, because that is what a lender sees:
+
+| Person | Accounts |
+|---|---|
+| Mia | Westpac Credit Card (late), Afterpay, Zip |
+| Marcus | Westpac Credit Card (late), Toyota Finance loan, business overdraft |
+| Elena | none, which is the point of her persona |
+| David | Westpac Credit Card, Westpac Car Loan, ANZ |
+
+- Rows come from transaction flags, not a hand-written list: `bnpl`, `credit_repayment`,
+  `credit_facility`, `late_payment`. A bureau search (`*_enquiry`) is deliberately excluded,
+  because an enquiry is not an account.
+- Each row carries the institution's own mark on a white tile: the Westpac W for Westpac
+  products, fetched logos for Afterpay, Zip, Toyota, ANZ and Plenti. `fetch-logos.mjs` now
+  decodes BMP-only `.ico` files, which is how ANZ is served.
+- `monthly` is the average commitment over the transaction window, so the row reads
+  `$5,519/mo` for Marcus and `$91.67/mo` for Mia. The list sorts by it.
+- `status` drives a chip: amber **Late**, green **On time**.
+- Elena gets a written empty state instead of a blank list: "Nothing to repay yet. That is
+  why your file is thin, and why the first small limit matters."
+- Tapping any row opens the movements sheet filtered to that institution.
+
+Audit is now **140 assertions**, including the four persona pages.
+
 ## 4. What changed before that (v3)
 
 ### Deleted
@@ -144,7 +193,7 @@ live, and that no other provider is ever named.
 
 ---
 
-## 5. Where the data comes from
+## 7. Where the data comes from
 
 | Tier | Source | In the app |
 |---|---|---|

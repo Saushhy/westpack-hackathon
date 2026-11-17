@@ -27,6 +27,47 @@ window.DATA = {
       "goal": "Car loan in 12 months",
       "goal_date": "2027-11-17",
       "goal_note": "On track",
+      "accounts": [
+        {
+          "id": "acc_westpac_credit_card",
+          "name": "Westpac Credit Card",
+          "kind": "card",
+          "kind_label": "Credit card",
+          "logo": "assets/gel/wbc-logo.svg",
+          "match": "Westpac Credit Card",
+          "monthly": 40,
+          "payments": 3,
+          "status": "late",
+          "note": "3 days late in October",
+          "last": "2026-10-15"
+        },
+        {
+          "id": "acc_afterpay",
+          "name": "Afterpay",
+          "kind": "bnpl",
+          "kind_label": "Buy now, pay later",
+          "logo": "assets/brands/afterpay.png",
+          "match": "Afterpay",
+          "monthly": 91.67,
+          "payments": 7,
+          "status": "on_time",
+          "note": "2 plans open",
+          "last": "2026-11-14"
+        },
+        {
+          "id": "acc_zip",
+          "name": "Zip",
+          "kind": "bnpl",
+          "kind_label": "Buy now, pay later",
+          "logo": "assets/brands/zip.png",
+          "match": "Zip",
+          "monthly": 49.95,
+          "payments": 3,
+          "status": "on_time",
+          "note": "1 plan open",
+          "last": "2026-10-21"
+        }
+      ],
       "bnpl": {
         "providers": [
           {
@@ -515,28 +556,35 @@ window.DATA = {
         "label": "Repayment history",
         "impact": "biggest",
         "direction": "up",
-        "what": "Paying cards, loans and BNPL on time. This matters more than anything else."
+        "what": "Paying on time. It matters more than anything else."
       },
       {
         "id": "credit_enquiries",
         "label": "Credit enquiries",
         "impact": "small",
         "direction": "down",
-        "what": "Every application stays on your file for 12 months. Fewer is better."
+        "what": "Every application stays on file for 12 months."
       },
       {
         "id": "limits_debt",
         "label": "Limits and debt",
         "impact": "moderate",
         "direction": "down",
-        "what": "High limits and big balances read as risk to a lender."
+        "what": "High limits and balances read as risk."
       },
       {
         "id": "defaults",
         "label": "Defaults",
         "impact": "severe",
         "direction": "down",
-        "what": "Unpaid debts sent to collection stay on file for years."
+        "what": "Unpaid debts sent to collection stay for years."
+      },
+      {
+        "id": "bnpl",
+        "label": "Buy now, pay later",
+        "impact": "moderate",
+        "direction": "down",
+        "what": "Short term credit. Plans and missed instalments show on your file."
       }
     ],
     "starting_state": {

@@ -87,6 +87,33 @@ browser download. Edit the `EDGE` path in `scripts/*.mjs` if Edge lives elsewher
 > demo. They are trademarks of those companies and are used only to identify accounts Mia
 > already holds.
 
+## Four personas
+
+| Page | Persona | Data source |
+|---|---|---|
+| `index.html` | Mia, student with BNPL | hand-authored `data/bills.json` + `data/rewards.json` |
+| `marcus.html` | Marcus, sole trader | generated from `data/marcus_*.json` |
+| `elena.html` | Elena, thin credit file | generated from `data/elena_*.json` |
+| `david.html` | David, home buyer | generated from `data/david_*.json` |
+
+`npm run build:personas` reads Carlos's three files per person, converts them into the
+schema this app renders, and writes `personas.js` plus the three HTML pages (which are
+generated from `index.html`, so they cannot drift from the real shell).
+
+What is converted:
+
+- `credit_score` becomes the score panel. The single `projected_score_after_plan` is turned
+  into a **range** with a stated assumption, because nobody can promise points.
+- `key_insights` become the Insights cards. `bureau_explanation` is deliberately dropped: it
+  is the CCR lecture the team asked us to remove. The `summary` is shown in the sheet.
+- `recommended_goals` are not used as-is. The plan is the same three goals for everyone
+  (check in daily, pay every credit repayment on time, no new credit for 30 days), because
+  credit behaves the same way for everyone. Only the **targets** change, and they come from
+  each person's own transaction flags (`credit_repayment`, `late_payment`, `credit_enquiry`,
+  `commercial_enquiry`).
+- State is saved per persona (`credit-dragon:state:<name>`), so the four demos do not share
+  XP or coins.
+
 ## Demo click-path (550 → 870 XP, the egg hatches into the baby dragon)
 
 1. **Score** → 612/1200 (Equifax), forecast 635 to 650, "Your goal: Car loan in 12 months",

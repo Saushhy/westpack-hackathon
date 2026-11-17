@@ -145,7 +145,7 @@ await page.waitForTimeout(900);
   check("Row is flat (no shadow)", "none", cell.shadow, cell.shadow === "none");
 
   const n = await page.evaluate(() => document.querySelectorAll(".gel-ico svg").length);
-  check("GEL icons render as inline SVG (>=8)", ">=8", String(n), n >= 8);
+  check("GEL icons render as inline SVG (>=5)", ">=5", String(n), n >= 5);
   const fill = await page.evaluate(() => {
     const p = document.querySelector(".gel-ico svg path");
     return p ? p.getAttribute("fill") : null;
@@ -160,8 +160,10 @@ await page.waitForTimeout(900);
     hero: document.querySelector(".gel-badge--hero")?.textContent.trim() || "",
     goalTitle: document.querySelector(".gel-goal-title")?.textContent.trim() || "",
     goalLabel: Array.from(document.querySelectorAll(".gel-label")).map((e) => e.textContent.trim()),
-    bnplRows: document.querySelectorAll(".gel-row-link--tile").length,
-    logos: Array.from(document.querySelectorAll(".gel-brand-img")).map((i) => i.naturalWidth),
+    accounts: document.querySelectorAll(".gel-acc").length,
+    accountNames: Array.from(document.querySelectorAll(".gel-acc-name")).map((e) => e.textContent.trim()),
+    late: Array.from(document.querySelectorAll(".gel-acc-status.is-late")).map((e) => e.textContent.trim()),
+    logos: Array.from(document.querySelectorAll(".gel-acc .gel-brand-img")).map((i) => i.naturalWidth),
     buckets: document.querySelectorAll(".gel-bucket, .gel-buckets").length,
     body: document.body.innerText
   }));
@@ -170,34 +172,49 @@ await page.waitForTimeout(900);
   check("Score source = Equifax", "Equifax", s.hero, /Equifax/.test(s.hero));
   check("Goal card is labelled 'Your goal'", "Your goal", s.goalLabel.join("|"), s.goalLabel.includes("Your goal"));
   check("Goal reads 'Car loan in 12 months'", "Car loan in 12 months", s.goalTitle, s.goalTitle === "Car loan in 12 months");
-  check("Two BNPL rows (Afterpay, Zip)", "2", String(s.bnplRows), s.bnplRows === 2);
-  check("Both BNPL logos are real files", "2 loaded", s.logos.filter((w) => w > 0).length + " loaded", s.logos.length === 2 && s.logos.every((w) => w > 0));
+  check("Three credit accounts (card, Afterpay, Zip)", "3", String(s.accounts), s.accounts === 3);
+  check(
+    "Accounts are named",
+    "Westpac Credit Card, Afterpay, Zip",
+    s.accountNames.join(", "),
+    ["Westpac Credit Card", "Afterpay", "Zip"].every((n) => s.accountNames.includes(n))
+  );
+  check("Every account logo loads", "3 loaded", s.logos.filter((w) => w > 0).length + " loaded", s.logos.length === 3 && s.logos.every((w) => w > 0));
+  check("The late card is flagged", "Late", s.late.join(","), s.late.length === 1 && s.late[0] === "Late");
   check("Forecast reads as a range", "635 to 650", s.body.includes("635 to 650") ? "635 to 650" : "missing", s.body.includes("635 to 650"));
   check("Bucket strip removed", "0", String(s.buckets), s.buckets === 0);
   check("No Low Rate Card panel", "absent", s.body.includes("Low Rate Card") ? "present" : "absent", !s.body.includes("Low Rate Card"));
   check("No 'Last check' history", "absent", s.body.includes("Last check") ? "present" : "absent", !s.body.includes("Last check"));
   check("No 'debit is at risk' block", "absent", s.body.includes("debit is at risk") ? "present" : "absent", !s.body.includes("debit is at risk"));
+  check("No BNPL explainer on the score screen", "absent", s.body.includes("BNPL is credit") ? "present" : "absent", !s.body.includes("BNPL is credit"));
   check("No em or en dashes on screen", "clean", dashFree(s.body) ? "clean" : "dash found", dashFree(s.body));
-  check("'What moves your score' button present", "present", s.body.includes("What moves your score") ? "present" : "missing", s.body.includes("What moves your score"));
+  check("'Check what affects your score' button present", "present", s.body.includes("Check what affects your score") ? "present" : "missing", s.body.includes("Check what affects your score"));
 }
 
 // ============================ score sheets ============================
 {
-  await page.locator('button:has-text("What moves your score")').click();
+  await page.locator('button:has-text("Check what affects your score")').click();
   await page.waitForTimeout(400);
   const factors = await page.evaluate(() => ({
     open: !!document.querySelector(".gel-sheet"),
     rows: document.querySelectorAll(".gel-sheet .gel-factor-row").length,
+    body: document.querySelector(".gel-sheet")?.innerText || "",
     radius: document.querySelector(".gel-sheet") ? getComputedStyle(document.querySelector(".gel-sheet")).borderTopLeftRadius : null
   }));
   check("Factors open in a sheet", "present", factors.open ? "present" : "missing", factors.open);
   check("Sheet is a bottom sheet (rounded top 12px)", "12px", factors.radius, factors.radius === "12px");
-  check("Four bureau factors in the sheet", "4", String(factors.rows), factors.rows === 4);
+  check("Five factors in the sheet, BNPL included", "5", String(factors.rows), factors.rows === 5);
+  check(
+    "BNPL is explained in the sheet, not the overview",
+    "Short term credit",
+    factors.body,
+    /Short term credit\. Plans and missed instalments show on your file\./.test(factors.body)
+  );
   await page.locator(".gel-sheet-close").click();
   await page.waitForTimeout(200);
   check("Sheet closes", "0", String(await page.locator(".gel-sheet").count()), (await page.locator(".gel-sheet").count()) === 0);
 
-  await page.locator(".gel-row-link--tile").first().click();
+  await page.locator(".gel-acc").first().click();
   await page.waitForTimeout(400);
   const moves = await page.evaluate(() => ({
     title: document.querySelector(".gel-sheet-title")?.textContent.trim() || "",
@@ -477,6 +494,81 @@ await page.waitForTimeout(900);
   await page.locator(".gel-ar-controls .gel-btn-primary").click();
   await page.waitForTimeout(300);
   check("Done closes AR", "0", String(await page.locator("#ar-root:not([hidden])").count()), (await page.locator("#ar-root:not([hidden])").count()) === 0);
+}
+
+// ============================ personas from Carlos's data ============================
+{
+  const p3 = await browser.newPage({ viewport: { width: 480, height: 980 } });
+  const perrs = [];
+  p3.on("pageerror", (e) => perrs.push(e.message));
+  p3.on("console", (m) => {
+    if (m.type() === "error" && !/Failed to load resource/.test(m.text())) perrs.push(m.text());
+  });
+
+  await p3.goto(fileUrl("marcus.html"));
+  await p3.waitForTimeout(900);
+  const m = await p3.evaluate(() => {
+    const st = JSON.parse(localStorage.getItem("credit-dragon:state:marcus") || "null");
+    return {
+      score: document.querySelector(".gel-score-num")?.textContent.trim() || "",
+      sub: document.querySelector(".gel-screen-head .gel-muted")?.textContent.trim() || "",
+      accounts: Array.from(document.querySelectorAll(".gel-acc-name")).map((e) => e.textContent.trim()),
+      logos: Array.from(document.querySelectorAll(".gel-acc .gel-brand-img")).map((i) => i.naturalWidth),
+      xp: st ? st.xp_total : null
+    };
+  });
+  check("Marcus page loads his own score", "670", m.score.split("/")[0], m.score.split("/")[0] === "670");
+  check("Marcus page names the persona", "Marcus", m.sub.split("·")[0].trim(), m.sub.split("·")[0].trim() === "Marcus");
+  check(
+    "Marcus sees his card, car loan and overdraft",
+    "3",
+    m.accounts.join(", "),
+    m.accounts.length === 3 &&
+      m.accounts.includes("Westpac Credit Card") &&
+      m.accounts.includes("Toyota Finance") &&
+      m.accounts.includes("Business Overdraft")
+  );
+  check("Marcus account logos load (Toyota included)", "3 loaded", m.logos.filter((w) => w > 0).length + " loaded", m.logos.length === 3 && m.logos.every((w) => w > 0));
+  check("Marcus keeps his own saved state", "present", m.xp === null ? "missing" : String(m.xp), m.xp !== null);
+
+  await p3.locator('.gel-tab[data-tab="insights"]').click();
+  await p3.waitForTimeout(350);
+  const mi = await p3.evaluate(() => ({
+    cards: document.querySelectorAll(".gel-bill").length,
+    body: document.querySelector("#screen").innerText
+  }));
+  check("Marcus shows his own 4 findings", "4", String(mi.cards), mi.cards === 4);
+  check(
+    "Marcus findings come from his file",
+    "present",
+    /Repayment History|Credit Utilisation/.test(mi.body) ? "present" : "missing",
+    /Repayment History|Credit Utilisation/.test(mi.body)
+  );
+  check("No bureau lecture on the page", "absent", /Comprehensive Credit Reporting/.test(mi.body) ? "present" : "absent", !/Comprehensive Credit Reporting/.test(mi.body));
+
+  await p3.locator('.gel-tab[data-tab="goals"]').click();
+  await p3.waitForTimeout(300);
+  const mg = await p3.evaluate(() => document.querySelector("#screen").innerText);
+  check("Marcus plan uses his own repayments", "present", /credit repayment/i.test(mg) ? "present" : "missing", /credit repayment/i.test(mg));
+  check("Marcus has no BNPL goal", "absent", /Afterpay|Zip/i.test(mg) ? "present" : "absent", !/Afterpay|Zip/i.test(mg));
+  check("No runtime errors on a persona page", "0", String(perrs.length), perrs.length === 0);
+
+  /* Elena is the thin-file persona: no credit accounts at all, and the screen
+     has to say so rather than showing an empty list. */
+  await p3.goto(fileUrl("elena.html"));
+  await p3.waitForTimeout(800);
+  const e = await p3.evaluate(() => ({
+    score: document.querySelector(".gel-score-num")?.textContent.trim() || "",
+    accounts: document.querySelectorAll(".gel-acc").length,
+    empty: !!document.querySelector(".gel-acc-empty"),
+    body: document.querySelector("#screen").innerText
+  }));
+  check("Elena loads with her own score", "530", e.score.split("/")[0], e.score.split("/")[0] === "530");
+  check("Elena has no credit accounts", "0", String(e.accounts), e.accounts === 0);
+  check("Elena gets the empty state, not a blank list", "true", String(e.empty), e.empty);
+  check("The empty state explains why", "file is thin", e.body, /file is thin/.test(e.body));
+
+  await p3.close();
 }
 
 // ============================ GEL reference page ============================

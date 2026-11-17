@@ -1,7 +1,13 @@
 "use strict";
 
-const { bills, rewards } = window.DATA;
-const LS_KEY = "credit-dragon:state";
+/* A persona page sets data-persona on <body>. index.html is Mia, whose data is
+   hand-authored in data/bills.json. The other pages load personas.js, generated
+   from Carlos's mock data. */
+const PERSONA = (document.body.dataset.persona || "").toLowerCase();
+const PACK = (PERSONA && window.PERSONAS && window.PERSONAS[PERSONA]) || null;
+const { bills, rewards } = PACK || window.DATA;
+const TX = (PACK && PACK.transactions) || (window.DATA && window.DATA.transactions) || [];
+const LS_KEY = "credit-dragon:state" + (PACK ? ":" + PERSONA : "");
 const STATE_VERSION = 2;
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -549,6 +555,7 @@ function openInsight(id) {
       <span class="gel-evidence-eyebrow">What we saw</span>
       ${evidenceRows(bill)}
     </div>
+    ${bill.detail ? `<p class="gel-detail">${bill.detail}</p>` : ""}
     ${
       bill.advice
         ? `<div class="gel-callout">
@@ -707,9 +714,9 @@ const monthLabel = (ym) =>
 
 function movementsFor(match) {
   const re = new RegExp(match, "i");
-  return ((window.DATA && window.DATA.transactions) || [])
-    .filter((t) => re.test(t.merchant || "") || re.test(t.description || ""))
-    .sort((a, b) => (a.date < b.date ? 1 : -1));
+  return TX.filter((t) => re.test(t.merchant || "") || re.test(t.description || "")).sort((a, b) =>
+    a.date < b.date ? 1 : -1
+  );
 }
 
 function openMovements(name, match) {
@@ -792,14 +799,35 @@ function daysSinceNewFacility() {
   return Math.max(0, Math.round(ms / 86400000));
 }
 
+/* Persona goals read flags from that person's own transactions, so the same
+   three goals work for a student with BNPL and a business owner with an ATO
+   bill. */
+function onTimeRepayments() {
+  const repay = TX.filter((t) => (t.flags || []).includes("credit_repayment"));
+  return repay.filter((t) => !(t.flags || []).includes("late_payment")).length;
+}
+
+function daysSinceLastEnquiry() {
+  const rows = TX.filter((t) => (t.flags || []).some((f) => /enquiry/i.test(f)));
+  if (!rows.length) return 999; // no applications at all: nothing to wait out
+  const last = rows.map((t) => t.date).sort().pop();
+  return Math.max(
+    0,
+    Math.round((new Date(TODAY + "T00:00:00") - new Date(last + "T00:00:00")) / 86400000)
+  );
+}
+
 function goalValue(g) {
   if (g.source === "checkin") return checkinsInWindow();
   if (g.source === "bnpl_on_time") return bnplPaidOnTime();
   if (g.source === "no_new_bnpl") return daysSinceNewFacility();
+  if (g.source === "on_time") return onTimeRepayments();
+  if (g.source === "no_new_credit") return daysSinceLastEnquiry();
   return 0;
 }
 
-const goalPct = (g) => Math.min(100, (goalValue(g) / g.target) * 100);const goalDone = (g) => state.goals[g.id]?.status === "completed";
+const goalPct = (g) => Math.min(100, (goalValue(g) / g.target) * 100);
+const goalDone = (g) => state.goals[g.id]?.status === "completed";
 
 /* Called after any award and once at boot: a goal completes itself, and the
    XP follows it. Returns the award results so the caller can celebrate. */
@@ -858,20 +886,63 @@ function renderGoals() {
    history. The detail lives in a sheet so the screen stays calm.
    ========================================================================== */
 
-function bnplRow(p) {
+/* ---------- credit accounts ----------
+   Cards, BNPL and loans, straight from the transaction file. The logo is the
+   institution's own mark; without one the tile falls back to a GEL icon. */
+const fmtMoneyShort = (n) =>
+  n >= 1000 ? "$" + Math.round(n).toLocaleString("en-AU") : fmtAUD(n);
+
+function accountRow(a) {
+  const late = a.status === "late";
+  const icon = a.kind === "card" ? "card" : a.kind === "bnpl" ? "shopping-bag" : "house";
   return `
-    <button class="gel-row-link gel-row-link--tile" type="button"
-            onclick="openMovements('${p.name}', '${p.match}')">
-      <span class="gel-adorn gel-adorn--brand">
-        <img class="gel-brand-img" src="${p.logo}" alt="" loading="lazy"
-             data-icon="shopping-bag" onerror="brandFallback(this)">
-      </span>
+    <button class="gel-acc" type="button" onclick="openMovements('${a.name}', '${a.match}')">
+      ${
+        a.logo
+          ? `<span class="gel-adorn gel-adorn--brand">
+               <img class="gel-brand-img" src="${a.logo}" alt="" loading="lazy"
+                    data-icon="${icon}" onerror="brandFallback(this)">
+             </span>`
+          : `<span class="gel-adorn">${ico(icon)}</span>`
+      }
       <span class="gel-cell-body">
-        <span class="gel-move-name">${p.name}</span>
-        <span class="gel-muted">Next payment ${fmtAUD(p.amount_due)} on ${fmtDate(p.next_due)}</span>
+        <span class="gel-acc-name">${a.name}</span>
+        <span class="gel-acc-kind">${a.kind_label} · ${a.note}</span>
       </span>
-      ${ico("arrow-right")}
+      <span class="gel-acc-end">
+        <span class="gel-acc-amount">${fmtMoneyShort(a.monthly)}<span class="gel-acc-unit">/mo</span></span>
+        <span class="gel-acc-status ${late ? "is-late" : "is-ok"}">${late ? "Late" : "On time"}</span>
+      </span>
     </button>`;
+}
+
+function creditAccounts(cf) {
+  const accounts = cf.accounts || [];
+  if (!accounts.length) {
+    return `
+      <section class="gel-cell">
+        <div class="gel-row-between">
+          <span class="gel-label">Credit accounts</span>
+          <span class="gel-badge gel-badge--faint">None</span>
+        </div>
+        <div class="gel-acc-empty">
+          ${ico("card")}
+          <p class="gel-acc-empty-text">Nothing to repay yet. That is why your file is thin, and why the first small limit matters.</p>
+        </div>
+      </section>`;
+  }
+  return `
+    <section class="gel-cell">
+      <div class="gel-row-between">
+        <span class="gel-label">Credit accounts</span>
+        <span class="gel-badge gel-badge--faint">${accounts.length} open</span>
+      </div>
+      <div style="margin-top:6px">${accounts
+        .slice()
+        .sort((a, b) => b.monthly - a.monthly)
+        .map(accountRow)
+        .join("")}</div>
+    </section>`;
 }
 
 function openFactors() {
@@ -894,7 +965,7 @@ function openFactors() {
     '<p class="gel-note">Direction only. Nobody can promise you points.</p>';
 
   openSheet({
-    title: "What moves your score",
+    title: "What affects your score",
     body,
     actions: '<button class="gel-btn-ghost" type="button" onclick="closeSheet()">Close</button>'
   });
@@ -904,14 +975,14 @@ function renderScore() {
   const score = bills.score || {};
   const cf = bills.credit_file || {};
   const forecast = score.forecast || {};
-  const bnpl = cf.bnpl || {};
-  const providers = bnpl.providers || [];
 
   return `
     <div class="gel-screen-head">
       <div>
         <h1 class="gel-title">Your score</h1>
-        <p class="gel-muted">${score.consent ? "Shared with your consent" : ""}</p>
+        <p class="gel-muted">${[bills.persona, score.band, "Shared with your consent"]
+          .filter(Boolean)
+          .join(" · ")}</p>
       </div>
       <span class="gel-badge gel-badge--hero">${score.source || "Equifax"}</span>
     </div>
@@ -944,17 +1015,10 @@ function renderScore() {
       </div>
     </article>
 
-    <section class="gel-cell">
-      <div class="gel-row-between">
-        <span class="gel-label">Credit you don't see</span>
-        <span class="gel-badge gel-badge--faint">${bnpl.active_facilities || 0} plans</span>
-      </div>
-      <div style="margin-top:6px">${providers.map(bnplRow).join("")}</div>
-      <p class="gel-note" style="margin-top:10px">${bnpl.note || ""}</p>
-    </section>
+    ${creditAccounts(cf)}
 
     <button class="gel-btn-ghost gel-btn-block" type="button" onclick="openFactors()">
-      What moves your score ${ico("arrow-right")}
+      Check what affects your score ${ico("arrow-right")}
     </button>`;
 }
 

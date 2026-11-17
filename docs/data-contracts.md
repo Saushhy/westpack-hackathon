@@ -35,6 +35,17 @@ There is deliberately no forecast history in the UI.
 
 ### 1b. `credit_file`
 
+- `accounts[]`: every credit facility the person actually repays, for all four personas.
+  `{ id, name, kind, kind_label, logo, match, monthly, payments, status, note, last }`.
+  - `kind` is `bnpl` / `card` / `loan` / `facility`.
+  - `status` is `late` / `on_time`, which drives the chip in the row.
+  - `monthly` is the average monthly commitment across the transaction window.
+  - `match` finds that institution's rows in the transaction file, so tapping the row opens
+    the movements sheet.
+  - `logo` is the institution's own mark from `web/assets/brands/`, or
+    `assets/gel/wbc-logo.svg` for Westpac products.
+  - A bureau search (`*_enquiry`) is **not** an account. Only `bnpl`, `credit_repayment`,
+    `credit_facility` and `late_payment` rows become one.
 - `goal` / `goal_date` / `goal_note`: "Car loan in 12 months", 2027-11-17, "On track".
 - `bnpl.providers[]`: `{ name, logo, match, plans, instalments_left, next_due, amount_due,
   paid_on_time, instalments_cycle }`.
@@ -140,7 +151,31 @@ Top level: `version`, `currency`, `credit_factors[]`, `starting_state`, `actions
 
 ---
 
-## 4. Known mismatches to reconcile as a team
+## 5. Persona pages
+
+Carlos owns `data/<name>_{transactions,questions,insights}.json` for four people: mia,
+marcus, elena, david. `web/tools/build-personas.js` converts each into the schema above and
+writes `web/personas.js` plus one HTML page per persona. Mia's `index.html` keeps her
+hand-authored data; the other three run entirely from Carlos's files.
+
+| Carlos's field | Becomes | Notes |
+|---|---|---|
+| `credit_score.current_score` / `scale_max` | `score.value` / `score.max` | `current_band` is shown next to the name. |
+| `credit_score.projected_score_after_plan` | `score.forecast.range` | Converted to a **range** (60% of the way to projected, up to projected) with a stated assumption. A single promised number is not used. |
+| `key_insights[].title` | `bills[].finding` | The short line on the card. |
+| `key_insights[].summary` | `bills[].detail` | Shown in the Review sheet under the evidence. |
+| `key_insights[].bureau_explanation` | **dropped** | It is the CCR lecture the team asked us to remove. |
+| `key_insights[].category` | `bills[].label` + `factor` | Mapped to credit / cash / fees. |
+| `key_insights[].related_transaction_ids` | `evidence[]`, `detected_from` | Up to three real transactions per finding. |
+| `key_insights[].severity` | `bills[].severity` | Carried for later, not rendered yet. |
+| `recommended_goals[]` | **not used** | The plan is the same three behavioural goals for everyone; only targets differ. |
+| transactions with `credit_repayment` | `goal_on_time` target | Value = repayments without `late_payment`. |
+| transactions with `credit_enquiry` / `commercial_enquiry` | `goal_no_new_credit` | Days since the last one. |
+
+Goal sources the engine understands: `checkin`, `bnpl_on_time`, `no_new_bnpl` (Mia's
+authored data) and `on_time`, `no_new_credit` (generated personas).
+
+## 6. Known mismatches to reconcile as a team
 
 1. **Carlos's files** sit at the repo root. `web/tools/build-data.js` reads
    `data/transactions.json` first and falls back to `mia_transactions.json`, so he can move

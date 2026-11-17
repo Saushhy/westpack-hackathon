@@ -21,6 +21,47 @@
     "goal": "Car loan in 12 months",
     "goal_date": "2027-11-17",
     "goal_note": "On track",
+    "accounts": [
+      {
+        "id": "acc_westpac_credit_card",
+        "name": "Westpac Credit Card",
+        "kind": "card",
+        "kind_label": "Credit card",
+        "logo": "assets/gel/wbc-logo.svg",
+        "match": "Westpac Credit Card",
+        "monthly": 40,
+        "payments": 3,
+        "status": "late",
+        "note": "3 days late in October",
+        "last": "2026-10-15"
+      },
+      {
+        "id": "acc_afterpay",
+        "name": "Afterpay",
+        "kind": "bnpl",
+        "kind_label": "Buy now, pay later",
+        "logo": "assets/brands/afterpay.png",
+        "match": "Afterpay",
+        "monthly": 91.67,
+        "payments": 7,
+        "status": "on_time",
+        "note": "2 plans open",
+        "last": "2026-11-14"
+      },
+      {
+        "id": "acc_zip",
+        "name": "Zip",
+        "kind": "bnpl",
+        "kind_label": "Buy now, pay later",
+        "logo": "assets/brands/zip.png",
+        "match": "Zip",
+        "monthly": 49.95,
+        "payments": 3,
+        "status": "on_time",
+        "note": "1 plan open",
+        "last": "2026-10-21"
+      }
+    ],
     "bnpl": {
       "providers": [
         {

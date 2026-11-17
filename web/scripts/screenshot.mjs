@@ -62,13 +62,13 @@ await tab("goals");
 await shot("03-goals");
 
 await tab("score");
-await page.locator(".gel-row-link--tile").first().click();
+await page.locator(".gel-acc").first().click();
 await page.waitForTimeout(500);
 await shot("04-movements");
 await page.keyboard.press("Escape");
 await page.waitForTimeout(220);
 
-await page.locator('button:has-text("What moves your score")').click();
+await page.locator('button:has-text("Check what affects your score")').click();
 await page.waitForTimeout(500);
 await shot("05-factors");
 await page.keyboard.press("Escape");
@@ -113,6 +113,22 @@ await page.waitForTimeout(1500);
 await shot("11-ar");
 await page.locator(".gel-ar-controls .gel-btn-primary").click();
 await page.waitForTimeout(200);
+
+// ---------- the other three personas, generated from Carlos's data ----------
+let personaShot = 12;
+for (const name of ["marcus", "elena", "david"]) {
+  const pp = await browser.newPage({ viewport: { width: 480, height: 980 } });
+  await pp.goto(fileUrl(name + ".html"));
+  await pp.waitForTimeout(900);
+  const ph = pp.locator(".phone");
+  await ph.screenshot({ path: join(OUT, personaShot + "-" + name + "-score.png") });
+  await pp.locator('.gel-tab[data-tab="insights"]').click();
+  await pp.waitForTimeout(350);
+  await ph.screenshot({ path: join(OUT, personaShot + "-" + name + "-insights.png") });
+  await pp.close();
+  console.log("saved", personaShot + "-" + name + "-score.png and -insights.png");
+  personaShot++;
+}
 
 await browser.close();
 console.log("shots written to", OUT);
