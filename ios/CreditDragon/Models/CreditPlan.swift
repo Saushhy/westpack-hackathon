@@ -6,14 +6,9 @@ struct CreditGoal: Identifiable, Codable {
     let description: String
     let xpReward: Int
     let coinReward: Int
-    let category: GoalCategory
-
-    enum GoalCategory: String, Codable {
-        case repayment, spending, bills
-    }
 
     enum CodingKeys: String, CodingKey {
-        case id, title, description, category
+        case id, title, description
         case xpReward = "xp_reward"
         case coinReward = "coin_reward"
     }

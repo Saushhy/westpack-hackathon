@@ -2,7 +2,6 @@ import SwiftUI
 
 struct BillNegotiatorView: View {
     @EnvironmentObject var appState: AppState
-    @State private var showConfirmation = false
     @State private var confirmedBill: Bill?
 
     private let bills = DataLoader.bills
@@ -37,10 +36,7 @@ struct BillNegotiatorView: View {
                     BillCard(
                         bill: bill,
                         isSwitched: appState.switchedBills.contains(bill.id),
-                        onSwitch: {
-                            confirmedBill = bill
-                            showConfirmation = true
-                        }
+                        onSwitch: { confirmedBill = bill }
                     )
                     .padding(.horizontal, WestpacSpace.x3)
                 }
@@ -48,12 +44,12 @@ struct BillNegotiatorView: View {
             .padding(.bottom, WestpacSpace.x5)
         }
         .background(Color.wbcBackgroundPale)
-        .sheet(isPresented: $showConfirmation) {
-            if let bill = confirmedBill {
-                SwitchConfirmationView(bill: bill) {
-                    appState.switchBill(bill)
-                    showConfirmation = false
-                }
+        // sheet(item:) rather than sheet(isPresented:) — the latter builds its body
+        // before confirmedBill propagates and presents an empty sheet.
+        .sheet(item: $confirmedBill) { bill in
+            SwitchConfirmationView(bill: bill) {
+                appState.switchBill(bill)
+                confirmedBill = nil
             }
         }
     }
@@ -285,9 +281,11 @@ struct SwitchConfirmationView: View {
                 .font(WestpacFont.heading(WestpacType.s8))
                 .foregroundColor(.wbcSuccess)
 
-            Text("+30 XP  ·  +10 coins")
-                .font(WestpacFont.body(WestpacType.s10, weight: .semibold))
-                .foregroundColor(.wbcDance)
+            if let reward = RewardsData.shared.action(.billSwitch) {
+                Text("+\(reward.xp ?? 0) XP  ·  +\(reward.coins ?? 0) coins")
+                    .font(WestpacFont.body(WestpacType.s10, weight: .semibold))
+                    .foregroundColor(.wbcDance)
+            }
 
             Button {
                 onConfirm()

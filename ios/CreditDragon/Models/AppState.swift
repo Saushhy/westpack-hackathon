@@ -25,19 +25,22 @@ class AppState: ObservableObject {
     @Published var answeredQuestions: [String: String] = [:]
     @Published var totalMonthlySavings: Double = 0
 
+    /// Set when an action evolves the dragon, so the UI can celebrate it.
+    @Published var justEvolvedTo: DragonStage?
+
     func completeGoal(_ goal: CreditGoal) {
         guard !completedGoals.contains(goal.id) else { return }
         completedGoals.insert(goal.id)
-        dragon.addXP(goal.xpReward)
         dragon.addCoins(goal.coinReward)
+        let evolved = dragon.addXP(goal.xpReward)
         creditScore.current = min(creditScore.current + 15, creditScore.potential)
+        if evolved { justEvolvedTo = dragon.stage }
     }
 
     func switchBill(_ bill: Bill) {
         guard !switchedBills.contains(bill.id) else { return }
         switchedBills.insert(bill.id)
         totalMonthlySavings += bill.monthlySaving
-        dragon.addXP(30)
-        dragon.addCoins(10)
+        if dragon.award(.billSwitch) { justEvolvedTo = dragon.stage }
     }
 }

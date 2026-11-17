@@ -3,22 +3,21 @@ import Foundation
 enum DragonStage: String, Codable, CaseIterable {
     case egg, baby, teen, adult
 
-    var displayName: String {
-        switch self {
-        case .egg: return "Egg"
-        case .baby: return "Baby Dragon"
-        case .teen: return "Teen Dragon"
-        case .adult: return "Adult Dragon"
-        }
+    private var spec: Rewards.Stage? {
+        RewardsData.shared.stages.first { $0.id == rawValue }
     }
 
+    var displayName: String {
+        spec?.name ?? rawValue.capitalized
+    }
+
+    var emoji: String {
+        spec?.emoji ?? "🥚"
+    }
+
+    /// From `rewards.json`: egg 0 → baby 250 → teen 800 → adult 1500.
     var xpThreshold: Int {
-        switch self {
-        case .egg: return 0
-        case .baby: return 100
-        case .teen: return 350
-        case .adult: return 700
-        }
+        spec?.xpRequired ?? 0
     }
 
     var nextStage: DragonStage? {
@@ -28,6 +27,10 @@ enum DragonStage: String, Codable, CaseIterable {
         case .teen: return .adult
         case .adult: return nil
         }
+    }
+
+    static func forXP(_ xp: Int) -> DragonStage {
+        allCases.last { xp >= $0.xpThreshold } ?? .egg
     }
 }
 
@@ -41,37 +44,71 @@ struct ShopItem: Identifiable, Codable {
 
 class DragonState: ObservableObject {
     @Published var name: String = "Sparky"
-    @Published var xp: Int = 0
-    @Published var coins: Int = 0
-    @Published var stage: DragonStage = .egg
+    @Published var xp: Int
+    @Published var coins: Int
+    @Published var stage: DragonStage
+    @Published var streakWeeks: Int
     @Published var ownedItems: [String] = []
 
-    private static let levelCurve = [0, 100, 250, 450, 700, 1000, 1350, 1750, 2200, 2700]
-
-    var level: Int {
-        var lvl = 1
-        for (i, threshold) in Self.levelCurve.enumerated() {
-            if xp >= threshold { lvl = i + 1 }
-        }
-        return lvl
+    init() {
+        let start = RewardsData.shared.startingState
+        xp = start.xpTotal
+        coins = start.coins
+        streakWeeks = start.streakWeeks
+        stage = DragonStage.forXP(start.xpTotal)
     }
 
+    /// From `rewards.json`: 0/100/250/450/700/1000/1350/1750/2200/2700.
+    var level: Int {
+        RewardsData.shared.levels
+            .filter { xp >= $0.xpRequired }
+            .map(\.level)
+            .max() ?? 1
+    }
+
+    var nextLevelXP: Int? {
+        RewardsData.shared.levels
+            .first { $0.xpRequired > xp }?
+            .xpRequired
+    }
+
+    /// Progress toward the next level, not the next evolution.
     var xpProgress: Double {
+        let levels = RewardsData.shared.levels
+        guard let next = nextLevelXP else { return 1.0 }
+        let current = levels.filter { xp >= $0.xpRequired }.map(\.xpRequired).max() ?? 0
+        let span = next - current
+        guard span > 0 else { return 1.0 }
+        return Double(xp - current) / Double(span)
+    }
+
+    var evolutionProgress: Double {
         guard let next = stage.nextStage else { return 1.0 }
         let current = stage.xpThreshold
-        let needed = next.xpThreshold - current
-        return Double(xp - current) / Double(needed)
+        let span = next.xpThreshold - current
+        guard span > 0 else { return 1.0 }
+        return min(1.0, max(0.0, Double(xp - current) / Double(span)))
     }
 
-    func addXP(_ amount: Int) {
+    /// Returns true when the dragon evolved, so the UI can celebrate it.
+    @discardableResult
+    func addXP(_ amount: Int) -> Bool {
+        let before = stage
         xp += amount
-        while let next = stage.nextStage, xp >= next.xpThreshold {
-            stage = next
-        }
+        stage = DragonStage.forXP(xp)
+        return stage != before
     }
 
     func addCoins(_ amount: Int) {
         coins += amount
+    }
+
+    /// Applies a reward from the contract. Returns true if the dragon evolved.
+    @discardableResult
+    func award(_ action: RewardAction) -> Bool {
+        guard let spec = RewardsData.shared.action(action) else { return false }
+        addCoins(spec.coins ?? 0)
+        return addXP(spec.xp ?? 0)
     }
 
     func buyItem(_ item: ShopItem) -> Bool {
@@ -81,12 +118,9 @@ class DragonState: ObservableObject {
         return true
     }
 
-    static let shopItems: [ShopItem] = [
-        ShopItem(id: "hat_top", name: "Top Hat", emoji: "🎩", price: 50, description: "A classy top hat"),
-        ShopItem(id: "food_steak", name: "Dragon Steak", emoji: "🥩", price: 30, description: "Boosts dragon energy"),
-        ShopItem(id: "lair_cave", name: "Crystal Cave", emoji: "🏔️", price: 100, description: "A sparkling home"),
-        ShopItem(id: "toy_ball", name: "Fire Ball", emoji: "🔥", price: 20, description: "Play fetch with fire"),
-        ShopItem(id: "armor_gold", name: "Gold Armor", emoji: "🛡️", price: 80, description: "Shiny protection"),
-        ShopItem(id: "wing_boost", name: "Wing Polish", emoji: "✨", price: 40, description: "Extra sparkle on wings"),
-    ]
+    static var shopItems: [ShopItem] {
+        RewardsData.shared.shop.map {
+            ShopItem(id: $0.id, name: $0.name, emoji: $0.emoji, price: $0.cost, description: $0.description)
+        }
+    }
 }

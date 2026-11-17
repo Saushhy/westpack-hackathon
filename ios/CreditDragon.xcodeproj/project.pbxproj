@@ -30,7 +30,10 @@
 		A10021 /* questions.json in Resources */ = {isa = PBXBuildFile; fileRef = B10021; };
 		A10022 /* bills.json in Resources */ = {isa = PBXBuildFile; fileRef = B10022; };
 		A10023 /* insights.json in Resources */ = {isa = PBXBuildFile; fileRef = B10023; };
-		A10024 /* goals.json in Resources */ = {isa = PBXBuildFile; fileRef = B10024; };
+		A10026 /* rewards.json in Resources */ = {isa = PBXBuildFile; fileRef = B10026; };
+		A10028 /* westpac_dragon.usdz in Resources */ = {isa = PBXBuildFile; fileRef = B10028; };
+		A10027 /* Rewards.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10027; };
+		A10029 /* DragonModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10029; };
 		A10025 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10025; };
 /* End PBXBuildFile section */
 
@@ -59,7 +62,10 @@
 		B10021 /* questions.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = questions.json; sourceTree = "<group>"; };
 		B10022 /* bills.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = bills.json; sourceTree = "<group>"; };
 		B10023 /* insights.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = insights.json; sourceTree = "<group>"; };
-		B10024 /* goals.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = goals.json; sourceTree = "<group>"; };
+		B10026 /* rewards.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = rewards.json; sourceTree = "<group>"; };
+		B10028 /* westpac_dragon.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = westpac_dragon.usdz; sourceTree = "<group>"; };
+		B10027 /* Rewards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Rewards.swift; sourceTree = "<group>"; };
+		B10029 /* DragonModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DragonModel.swift; sourceTree = "<group>"; };
 		PROD00 /* CreditDragon.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CreditDragon.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -130,6 +136,7 @@
 				B10007,
 				B10008,
 				B10009,
+				B10027,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -142,7 +149,8 @@
 				B10021,
 				B10022,
 				B10023,
-				B10024,
+				B10026,
+				B10028,
 			);
 			path = Data;
 			sourceTree = "<group>";
@@ -208,6 +216,7 @@
 			isa = PBXGroup;
 			children = (
 				B10017,
+				B10029,
 			);
 			path = AR;
 			sourceTree = "<group>";
@@ -288,7 +297,8 @@
 				A10021 /* questions.json in Resources */,
 				A10022 /* bills.json in Resources */,
 				A10023 /* insights.json in Resources */,
-				A10024 /* goals.json in Resources */,
+				A10026 /* rewards.json in Resources */,
+				A10028 /* westpac_dragon.usdz in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -319,6 +329,8 @@
 				A10018,
 				A10019,
 				A10025,
+				A10027,
+				A10029,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

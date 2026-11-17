@@ -54,7 +54,7 @@ struct DragonHomeView: View {
                 .font(WestpacFont.heading(WestpacType.s7))
                 .foregroundColor(.wbcTextHeading)
 
-            Text("Level \(dragon.level) · \(dragon.xp) XP · 3-week streak")
+            Text("Level \(dragon.level) · \(dragon.xp) XP · \(dragon.streakWeeks)-week streak")
                 .font(WestpacFont.body(WestpacType.s10))
                 .foregroundColor(.wbcTextMuted)
 
@@ -71,15 +71,15 @@ struct DragonHomeView: View {
                     .font(WestpacFont.body(WestpacType.s10))
                     .foregroundColor(.wbcTextMuted)
                 Spacer()
-                Text(dragon.stage.nextStage != nil ? "Level \(dragon.level + 1)" : "Max level")
+                Text(dragon.nextLevelXP != nil ? "Level \(dragon.level + 1)" : "Max level")
                     .font(WestpacFont.body(WestpacType.s10))
                     .foregroundColor(.wbcTextMuted)
             }
 
             WestpacProgressBar.skinny(value: dragon.xpProgress)
 
-            if let next = dragon.stage.nextStage {
-                Text("\(next.xpThreshold - dragon.xp) XP to level up")
+            if let next = dragon.nextLevelXP {
+                Text("\(next - dragon.xp) XP to level up")
                     .font(WestpacFont.body(WestpacType.s10))
                     .foregroundColor(.wbcTextMuted)
             }
@@ -115,7 +115,7 @@ struct DragonHomeView: View {
             }
             .padding(.vertical, WestpacSpace.x05)
 
-            WestpacProgressBar.skinny(value: evolutionProgress)
+            WestpacProgressBar.skinny(value: dragon.evolutionProgress)
 
             Text(dragon.stage.nextStage.map { "\($0.xpThreshold - dragon.xp) XP to evolve" } ?? "Fully grown")
                 .font(WestpacFont.body(WestpacType.s10))
@@ -124,24 +124,9 @@ struct DragonHomeView: View {
         .westpacCard(padding: WestpacSpace.x3)
     }
 
-    private var dragonEmoji: String { stageEmoji(dragon.stage) }
+    private var dragonEmoji: String { dragon.stage.emoji }
 
-    private func stageEmoji(_ stage: DragonStage) -> String {
-        switch stage {
-        case .egg: return "🥚"
-        case .baby: return "🐣"
-        case .teen: return "🐉"
-        case .adult: return "🐲"
-        }
-    }
-
-    private var evolutionProgress: Double {
-        guard let next = dragon.stage.nextStage else { return 1.0 }
-        let current = dragon.stage.xpThreshold
-        let total = next.xpThreshold - current
-        guard total > 0 else { return 1.0 }
-        return Double(dragon.xp - current) / Double(total)
-    }
+    private func stageEmoji(_ stage: DragonStage) -> String { stage.emoji }
 }
 
 /// Reward currency is an app concept, not a GEL one; it borrows the data-F accent.
