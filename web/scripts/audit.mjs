@@ -211,7 +211,7 @@ await page.waitForTimeout(900);
   await page.waitForTimeout(400);
   const factors = await page.evaluate(() => {
     const sheet = document.querySelector(".gel-sheet");
-    const rows = Array.from(sheet?.querySelectorAll(".gel-fact") || []);
+    const rows = Array.from(sheet?.querySelectorAll(".gel-disc") || []);
     const contentVis = (d) => {
       try {
         return getComputedStyle(d, "::details-content").contentVisibility;
@@ -222,8 +222,8 @@ await page.waitForTimeout(900);
     return {
       open: !!sheet,
       title: sheet?.querySelector(".gel-sheet-title")?.textContent.trim() || "",
-      rows: rows.map((d) => d.querySelector(".gel-fact-title").textContent.trim()),
-      icons: rows.filter((d) => !!d.querySelector(".gel-fact-icon svg")).length,
+      rows: rows.map((d) => d.querySelector(".gel-disc-label").textContent.trim()),
+      icons: rows.filter((d) => !!d.querySelector(".gel-disc-icon svg")).length,
       openCount: rows.filter((d) => d.open).length,
       hidden: rows.map(contentVis),
       badges: sheet ? sheet.querySelectorAll(".gel-badge").length : 0,
@@ -257,13 +257,13 @@ await page.waitForTimeout(900);
   check("No rule above the action buttons", "0px", factors.divider, factors.divider === "0px");
 
   // Expand one: the description has to appear, and close again.
-  await page.locator(".gel-fact-row").first().click();
+  await page.locator(".gel-disc-row").first().click();
   await page.waitForTimeout(400);
   const expanded = await page.evaluate(() => {
-    const first = document.querySelector(".gel-fact");
-    const row = first.querySelector(".gel-fact-row").getBoundingClientRect();
-    const body = first.querySelector(".gel-fact-body").getBoundingClientRect();
-    const icon = first.querySelector(".gel-fact-icon");
+    const first = document.querySelector(".gel-disc");
+    const row = first.querySelector(".gel-disc-row").getBoundingClientRect();
+    const body = first.querySelector(".gel-disc-body").getBoundingClientRect();
+    const icon = first.querySelector(".gel-disc-icon");
     const vis = (() => {
       try {
         return getComputedStyle(first, "::details-content").contentVisibility;
@@ -273,7 +273,7 @@ await page.waitForTimeout(900);
     })();
     return {
       open: first.open,
-      text: first.querySelector(".gel-fact-text").textContent.trim(),
+      text: first.querySelector(".gel-disc-text").textContent.trim(),
       visible: vis,
       rotated: getComputedStyle(icon).transform,
       iconRadius: getComputedStyle(icon).borderRadius,
@@ -301,10 +301,10 @@ await page.waitForTimeout(900);
     expanded.bodyLeft === expanded.rowLeft
   );
 
-  await page.locator(".gel-fact-row").first().click();
+  await page.locator(".gel-disc-row").first().click();
   await page.waitForTimeout(400);
   const collapsed = await page.evaluate(() => {
-    const first = document.querySelector(".gel-fact");
+    const first = document.querySelector(".gel-disc");
     const vis = (() => {
       try {
         return getComputedStyle(first, "::details-content").contentVisibility;
@@ -468,26 +468,53 @@ await page.waitForTimeout(900);
 
   const g = await page.evaluate(() => {
     const body = document.querySelector("#screen").innerText;
+    const cards = Array.from(document.querySelectorAll(".gel-goal"));
     return {
-      cards: document.querySelectorAll(".gel-goal").length,
+      cards: cards.length,
       buttons: document.querySelectorAll("#screen button").length,
+      reviews: document.querySelectorAll("#screen .gel-goal .gel-row-link").length,
       bars: Array.from(document.querySelectorAll(".gel-goal .gel-bar-fill")).map((b) => b.style.width),
-      doneBadge:
-        document.querySelector('.gel-goal[data-goal="goal_checkin"] .gel-badge')?.textContent.trim() || "",
+      statuses: cards.map((c) => c.querySelector(".gel-band").textContent.trim()),
+      xp: cards.map((c) => c.querySelector(".gel-goal-xp").textContent.trim()),
       body
     };
   });
 
   check("Three goals", "3", String(g.cards), g.cards === 3);
-  check("Goals have no buttons at all", "0", String(g.buttons), g.buttons === 0);
+  check("Goals carry a Review button and no action button", "3 reviews", g.reviews + " reviews, " + (g.buttons - g.reviews) + " other", g.reviews === 3 && g.buttons - g.reviews === 0);
   check("No '1 of 3 done' subtitle", "absent", g.body.includes(" of 3 done") ? "present" : "absent", !g.body.includes(" of 3 done"));
   check("No explanatory note above the cards", "absent", /fill in on their own/.test(g.body) ? "present" : "absent", !/fill in on their own/.test(g.body));
-  check("Goal 1 shows the Done badge", "Done", g.doneBadge, g.doneBadge === "Done");
-  check("Goal 2 shows 2 of 4 instalments", "2 of 4", g.body.includes("2 of 4") ? "2 of 4" : "missing", g.body.includes("2 of 4"));
+  check("Goal 1 shows the Done state", "Completed", g.statuses[0], g.statuses[0] === "Completed");
+  check("Goal 2 shows it is in progress", "In progress", g.statuses[1], g.statuses[1] === "In progress");
+  check("Each goal shows its reward", "+100 XP", g.xp.join(","), g.xp.every((x) => /^\+\d+ XP$/.test(x)));
+  check(
+    "Goal explanations are not on the card",
+    "absent",
+    /re-reads your transactions/.test(g.body) ? "present" : "absent",
+    !/re-reads your transactions/.test(g.body)
+  );
   check("Goal 3 shows 27 of 30 days", "27 of 30", g.body.includes("27 of 30") ? "27 of 30" : "missing", g.body.includes("27 of 30"));
   check("Bars reflect the data", "100%,50%,90%", g.bars.join(","), g.bars.join(",") === "100%,50%,90%");
   check("Next check is stated", "present", /Next check/.test(g.body) ? "present" : "missing", /Next check/.test(g.body));
   check("No em or en dashes on screen", "clean", dashFree(g.body) ? "clean" : "dash found", dashFree(g.body));
+
+  // Review opens the goal, the same way an insight does.
+  await page.locator("#screen .gel-goal .gel-row-link").first().click();
+  await page.waitForTimeout(400);
+  const gs = await page.evaluate(() => {
+    const s = document.querySelector(".gel-sheet");
+    return {
+      title: s?.querySelector(".gel-sheet-title")?.textContent.trim() || "",
+      body: s?.innerText || "",
+      close: !!s?.querySelector(".gel-sheet-actions .gel-btn-ghost")
+    };
+  });
+  check("Review opens the goal sheet", "present", gs.title || "missing", gs.title.length > 0);
+  check("The goal sheet explains the goal", "present", /re-reads your transactions/.test(gs.body) ? "present" : "missing", /re-reads your transactions/.test(gs.body));
+  check("The goal sheet says what it watches", "present", /What it watches/.test(gs.body) ? "present" : "missing", /What it watches/.test(gs.body));
+  check("The goal sheet closes", "true", String(gs.close), gs.close);
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(200);
 }
 
 // ============================ dragon + wardrobe ============================
@@ -542,6 +569,20 @@ await page.waitForTimeout(900);
 
   await page.locator('.gel-tab[data-tab="shop"]').click();
   await page.waitForTimeout(300);
+  const shop = await page.evaluate(() => ({
+    items: document.querySelectorAll(".gel-shop-item").length,
+    discs: document.querySelectorAll(".gel-shop-item .gel-disc").length,
+    body: document.querySelector("#screen").innerText
+  }));
+  check("Shop keeps its tiles", ">=8", String(shop.items), shop.items >= 8);
+  check("Every shop tile hides its blurb behind a disclosure", String(shop.items), String(shop.discs), shop.discs === shop.items);
+  check(
+    "Shop blurbs are not on the tiles",
+    "absent",
+    /hops and asks for more/.test(shop.body) ? "present" : "absent",
+    !/hops and asks for more/.test(shop.body)
+  );
+
   const cap = page.locator('.gel-shop-item[data-item="item_cap"] button', { hasText: "Buy" });
   if ((await cap.count()) > 0) {
     await cap.click();
