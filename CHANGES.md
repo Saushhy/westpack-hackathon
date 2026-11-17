@@ -73,6 +73,34 @@ embedded, 915 kB, all inside the file so it works offline.
 - **Your plan**: the "1 of 3 done" subtitle and the explanatory note are gone. The cards and
   their self-filling bars carry it on their own.
 
+### The Review sheet, rebuilt
+
+The user's note: the credit-scoring lecture ("Repayment history is the biggest thing in your
+score") was the wrong voice. The advice and the Westpac provenance were the right voice.
+
+- The `why` sentence is **gone** from the sheet. It still exists in `bills.json` and still
+  renders on the informational `keep` / `no_offer` cards, which have no action.
+- The sheet now opens with a **compact header**: the brand tile, the finding's label, the
+  `provider · plan` line, and the amount on the right. It reads like a row from the app that
+  expanded, which is the point.
+- The evidence sits in a soft grey block with a **"What we saw"** eyebrow.
+- The advice is a **callout**, tinted with the hero colour, icon on the left, 16px sentence.
+  It is now the loudest thing after the header, because it is the only thing the customer
+  has to act on.
+- The Westpac line stays at the foot: `Westpac transaction history · 17 Nov 2026`.
+- The secondary action reads **Not now** instead of Dismiss.
+
+### The dragon was off centre
+
+Measured, not guessed: the silhouette's bounding box sat at **51.9%** of the frame, with an
+11.3% left margin against 7.5% right, because the bounding box includes the wings and the
+camera is at a 20° yaw. `tools/render-dragon.mjs` now renders once, measures the opaque
+silhouette (alpha > 200, which excludes the contact shadow), pans the camera along its own
+right vector by the error, and renders again. The output is **49.9%**, and the tool prints
+`centre 51.9% -> 49.9%` on every build.
+
+Audit is now **121 assertions**.
+
 ### The dragon speaks, and only from our data
 
 The compliance rule for this build: **no free chat, no generation at runtime.** The

@@ -385,15 +385,15 @@ function sheetKeyHandler(e) {
 function openSheet(opts) {
   const root = $("#modal-root");
   if (!root) return;
+  const head =
+    opts.head || '<h2 class="gel-sheet-title" id="sheet-title">' + opts.title + "</h2>";
   root.innerHTML =
     '<div class="gel-sheet-overlay" onclick="if (event.target === this) closeSheet()">' +
     '<div class="gel-sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">' +
     '<button class="gel-sheet-close" type="button" aria-label="Close" onclick="closeSheet()">' +
     ico("close") +
     "</button>" +
-    '<h2 class="gel-sheet-title" id="sheet-title">' +
-    opts.title +
-    "</h2>" +
+    head +
     '<div class="gel-sheet-body">' +
     opts.body +
     "</div>" +
@@ -519,29 +519,61 @@ function doneCopy(bill) {
   return "Noted.";
 }
 
-/* The sheet: evidence, why it matters, the one action. */
+/* The sheet: what we saw, what to do about it, and where it came from.
+   No lecture about credit scoring. The advice is the point. */
 function openInsight(id) {
   const bill = bills.bills.find((b) => b.id === id);
   if (!bill) return;
   const copy = ACTION_COPY[bill.action_type] || ACTION_COPY.track;
 
+  const head = `
+    <div class="gel-sheet-head">
+      ${adorn(bill)}
+      <div class="gel-sheet-head-body">
+        <h2 class="gel-sheet-title" id="sheet-title">${bill.label}</h2>
+        <p class="gel-sheet-sub">${bill.provider} · ${bill.plan}</p>
+      </div>
+      ${
+        bill.current_amount
+          ? `<div class="gel-sheet-head-end">
+               <span class="gel-money gel-money--sm">${fmtAUD(bill.current_amount)}</span>${moneyUnit(
+                 bill.billing_period
+               )}
+             </div>`
+          : ""
+      }
+    </div>`;
+
   const body = `
-    <div class="gel-evidence">${evidenceRows(bill)}</div>
-    <p class="gel-note" style="margin-top:14px">${bill.why}</p>
-    ${bill.advice ? `<p class="gel-note gel-note--warn" style="margin-top:6px">${bill.advice}</p>` : ""}
+    <div class="gel-evidence-card">
+      <span class="gel-evidence-eyebrow">What we saw</span>
+      ${evidenceRows(bill)}
+    </div>
+    ${
+      bill.advice
+        ? `<div class="gel-callout">
+             ${ico(copy.icon)}
+             <p class="gel-callout-text">${bill.advice}</p>
+           </div>`
+        : ""
+    }
     ${sourceLink(bill)}
     <div class="gel-verified" style="margin-top:14px">
       ${ico("check")}
-      ${bill.verification ? bill.verification.source + " · " + fmtDate(bill.verification.checked_at) : "From your transactions"}
+      ${
+        bill.verification
+          ? bill.verification.source + " · " + fmtDate(bill.verification.checked_at)
+          : "From your transactions"
+      }
     </div>`;
 
   const actions = `
     <button class="gel-btn-primary gel-btn-block" type="button" onclick="actFromSheet('${bill.id}')">
       ${ico(copy.icon)} ${copy.label}
     </button>
-    <button class="gel-btn-text" type="button" onclick="dismissFromSheet('${bill.id}')">Dismiss</button>`;
+    <button class="gel-btn-text" type="button" onclick="dismissFromSheet('${bill.id}')">Not now</button>`;
 
-  openSheet({ title: bill.label, body, actions });
+  openSheet({ title: bill.label, head, body, actions });
 }
 
 function actFromSheet(id) {

@@ -272,17 +272,36 @@ await page.waitForTimeout(900);
   await page.waitForTimeout(400);
   const sheet = await page.evaluate(() => {
     const s = document.querySelector(".gel-sheet");
+    const head = s?.querySelector(".gel-sheet-head");
+    const callout = s?.querySelector(".gel-callout");
     return {
       open: !!s,
       rows: s ? s.querySelectorAll(".gel-kv").length : 0,
       action: s ? !!s.querySelector(".gel-sheet-actions .gel-btn-primary") : false,
+      head: !!head,
+      headTitle: head?.querySelector(".gel-sheet-title")?.textContent.trim() || "",
+      headSub: head?.querySelector(".gel-sheet-sub")?.textContent.trim() || "",
+      hasBrandTile: !!head?.querySelector(".gel-adorn"),
+      eyebrow: s?.querySelector(".gel-evidence-eyebrow")?.textContent.trim() || "",
+      callout: callout ? callout.innerText.trim() : "",
       body: s ? s.innerText : ""
     };
   });
-  check("'How we know this' opens a sheet", "present", sheet.open ? "present" : "missing", sheet.open);
+  check("Review opens a sheet", "present", sheet.open ? "present" : "missing", sheet.open);
   check("Sheet shows the evidence rows", ">=3", String(sheet.rows), sheet.rows >= 3);
   check("Sheet carries the action", "present", sheet.action ? "present" : "missing", sheet.action);
-  check("Sheet explains why it matters", "present", /score/i.test(sheet.body) ? "present" : "missing", /score/i.test(sheet.body));
+  check("Sheet header is the finding itself", "Credit card repayment", sheet.headTitle, sheet.headTitle === "Credit card repayment");
+  check("Header shows the provider line", "Westpac", sheet.headSub, /^Westpac/.test(sheet.headSub));
+  check("Header carries a brand tile", "true", String(sheet.hasBrandTile), sheet.hasBrandTile);
+  check("Evidence is labelled 'What we saw'", "What we saw", sheet.eyebrow, sheet.eyebrow === "What we saw");
+  check(
+    "Leading with the advice, not a lecture",
+    "Set a reminder so the next one is on time.",
+    sheet.callout,
+    /^Set a reminder so the next one is on time\.$/.test(sheet.callout)
+  );
+  check("No credit-scoring lecture in the sheet", "absent", /biggest thing in your score/i.test(sheet.body) ? "present" : "absent", !/biggest thing in your score/i.test(sheet.body));
+  check("Westpac source is shown", "present", /Westpac transaction history/.test(sheet.body) ? "present" : "missing", /Westpac transaction history/.test(sheet.body));
 
   await page.locator(".gel-sheet-actions .gel-btn-primary").click();
   await page.waitForTimeout(350);

@@ -108,10 +108,24 @@ window.renderStage = async (opts = {}) => {
     target.z + Math.cos(yaw) * Math.cos(pitch) * dist
   );
   camera.lookAt(target);
+
+  /* Centre the silhouette, not the bounding box. The wings and tail make the
+     bounding box asymmetric, and at an angle the dragon visibly sits to one
+     side. shiftX is a fraction of the frame width, positive pans the camera
+     right so the subject moves left. */
+  const shiftX = opts.shiftX || 0;
+  if (shiftX) {
+    camera.updateMatrixWorld();
+    const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+    const dx = shiftX * visible;
+    camera.position.addScaledVector(right, dx);
+    target.addScaledVector(right, dx);
+    camera.lookAt(target);
+  }
   camera.updateProjectionMatrix();
 
   renderer.render(scene, camera);
-  return { height, dist, fill };
+  return { height, dist, fill, visible };
 };
 
 window.__ready = true;
