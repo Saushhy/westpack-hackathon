@@ -1310,9 +1310,21 @@ function renderDragon() {
     : 100;
 
   const worn = wornItems();
-  const wardrobe = worn.length
-    ? worn.map((it) => `<span class="gel-worn">${it.emoji} ${it.name}</span>`).join("")
-    : `<span class="gel-muted">Nothing on yet. Visit the shop to dress your dragon.</span>`;
+  const wornRows = worn.length
+    ? worn
+        .map(
+          (it) => `
+        <button class="gel-shop-row" type="button" onclick="takeOff('${it.id}')">
+          <span class="gel-item-tile">${imgOrEmoji(it.image, it.emoji, it.name, "shop-img")}</span>
+          <span class="gel-cell-body">
+            <span class="gel-move-name">${it.name}</span>
+            <span class="gel-muted">${it.slot_label}</span>
+          </span>
+          <span class="gel-badge gel-badge--success">Wearing</span>
+        </button>`
+        )
+        .join("")
+    : `<p class="gel-muted">Nothing on yet. Visit the shop to dress your dragon.</p>`;
 
   const trail = rewards.stages
     .map((s) => {
@@ -1338,61 +1350,70 @@ function renderDragon() {
   return `
     <div class="gel-screen-head">
       <div>
-        <h1 class="gel-title">${stage.name}</h1>
-        <p class="gel-muted">Level ${lvl.level} · ${fmtWhole(state.xp_total)} XP · ${state.streak_weeks}-week streak</p>
+        <h1 class="gel-title">Your dragon</h1>
       </div>
-      <span class="gel-coin-pill">${coin()}${fmtWhole(state.coins)}</span>
     </div>
 
     ${sceneHtml()}
 
     ${
       stage.id === "egg"
-        ? `<p class="gel-note" style="margin:0 0 12px">Your dragon hatches at ${fmtWhole(
-            nextStage(state.xp_total)?.xp_required ?? 800
-          )} XP. Act on an insight to get there.</p>`
+        ? ""
         : `<button class="gel-btn-primary gel-btn-block" type="button" onclick="openAR()" style="margin-bottom:12px">
              ${ico("camera")} See it in your room
            </button>`
     }
 
-    <article class="gel-cell">
-      <div class="gel-row-between">
-        <span class="gel-label">Wearing</span>
-        <button class="gel-btn-text gel-btn-text--sm" type="button" onclick="setTab('shop')">Change</button>
+    <section class="gel-panel gel-goal">
+      <div class="gel-panel-head">
+        <span class="gel-band">Level ${lvl.level}</span>
+        <span class="gel-goal-xp">${fmtWhole(state.xp_total)} XP</span>
       </div>
-      <div class="gel-wornlist">${wardrobe}</div>
-      <div class="gel-hr"></div>
-      <div class="gel-row-between">
-        <span class="gel-label">Feasts</span>
-        <span class="gel-kv-v">${state.shop.feeds}</span>
-      </div>
-    </article>
-
-    <article class="gel-cell">
-      <div class="gel-row-between">
-        <span class="gel-label">Level ${lvl.level}</span>
-        <span class="gel-label">${nxt ? "Level " + nxt.level : "Max level"}</span>
-      </div>
-      <div class="gel-bar" style="margin-top:6px">
-        <div class="gel-bar-fill" style="width:${fmtPct(lvlPct)}">
-          <span class="gel-bar-label">${fmtPct(lvlPct)}</span>
+      <div class="gel-panel-body">
+        <div class="gel-goal-meta">
+          <span class="gel-goal-count"><b>${fmtPct(lvlPct).replace("%", "")}</b><span>% to ${
+            nxt ? "Level " + nxt.level : "max"
+          }</span></span>
+          <span class="gel-when">${ico("paw")}${
+            nxt ? fmtWhole(nxt.xp_required - state.xp_total) + " XP to go" : "Top level"
+          }</span>
+        </div>
+        <div class="gel-bar gel-bar--skinny" style="margin-top:6px">
+          <div class="gel-bar-fill" style="width:${fmtPct(lvlPct)}"></div>
         </div>
       </div>
-      <p class="gel-note">${
-        nxt ? fmtWhole(nxt.xp_required - state.xp_total) + " XP to Level " + nxt.level : "You've reached the top level."
-      }</p>
-    </article>
+    </section>
 
-    <article class="gel-cell">
-      <div class="gel-stage-trail">${trail}</div>
-      <div class="gel-bar gel-bar--skinny">
-        <div class="gel-bar-fill" style="width:${fmtPct(stagePct)}"></div>
+    <section class="gel-panel gel-goal">
+      <div class="gel-panel-head">
+        <span class="gel-band">Stage</span>
+        <span class="gel-goal-xp">${stage.name}</span>
       </div>
-      <p class="gel-note">${
-        nxtStage ? fmtWhole(nxtStage.xp_required - state.xp_total) + " XP to evolve into " + nxtStage.name : "Fully grown."
-      }</p>
-    </article>
+      <div class="gel-panel-body">
+        <div class="gel-stage-trail">${trail}</div>
+        <div class="gel-bar gel-bar--skinny" style="margin-top:8px">
+          <div class="gel-bar-fill" style="width:${fmtPct(stagePct)}"></div>
+        </div>
+        <p class="gel-note" style="margin-top:8px">${
+          nxtStage ? fmtWhole(nxtStage.xp_required - state.xp_total) + " XP to evolve into " + nxtStage.name : "Fully grown."
+        }</p>
+      </div>
+    </section>
+
+    <section class="gel-panel gel-goal" data-worn-panel>
+      <div class="gel-panel-head">
+        <span class="gel-band">Wearing</span>
+        <span class="gel-goal-xp">${worn.length} of ${rewards.shop.filter((i) => i.slot !== "food" && i.slot !== "perk").length}</span>
+      </div>
+      <div class="gel-panel-body">
+        ${wornRows}
+        <div class="gel-hr"></div>
+        <div class="gel-row-between" style="padding-top:2px">
+          <span class="gel-muted">Feasts</span>
+          <span class="gel-bill-amount"><span class="gel-money gel-money--sm">${state.shop.feeds}</span></span>
+        </div>
+      </div>
+    </section>
 
     <details class="gel-cell">
       <summary class="gel-summary">Activity log</summary>
@@ -1402,25 +1423,81 @@ function renderDragon() {
     <button class="gel-btn-ghost gel-btn-block" type="button" onclick="reset()">Reset demo</button>`;
 }
 
-function shopCta(item) {
+/* One item, opened the same way as a finding: description, state, action. */
+function openItem(id) {
+  const item = rewards.shop.find((i) => i.id === id);
+  if (!item) return;
   const owned = state.shop.owned.includes(item.id);
+  const wearingNow = isWearing(item.id);
   const unlocked = !item.unlock_level || levelForXp(state.xp_total).level >= item.unlock_level;
   const affordable = state.coins >= item.cost;
 
-  if (item.locked) return `<span class="gel-badge gel-badge--hero">Pitch concept</span>`;
-  if (!unlocked)
-    return `<span class="gel-badge gel-badge--faint">Unlocks at Level ${item.unlock_level}</span>`;
-  if (item.slot === "food")
-    return `<button class="gel-btn-primary gel-btn-sm gel-btn-block" type="button" ${affordable ? "" : "disabled"}
-              onclick="buyItem('${item.id}')">${affordable ? "Buy &amp; feed" : "Not enough coins"}</button>`;
-  if (owned && isWearing(item.id))
-    return `<button class="gel-btn-ghost gel-btn-sm gel-btn-block" type="button"
-              onclick="takeOff('${item.id}')">Wearing, take off</button>`;
-  if (owned)
-    return `<button class="gel-btn-primary gel-btn-sm gel-btn-block" type="button"
-              onclick="wearItem('${item.id}')">Wear</button>`;
-  return `<button class="gel-btn-primary gel-btn-sm gel-btn-block" type="button" ${affordable ? "" : "disabled"}
-            onclick="buyItem('${item.id}')">${affordable ? "Buy " + fmtWhole(item.cost) : "Not enough coins"}</button>`;
+  const head = `
+    <div class="gel-sheet-head">
+      <span class="gel-item-tile gel-item-tile--lg">
+        ${imgOrEmoji(item.image, item.emoji, item.name, "shop-img")}
+      </span>
+      <div class="gel-sheet-head-body">
+        <h2 class="gel-sheet-title" id="sheet-title">${item.name}</h2>
+        <p class="gel-sheet-sub">${item.slot_label} · ${fmtWhole(item.cost)} coins</p>
+      </div>
+    </div>`;
+
+  const stateLine = item.locked
+    ? "Pitch concept"
+    : !unlocked
+    ? "Unlocks at Level " + item.unlock_level
+    : wearingNow
+    ? "On your dragon"
+    : owned
+    ? "In your wardrobe"
+    : affordable
+    ? "You have the coins"
+    : "Not enough coins yet";
+
+  const body = `
+    <p class="gel-detail">${item.description}</p>
+    <div class="gel-verified" style="margin-top:12px">${ico("check")}${stateLine}</div>`;
+
+  let primary = "";
+  if (!item.locked && unlocked) {
+    if (item.slot === "food") {
+      primary = `<button class="gel-btn-primary gel-btn-block" type="button" ${
+        affordable ? "" : "disabled"
+      } onclick="buyFromSheet('${item.id}')">${affordable ? "Buy and feed" : "Not enough coins"}</button>`;
+    } else if (wearingNow) {
+      primary = `<button class="gel-btn-ghost gel-btn-block" type="button" onclick="takeOffFromSheet('${item.id}')">Take off</button>`;
+    } else if (owned) {
+      primary = `<button class="gel-btn-primary gel-btn-block" type="button" onclick="wearFromSheet('${item.id}')">Wear it</button>`;
+    } else {
+      primary = `<button class="gel-btn-primary gel-btn-block" type="button" ${
+        affordable ? "" : "disabled"
+      } onclick="buyFromSheet('${item.id}')">${
+        affordable ? "Buy for " + fmtWhole(item.cost) : "Not enough coins"
+      }</button>`;
+    }
+  }
+
+  openSheet({
+    title: item.name,
+    head,
+    body,
+    actions:
+      primary + '<button class="gel-btn-ghost" type="button" onclick="closeSheet()">Close</button>'
+  });
+}
+
+function buyFromSheet(id) {
+  closeSheet();
+  buyItem(id);
+}
+function wearFromSheet(id) {
+  closeSheet();
+  wearItem(id);
+}
+function takeOffFromSheet(id) {
+  closeSheet();
+  takeOff(id);
 }
 
 function renderShop() {
@@ -1429,35 +1506,43 @@ function renderShop() {
   const items = rewards.shop
     .map((item) => {
       const wearingNow = isWearing(item.id);
+      const owned = state.shop.owned.includes(item.id);
+      const unlocked = !item.unlock_level || levelForXp(state.xp_total).level >= item.unlock_level;
+      const note = wearingNow
+        ? " · Wearing"
+        : owned
+        ? " · Owned"
+        : !unlocked
+        ? " · Level " + item.unlock_level
+        : "";
       return `
-        <article class="gel-cell gel-shop-item ${wearingNow ? "is-worn" : ""}" data-item="${item.id}">
-          <div class="gel-shop-art">
-            ${imgOrEmoji(item.image, item.emoji, item.name, "shop-img")}
-            ${wearingNow ? `<span class="gel-shop-worn">${ico("check")}</span>` : ""}
-          </div>
-          <div class="gel-shop-name">${item.name}</div>
-          <div class="gel-shop-price">
-            <span class="gel-money gel-money--sm">${fmtWhole(item.cost)}</span>
-            ${coin()}
-          </div>
-          ${disc("What it is", item.description)}
-          ${shopCta(item)}
-        </article>`;
+        <button class="gel-shop-row ${wearingNow ? "is-worn" : ""}" type="button"
+                data-item="${item.id}" onclick="openItem('${item.id}')">
+          <span class="gel-item-tile">${imgOrEmoji(item.image, item.emoji, item.name, "shop-img")}</span>
+          <span class="gel-cell-body">
+            <span class="gel-move-name">${item.name}</span>
+            <span class="gel-muted">${item.slot_label}${note}</span>
+          </span>
+          <span class="gel-shop-price">
+            <span class="gel-money gel-money--sm">${fmtWhole(item.cost)}</span>${coin()}
+          </span>
+          ${ico("arrow-right")}
+        </button>`;
     })
     .join("");
 
   return `
     <div class="gel-screen-head">
       <div>
-        <h1 class="gel-title">Dragon shop</h1>
-        <p class="gel-muted">${worn.length ? worn.length + " items worn · " : ""}${fmtWhole(state.coins)} coins</p>
+        <h1 class="gel-title">Shop</h1>
+        <p class="gel-muted">${worn.length} ${worn.length === 1 ? "item" : "items"} worn</p>
       </div>
       <span class="gel-badge gel-badge--faint">${stage.emoji} ${stage.name}</span>
     </div>
 
     ${sceneHtml("gel-scene--mini")}
 
-    <div class="gel-shop-grid">${items}</div>`;
+    <section class="gel-cell" style="padding:4px 12px">${items}</section>`;
 }
 
 /* ==========================================================================
@@ -1651,6 +1736,10 @@ let lastCoins = 0;
 function render() {
   animateCount($("#header-coins"), lastCoins, state.coins, fmtWhole);
   lastCoins = state.coins;
+
+  /* Coins are a shop currency, so the balance only appears there. */
+  const pill = $("#coin-pill");
+  if (pill) pill.hidden = activeTab !== "shop";
 
   const screen = $("#screen");
   if (activeTab === "score") screen.innerHTML = renderScore();

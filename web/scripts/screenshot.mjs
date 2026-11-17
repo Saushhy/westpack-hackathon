@@ -100,10 +100,14 @@ await shot("09-shop");
 
 await setState({ coins: 1200 });
 await tab("shop");
-await page.locator('.gel-shop-item[data-item="item_cap"] button', { hasText: "Buy" }).click();
-await page.waitForTimeout(250);
-await page.locator('.gel-shop-item[data-item="item_cave"] button', { hasText: "Buy" }).click();
+await page.locator('.gel-shop-row[data-item="item_cap"]').click();
+await page.waitForTimeout(350);
+await page.locator(".gel-sheet-actions .gel-btn-primary").click();
 await page.waitForTimeout(300);
+await page.locator('.gel-shop-row[data-item="item_cave"]').click();
+await page.waitForTimeout(350);
+await page.locator(".gel-sheet-actions .gel-btn-primary").click();
+await page.waitForTimeout(350);
 await tab("dragon");
 await shot("10-dragon-dressed");
 

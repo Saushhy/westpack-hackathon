@@ -987,21 +987,30 @@
   .gel-summary::-webkit-details-marker { display: none; }
 
   /* ================= shop =============================================== */
-  .gel-shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .gel-shop-item { text-align: center; margin: 0; display: flex; flex-direction: column; align-items: center; }
-  .gel-shop-item.is-worn { border-color: var(--surface-success); }
-  .gel-shop-art { position: relative; height: 54px; display: flex; align-items: center; justify-content: center; }
-  .gel-shop-worn {
-    position: absolute; top: 0; right: 0; width: 18px; height: 18px; border-radius: 50%;
-    background: var(--surface-success); color: #fff;
-    display: flex; align-items: center; justify-content: center;
+  .gel-shop-row {
+    display: flex; align-items: center; gap: 12px;
+    width: 100%; padding: 10px 0;
+    border: 0; border-top: 1px solid var(--border-muted-soft);
+    background: none; cursor: pointer; text-align: left; font-family: inherit;
   }
-  .gel-shop-worn .gel-ico { width: 12px; height: 12px; }
-  .gel-shop-name {
-    font-family: var(--font-brand), var(--font-family-sans);
-    font-size: 16px; font-weight: 700; color: var(--text-heading); margin-top: 4px;
+  .gel-shop-row:first-child { border-top: 0; }
+  .gel-shop-row:hover { background: var(--surface-muted-faint); }
+  .gel-shop-row:focus-visible { outline: 2px solid var(--text-link); outline-offset: 2px; }
+  .gel-shop-row .gel-ico { width: 16px; height: 16px; flex: none; color: var(--text-muted); }
+  .gel-shop-row .gel-cell-body { flex: 1 1 auto; min-width: 0; gap: 1px; }
+  .gel-shop-row .gel-shop-price { margin-left: auto; flex: none; }
+
+  .gel-item-tile {
+    width: 42px; height: 42px; flex: none;
+    border-radius: var(--rounded-2xl);
+    background: var(--surface-muted-faint);
+    display: inline-flex; align-items: center; justify-content: center;
   }
-  .gel-shop-price { display: flex; align-items: baseline; gap: 2px; margin-top: 2px; }
+  .gel-item-tile .shop-img { width: 26px; height: 26px; }
+  .gel-item-tile .shop-img.emoji-fallback { font-size: 22px; line-height: 1; }
+  .gel-item-tile--lg { width: 44px; height: 44px; }
+
+  .gel-shop-price { display: flex; align-items: baseline; gap: 2px; }
 
   /* ================= score / credit trajectory ========================== */
   .gel-score-hero .gel-panel-body { padding-top: 6px; }

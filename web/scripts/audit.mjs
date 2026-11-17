@@ -107,10 +107,11 @@ await page.waitForTimeout(900);
   check("Real Westpac logo loaded", ">0", String(logo), logo > 0);
   const chrome = await page.evaluate(() => ({
     dead: document.querySelectorAll(".gel-header-btn").length,
-    coin: !!document.querySelector(".gel-coin-pill")
+    coin: !!document.querySelector(".gel-coin-pill"),
+    coinHidden: document.querySelector(".gel-coin-pill")?.hidden === true
   }));
   check("Header has no dead help/profile buttons", "0", String(chrome.dead), chrome.dead === 0);
-  check("Header keeps the coin balance", "true", String(chrome.coin), chrome.coin);
+  check("Coin pill exists but stays out of the way", "true", String(chrome.coin && chrome.coinHidden), chrome.coin && chrome.coinHidden);
 }
 
 // ============================ buttons / cells / icons ============================
@@ -619,32 +620,44 @@ await page.waitForTimeout(900);
   await page.locator('.gel-tab[data-tab="shop"]').click();
   await page.waitForTimeout(300);
   const shop = await page.evaluate(() => ({
-    items: document.querySelectorAll(".gel-shop-item").length,
-    discs: document.querySelectorAll(".gel-shop-item .gel-disc").length,
+    items: document.querySelectorAll(".gel-shop-row").length,
     body: document.querySelector("#screen").innerText
   }));
-  check("Shop keeps its tiles", ">=8", String(shop.items), shop.items >= 8);
-  check("Every shop tile hides its blurb behind a disclosure", String(shop.items), String(shop.discs), shop.discs === shop.items);
+  check("Shop lists every item", ">=8", String(shop.items), shop.items >= 8);
+  const coinHere = await page.evaluate(() => document.querySelector(".gel-coin-pill")?.hidden === false);
+  check("Coins appear on the shop tab", "true", String(coinHere), coinHere === true);
   check(
-    "Shop blurbs are not on the tiles",
+    "Shop blurbs are not on the rows",
     "absent",
     /hops and asks for more/.test(shop.body) ? "present" : "absent",
     !/hops and asks for more/.test(shop.body)
   );
 
-  const cap = page.locator('.gel-shop-item[data-item="item_cap"] button', { hasText: "Buy" });
-  if ((await cap.count()) > 0) {
-    await cap.click();
-    await page.waitForTimeout(300);
-  }
+  // Open an item, check the sheet, then buy from it.
+  await page.locator('.gel-shop-row[data-item="item_cap"]').click();
+  await page.waitForTimeout(400);
+  const itemSheet = await page.evaluate(() => {
+    const s = document.querySelector(".gel-sheet");
+    return {
+      title: s?.querySelector(".gel-sheet-title")?.textContent.trim() || "",
+      body: s?.innerText || "",
+      primary: s?.querySelector(".gel-sheet-actions .gel-btn-primary")?.textContent.trim() || ""
+    };
+  });
+  check("Tapping an item opens its sheet", "Peak Cap", itemSheet.title, itemSheet.title === "Peak Cap");
+  check("The sheet carries the description", "present", /Sits on the head/.test(itemSheet.body) ? "present" : "missing", /Sits on the head/.test(itemSheet.body));
+  check("And the price on the action", "Buy for 120", itemSheet.primary, /Buy for 120/.test(itemSheet.primary));
+  await page.locator(".gel-sheet-actions .gel-btn-primary").click();
+  await page.waitForTimeout(400);
+  check("Buying closes the sheet", "0", String(await page.locator(".gel-sheet").count()), (await page.locator(".gel-sheet").count()) === 0);
+
   const worn = await page.evaluate(() => !!document.querySelector("#dragon-art .dragon-wear--hat"));
   check("Buying a hat puts it on the dragon", "true", String(worn), worn);
 
-  const cave = page.locator('.gel-shop-item[data-item="item_cave"] button', { hasText: "Buy" });
-  if ((await cave.count()) > 0) {
-    await cave.click();
-    await page.waitForTimeout(300);
-  }
+  await page.locator('.gel-shop-row[data-item="item_cave"]').click();
+  await page.waitForTimeout(350);
+  await page.locator(".gel-sheet-actions .gel-btn-primary").click();
+  await page.waitForTimeout(400);
   const scene2 = await page.evaluate(() => document.querySelector(".gel-scene")?.dataset.scene);
   check("Buying a home changes the scene", "stars", scene2, scene2 === "stars");
 }
