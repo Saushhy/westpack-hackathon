@@ -115,21 +115,27 @@ await page.waitForTimeout(900);
 
 // ============================ buttons / cells / icons ============================
 {
+  /* The score screen no longer carries a GEL button of its own, so measure the
+     real one inside the sheet that does. */
+  await page.locator('button:has-text("How your score is built")').click();
+  await page.waitForTimeout(350);
   const btn = await page.evaluate(() => {
-    const el = document.querySelector(".gel-btn-primary, .gel-btn-ghost");
+    const el = document.querySelector(".gel-sheet-actions .gel-btn-ghost");
     const s = getComputedStyle(el);
     return { h: s.height, r: s.borderRadius, fs: s.fontSize };
   });
   check("Button height 42px", "42px", btn.h, btn.h === "42px");
   check("Button radius 5px", "5px", btn.r, btn.r === "5px");
   check("Button label 16px", "16px", btn.fs, btn.fs === "16px");
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(200);
 
   const primaryFill = await page.evaluate(() => {
     const el = document.querySelector(".gel-btn-primary");
     return el ? getComputedStyle(el).backgroundColor : null;
   });
   check(
-    "Primary button fill = Westpac red",
+    "Primary button fill = Westpac red (checked on a sheet later)",
     "rgb(218, 23, 16)",
     primaryFill,
     primaryFill === null || primaryFill === "rgb(218, 23, 16)"
@@ -187,29 +193,41 @@ await page.waitForTimeout(900);
   check("No 'Last check' history", "absent", s.body.includes("Last check") ? "present" : "absent", !s.body.includes("Last check"));
   check("No 'debit is at risk' block", "absent", s.body.includes("debit is at risk") ? "present" : "absent", !s.body.includes("debit is at risk"));
   check("No BNPL explainer on the score screen", "absent", s.body.includes("BNPL is credit") ? "present" : "absent", !s.body.includes("BNPL is credit"));
+  check("No consent line under the title", "absent", s.body.includes("Shared with your consent") ? "present" : "absent", !s.body.includes("Shared with your consent"));
+  check("No demo-sample note", "absent", s.body.includes("Sample score") ? "present" : "absent", !s.body.includes("Sample score"));
   check("No em or en dashes on screen", "clean", dashFree(s.body) ? "clean" : "dash found", dashFree(s.body));
-  check("'Check what affects your score' button present", "present", s.body.includes("Check what affects your score") ? "present" : "missing", s.body.includes("Check what affects your score"));
+  check("'How your score is built' row present", "present", s.body.includes("How your score is built") ? "present" : "missing", s.body.includes("How your score is built"));
 }
 
 // ============================ score sheets ============================
 {
-  await page.locator('button:has-text("Check what affects your score")').click();
+  await page.locator('button:has-text("How your score is built")').click();
   await page.waitForTimeout(400);
-  const factors = await page.evaluate(() => ({
-    open: !!document.querySelector(".gel-sheet"),
-    rows: document.querySelectorAll(".gel-sheet .gel-factor-row").length,
-    body: document.querySelector(".gel-sheet")?.innerText || "",
-    radius: document.querySelector(".gel-sheet") ? getComputedStyle(document.querySelector(".gel-sheet")).borderTopLeftRadius : null
-  }));
+  const factors = await page.evaluate(() => {
+    const sheet = document.querySelector(".gel-sheet");
+    return {
+      open: !!sheet,
+      title: sheet?.querySelector(".gel-sheet-title")?.textContent.trim() || "",
+      rows: Array.from(sheet?.querySelectorAll(".gel-fact-list li") || []).map((li) => li.textContent.trim()),
+      badges: sheet ? sheet.querySelectorAll(".gel-badge").length : 0,
+      body: sheet?.innerText || "",
+      radius: sheet ? getComputedStyle(sheet).borderTopLeftRadius : null
+    };
+  });
   check("Factors open in a sheet", "present", factors.open ? "present" : "missing", factors.open);
   check("Sheet is a bottom sheet (rounded top 12px)", "12px", factors.radius, factors.radius === "12px");
-  check("Five factors in the sheet, BNPL included", "5", String(factors.rows), factors.rows === 5);
+  check("Sheet is titled 'How your score is built'", "How your score is built", factors.title, factors.title === "How your score is built");
   check(
-    "BNPL is explained in the sheet, not the overview",
-    "Short term credit",
-    factors.body,
-    /Short term credit\. Plans and missed instalments show on your file\./.test(factors.body)
+    "The five factors, titles only",
+    "5 titles",
+    factors.rows.join(", "),
+    factors.rows.length === 5 &&
+      factors.rows[0] === "Repayment history" &&
+      factors.rows[4] === "Buy now, pay later"
   );
+  check("No impact badges in the sheet", "0", String(factors.badges), factors.badges === 0);
+  check("No descriptions in the sheet", "absent", /Paying on time\. It matters/.test(factors.body) ? "present" : "absent", !/Paying on time\. It matters/.test(factors.body));
+  check("No closing note in the sheet", "absent", /promise you points/.test(factors.body) ? "present" : "absent", !/promise you points/.test(factors.body));
   await page.locator(".gel-sheet-close").click();
   await page.waitForTimeout(200);
   check("Sheet closes", "0", String(await page.locator(".gel-sheet").count()), (await page.locator(".gel-sheet").count()) === 0);
@@ -301,12 +319,16 @@ await page.waitForTimeout(900);
       hasBrandTile: !!head?.querySelector(".gel-adorn"),
       eyebrow: s?.querySelector(".gel-evidence-eyebrow")?.textContent.trim() || "",
       callout: callout ? callout.innerText.trim() : "",
+      primaryFill: s
+        ? getComputedStyle(s.querySelector(".gel-sheet-actions .gel-btn-primary")).backgroundColor
+        : "",
       body: s ? s.innerText : ""
     };
   });
   check("Review opens a sheet", "present", sheet.open ? "present" : "missing", sheet.open);
   check("Sheet shows the evidence rows", ">=3", String(sheet.rows), sheet.rows >= 3);
   check("Sheet carries the action", "present", sheet.action ? "present" : "missing", sheet.action);
+  check("Primary action is Westpac red", "rgb(218, 23, 16)", sheet.primaryFill, sheet.primaryFill === "rgb(218, 23, 16)");
   check("Sheet header is the finding itself", "Credit card repayment", sheet.headTitle, sheet.headTitle === "Credit card repayment");
   check("Header shows the provider line", "Westpac", sheet.headSub, /^Westpac/.test(sheet.headSub));
   check("Header carries a brand tile", "true", String(sheet.hasBrandTile), sheet.hasBrandTile);

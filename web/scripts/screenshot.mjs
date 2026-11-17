@@ -68,7 +68,7 @@ await shot("04-movements");
 await page.keyboard.press("Escape");
 await page.waitForTimeout(220);
 
-await page.locator('button:has-text("Check what affects your score")').click();
+await page.locator('button:has-text("How your score is built")').click();
 await page.waitForTimeout(500);
 await shot("05-factors");
 await page.keyboard.press("Escape");

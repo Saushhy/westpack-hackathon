@@ -1004,6 +1004,29 @@
 
   .gel-found-note { font-size: 12px; line-height: 1.4; color: var(--text-muted); margin: 12px 0 0; }
 
+  /* ================= big tappable row (opens a sheet) ================== */
+  .gel-row-card {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    width: 100%; min-height: 52px; padding: 0 16px; margin-bottom: 12px;
+    border: 1px solid var(--border-muted-soft); border-radius: var(--rounded-2xl);
+    background: var(--background-white); cursor: pointer; font-family: inherit;
+    font-size: var(--typography-body-size-10); font-weight: 700; color: var(--text-heading);
+    text-align: left;
+  }
+  .gel-row-card:hover { background: var(--surface-muted-faint); }
+  .gel-row-card .gel-ico { width: 18px; height: 18px; color: var(--text-muted); flex: none; }
+
+  /* the five factors, as titles only */
+  .gel-fact-list { margin: 0; padding: 0; list-style: none; }
+  .gel-fact-list li {
+    font-family: var(--font-brand), var(--font-family-sans);
+    font-size: 20px; line-height: 1.25; font-weight: 700; color: var(--text-heading);
+    padding: 16px 0;
+    border-top: 1px solid var(--border-muted-soft);
+  }
+  .gel-fact-list li:first-child { border-top: 0; padding-top: 2px; }
+  .gel-fact-list li:last-child { padding-bottom: 6px; }
+
   /* ================= credit accounts ==================================== */
   .gel-acc {
     display: flex; align-items: center; gap: 12px;
@@ -1072,15 +1095,6 @@
   }
 
   .gel-factor-list { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
-  .gel-factor-row { display: flex; gap: 10px; align-items: flex-start; }
-  .gel-factor-arrow {
-    flex: 0 0 auto; width: 26px; height: 26px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 16px; font-weight: 700; line-height: 1;
-  }
-  .gel-factor-arrow.is-up { background: var(--surface-success-faint); color: var(--text-success); }
-  .gel-factor-arrow.is-down { background: var(--surface-warning-faint); color: var(--text-warning); }
-  .gel-factor-body { flex: 1 1 auto; min-width: 0; }
 
   /* goals: bar + the "next check" line, never a button */
   .gel-progress-note {

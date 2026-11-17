@@ -945,27 +945,16 @@ function creditAccounts(cf) {
     </section>`;
 }
 
+/* Just the five things. No impact badges, no descriptions, no closing note:
+   the value is the list itself, not an essay about it. */
 function openFactors() {
   const body =
-    (rewards.credit_factors || [])
-      .map((f) => {
-        const up = f.direction === "up";
-        return `<div class="gel-factor-row" style="margin-bottom:16px">
-          <span class="gel-factor-arrow ${up ? "is-up" : "is-down"}">${up ? "↑" : "↓"}</span>
-          <div class="gel-factor-body">
-            <div class="gel-row-between">
-              <span class="gel-move-name">${f.label}</span>
-              <span class="gel-badge gel-badge--faint">${f.impact}</span>
-            </div>
-            <p class="gel-muted" style="margin:2px 0 0">${f.what}</p>
-          </div>
-        </div>`;
-      })
-      .join("") +
-    '<p class="gel-note">Direction only. Nobody can promise you points.</p>';
+    '<ul class="gel-fact-list">' +
+    (rewards.credit_factors || []).map((f) => "<li>" + f.label + "</li>").join("") +
+    "</ul>";
 
   openSheet({
-    title: "What affects your score",
+    title: "How your score is built",
     body,
     actions: '<button class="gel-btn-ghost" type="button" onclick="closeSheet()">Close</button>'
   });
@@ -980,9 +969,7 @@ function renderScore() {
     <div class="gel-screen-head">
       <div>
         <h1 class="gel-title">Your score</h1>
-        <p class="gel-muted">${[bills.persona, score.band, "Shared with your consent"]
-          .filter(Boolean)
-          .join(" · ")}</p>
+        <p class="gel-muted">${[bills.persona, score.band].filter(Boolean).join(" · ")}</p>
       </div>
       <span class="gel-badge gel-badge--hero">${score.source || "Equifax"}</span>
     </div>
@@ -994,7 +981,6 @@ function renderScore() {
       <div class="gel-panel-body">
         <div class="gel-score-num">${score.value != null ? fmtWhole(score.value) : ""}<span class="gel-score-max">/${score.max != null ? fmtWhole(score.max) : ""}</span></div>
         <p class="gel-muted" style="margin:4px 0 0">Updated ${score.refreshed_at ? fmtDate(score.refreshed_at) : ""}</p>
-        ${score.demo_sample ? '<p class="gel-note gel-note--warn" style="margin:6px 0 0">Sample score for this demo.</p>' : ""}
         <div class="gel-hr"></div>
         <div class="gel-forecast">
           <div class="gel-row-between">
@@ -1017,8 +1003,8 @@ function renderScore() {
 
     ${creditAccounts(cf)}
 
-    <button class="gel-btn-ghost gel-btn-block" type="button" onclick="openFactors()">
-      Check what affects your score ${ico("arrow-right")}
+    <button class="gel-row-card" type="button" onclick="openFactors()">
+      <span>How your score is built</span>${ico("arrow-right")}
     </button>`;
 }
 
