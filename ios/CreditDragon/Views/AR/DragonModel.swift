@@ -74,6 +74,18 @@ enum DragonModel {
         let container = Entity()
         container.addChild(idle)
         container.addChild(action)
+
+        // Imported USDZ meshes don't carry RealityKit collision shapes by
+        // default. Add an invisible bounds collider so ARView.entity(at:) can
+        // recognize taps on the dragon and its animated replacement.
+        let boundsInContainer = idle.visualBounds(relativeTo: container)
+        let tapTarget = Entity()
+        tapTarget.position = boundsInContainer.center
+        tapTarget.components.set(
+            CollisionComponent(shapes: [.generateBox(size: boundsInContainer.extents)])
+        )
+        container.addChild(tapTarget)
+
         return DragonAnimationPair(container: container, idle: idle, action: action)
     }
 
