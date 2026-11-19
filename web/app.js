@@ -427,10 +427,21 @@ function openSheet(opts) {
   document.addEventListener("keydown", sheetKeyHandler);
 }
 
+let sheetReturn = null; // set by Open Doors so a sheet opened from it returns there
 function closeSheet() {
   const root = $("#modal-root");
   if (root) root.innerHTML = "";
   document.removeEventListener("keydown", sheetKeyHandler);
+  /* Open Doors -> insight -> back to Open Doors. Wait a tick so an action
+     that triggered the close has saved and re-rendered, and never cover the
+     evolution dialog if the action hatched the egg. */
+  if (typeof sheetReturn === "function") {
+    const back = sheetReturn;
+    sheetReturn = null;
+    setTimeout(() => {
+      if (!document.querySelector(".gel-dialog")) back();
+    }, 0);
+  }
 }
 
 /* ==========================================================================
@@ -2366,25 +2377,35 @@ function announceDoors(results) {
   );
 }
 
+/* GEL-style line icon (24px, 1.7 stroke) for the Open Doors entry. */
+const DOOR_ICON =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+  '<path d="M6 21V4.5A1.5 1.5 0 0 1 7.5 3h9A1.5 1.5 0 0 1 18 4.5V21"/><path d="M3.5 21h17"/>' +
+  '<path d="M14.5 3.6 9.6 5.2a1 1 0 0 0-.6.9V20.4"/><circle cx="12" cy="12.5" r="0.9" fill="currentColor" stroke="none"/></svg>';
+
 function doorsSummaryCard() {
   if (!DOOR_LIST.length) return "";
   const doors = allDoors();
-  const count = (s) => doors.filter((d) => d.status === s).length;
-  const goal = doors.find((d) => d.goal);
+  const open = doors.filter((d) => d.status === "open").length;
+  const close = doors.find((d) => d.status === "opening");
+  const caption =
+    open + " of " + doors.length + " doors open" + (close ? " · Next up: " + close.title : "");
   return `
-    <button class="gel-row-card od-card" type="button" data-open-doors onclick="openDoors()">
-      <span class="od-card-icon" aria-hidden="true">🚪</span>
-      <span class="od-card-body">
-        <span class="od-card-title">Open Doors</span>
-        <span class="gel-muted">What your score can open</span>
-        <span class="od-card-chips">
-          <span class="od-pill od-pill--success">${count("open")} open</span>
-          <span class="od-pill od-pill--warning">${count("opening")} opening</span>
-          <span class="od-pill od-pill--faint">${count("not_yet")} not yet</span>
+    <button class="gel-cell od-card" type="button" data-open-doors onclick="openDoors()">
+      <span class="od-card-row">
+        <span class="od-card-icon">${DOOR_ICON}</span>
+        <span class="od-card-text">
+          <span class="od-card-title">Open Doors</span>
+          <span class="gel-muted">What your score can open</span>
         </span>
-        ${goal ? `<span class="od-card-goal">${goal.emoji} Your goal: ${goal.title} · ${DOOR_STATUS[goal.status].label}</span>` : ""}
+        ${ico("arrow-right")}
       </span>
-      ${ico("arrow-right")}
+      <span class="od-seg" aria-hidden="true">${doors
+        .map((d) => d.status)
+        .sort((a, b) => ["open", "opening", "not_yet"].indexOf(a) - ["open", "opening", "not_yet"].indexOf(b))
+        .map((st) => `<i class="od-seg-${st}"></i>`)
+        .join("")}</span>
+      <span class="od-card-caption">${caption}</span>
     </button>`;
 }
 
@@ -2475,7 +2496,7 @@ function openDoors() {
   const hasKey = key && state.shop.owned.includes(key.id);
   const head = `
     <div class="gel-sheet-head">
-      <span class="gel-item-tile gel-item-tile--lg od-head-icon">🚪</span>
+      <span class="gel-item-tile gel-item-tile--lg od-head-icon">${DOOR_ICON}</span>
       <div class="gel-sheet-head-body">
         <h2 class="gel-sheet-title" id="sheet-title">Open Doors</h2>
         <p class="gel-sheet-sub">What your score can open</p>
@@ -2502,9 +2523,12 @@ function openDoors() {
   });
 }
 
+/* An insight opened from Open Doors returns to Open Doors when it closes,
+   whether the customer acted, dismissed or just closed it. */
 function doorFix(findingId) {
   closeSheet();
   openInsight(findingId);
+  sheetReturn = openDoors;
 }
 
 /* ---------- shell ---------- */

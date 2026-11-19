@@ -935,6 +935,8 @@ await page.waitForTimeout(900);
   await p7.reload();
   await p7.waitForTimeout(800);
   check("Open Doors card on the Score tab", "1", String(await p7.locator("[data-open-doors]").count()), (await p7.locator("[data-open-doors]").count()) === 1);
+  const card = (await p7.locator("[data-open-doors]").innerText()).replace(/\s+/g, " ");
+  check("Card shows progress, not a row of chips", "0 of 4 doors open · Next up: Rental application", card, /0 of 4 doors open · Next up: Rental application/.test(card) && !/Your goal/.test(card));
   await p7.locator("[data-open-doors]").click();
   await p7.waitForTimeout(500);
   const od = (await p7.locator(".gel-sheet").innerText()).replace(/\s+/g, " ");
@@ -952,12 +954,21 @@ await page.waitForTimeout(900);
   check("Product links are Westpac only", "westpac.com.au", links.join(" "), links.length > 0 && links.every((h) => /^https:\/\/www\.westpac\.com\.au\//.test(h)));
   check("Open Doors copy has no dashes", "no dashes", od, dashFree(od));
 
+  // an insight opened from Open Doors comes back to Open Doors when it closes
+  await p7.locator(".od-fix").filter({ hasText: "card reminder" }).first().click();
+  await p7.waitForTimeout(300);
+  await p7.locator(".gel-sheet-close").click();
+  await p7.waitForTimeout(300);
+  const back = (await p7.locator(".gel-sheet-title").count()) ? await p7.locator(".gel-sheet-title").first().innerText() : "none";
+  check("Closing an insight returns to Open Doors", "Open Doors", back, back === "Open Doors");
   // the Safety Buffer opens the Rental door: XP and the Golden Key, once
   const xp0 = await p7.evaluate(() => state.xp_total);
   await p7.locator(".od-fix").filter({ hasText: "Safety Buffer" }).first().click();
   await p7.waitForTimeout(500);
   await p7.locator(".gel-sheet-actions .gel-btn-primary").first().click();
   await p7.waitForTimeout(800);
+  const back2 = (await p7.locator(".gel-sheet-title").count()) ? await p7.locator(".gel-sheet-title").first().innerText() : "none";
+  check("Acting on it also returns to Open Doors, updated", "Open Doors · Rental Open", back2 + " · " + (await p7.locator('.od-door[data-door="door_rental"] .od-pill').innerText().catch(() => "")), back2 === "Open Doors" && (await p7.locator('.od-door[data-door="door_rental"] .od-pill').innerText()) === "Open");
   const s7 = await p7.evaluate(() => ({ xp: state.xp_total, doors: state.doors, key: state.shop.owned.includes("item_golden_key"), neck: state.shop.equipped.neck, opened: state.ledger.filter((e) => e.action === "door_opened").length }));
   check("Safety Buffer opens the Rental door", "open", String(s7.doors.door_rental), s7.doors.door_rental === "open");
   check("Opening a door earns 150 XP once", "1 payout", String(s7.opened), s7.opened === 1 && s7.xp === xp0 + 60 + 150);

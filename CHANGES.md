@@ -320,7 +320,9 @@ pages read on 17 Nov 2026.
 
 An idea from a Westpac engineer at the hackathon: the score is a cold number, so show what
 it can open in real life, and what opens the next door. A new **Open Doors** card sits on
-the Score tab under the goal, and opens a sheet with three parts:
+the Score tab under the goal: a GEL-style door icon, the title, one segmented bar (green
+open, amber opening, grey not yet) and a single line such as "0 of 4 doors open · Next up:
+Rental application". It opens a sheet with three parts:
 
 1. **Where you sit.** Equifax's five bands as a ladder (Below average 0 to 459, Average
    460 to 660, Good 661 to 734, Very good 735 to 852, Excellent 853 to 1200), with the
@@ -332,6 +334,8 @@ the Score tab under the goal, and opens a sheet with three parts:
    at least half do. Every check shows its evidence ("7 rent payments in three months").
 3. **What opens it next.** The failing checks link straight to the insight that fixes them,
    and each door can link to the matching Westpac product page ("Explore Westpac car loans").
+   Closing that insight, or acting on it, brings you back to Open Doors with the status
+   updated.
 
 | Persona | Doors (goal first) |
 |---|---|
@@ -365,7 +369,7 @@ Also:
   **Average** (her thin file is still explained in her insights).
 - Demo numbers: the full Insights journey now ends at **1020 XP and 570 coins** (870 and 510
   plus the Rental door). The egg still hatches during Insights.
-- Audit is now **249 assertions**.
+- Audit is now **252 assertions**.
 
 ## 4. What changed before that (v3)
 
