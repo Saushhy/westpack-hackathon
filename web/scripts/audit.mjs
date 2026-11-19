@@ -483,8 +483,10 @@ await page.waitForTimeout(900);
   }
 
   const st = await state();
-  check("Journey XP = 870", "870", String(st.xp_total), st.xp_total === 870);
-  check("Journey coins = 510", "510", String(st.coins), st.coins === 510);
+  /* 870 XP and 510 coins from the insights, plus 150 XP and 60 coins when the
+     Safety Buffer opens Mia's Rental application door (Open Doors). */
+  check("Journey XP = 1020", "1020", String(st.xp_total), st.xp_total === 1020);
+  check("Journey coins = 570", "570", String(st.coins), st.coins === 570);
   check("The dragon hatched into a baby (>= 800 XP)", "baby", st.xp_total >= 800 ? "baby" : "still an egg", st.xp_total >= 800);
   check("No duplicate awards", "0 dups", new Set(st.awarded).size === st.awarded.length ? "0 dups" : "dups", new Set(st.awarded).size === st.awarded.length);
   check("Exactly one goal completed (the daily one)", "1", String(Object.keys(st.goals).length), Object.keys(st.goals).length === 1);
@@ -916,6 +918,73 @@ await page.waitForTimeout(900);
   check("No balance in the data: yearly amount, not a payoff date", "$508.68 a year", dav, /\$508\.68 a year on top of your \$620\.00/.test(dav));
   check("Persona bill check never names another telco", "none", (dav.match(OTHER_TELCOS) || ["none"])[0], !OTHER_TELCOS.test(dav));
   await p6.close();
+}
+
+// ============================ Open Doors ============================
+/* The score translated into what it can open. A guide, never an approval:
+   no approval wording, no other lender named, Westpac products only, and a
+   door pays out once, only when the customer's own action opens it. */
+{
+  const OTHER_LENDERS =
+    /\b(commbank|commonwealth bank|nab|anz|macquarie|ing|bendigo|suncorp|st\.? george|bankwest|ubank|plenti|harmoney|latitude)\b/i;
+  const APPROVAL = /\b(you('| a)re approved|guaranteed|pre-?approved for|you will be approved|you qualify)\b/i;
+  const p7 = await browser.newPage({ viewport: { width: 480, height: 980 } });
+  await skipOnboarding(p7);
+  await p7.goto(fileUrl("index.html"));
+  await p7.evaluate(() => localStorage.clear());
+  await p7.reload();
+  await p7.waitForTimeout(800);
+  check("Open Doors card on the Score tab", "1", String(await p7.locator("[data-open-doors]").count()), (await p7.locator("[data-open-doors]").count()) === 1);
+  await p7.locator("[data-open-doors]").click();
+  await p7.waitForTimeout(500);
+  const od = (await p7.locator(".gel-sheet").innerText()).replace(/\s+/g, " ");
+  check("Ladder shows Mia in the Average band", "Average ... You · 612", od, /Average 460 to 660 You · 612/.test(od));
+  check("Ladder shows the next band", "Good at 661, 49 points", od, /Next: Good at 661, 49 points to go/.test(od));
+  check("Mia has four doors", "4", String(await p7.locator(".od-door").count()), (await p7.locator(".od-door").count()) === 4);
+  check("Her goal door comes first", "Car loan", await p7.locator(".od-door-name").first().innerText(), (await p7.locator(".od-door-name").first().innerText()) === "Car loan");
+  check("Car loan is Not yet with 1 of 4 checks", "Not yet", od, /Car loan Your goal Not yet/i.test(od));
+  check("Rental application is Opening", "Opening", od, /Rental application Opening/.test(od));
+  check("Doors cite the evidence", "7 rent payments", od, /7 rent payments in three months/.test(od) && /You have 3 open/.test(od));
+  check("Open Doors says it is not an approval", "A guide, not an approval", od, /A guide, not an approval\. Lenders decide/.test(od));
+  check("No approval wording", "none", (od.match(APPROVAL) || ["none"])[0], !APPROVAL.test(od));
+  check("No other lender named", "none", (od.match(OTHER_LENDERS) || ["none"])[0], !OTHER_LENDERS.test(od));
+  const links = await p7.locator(".od-product").evaluateAll((as) => as.map((a) => a.href));
+  check("Product links are Westpac only", "westpac.com.au", links.join(" "), links.length > 0 && links.every((h) => /^https:\/\/www\.westpac\.com\.au\//.test(h)));
+  check("Open Doors copy has no dashes", "no dashes", od, dashFree(od));
+
+  // the Safety Buffer opens the Rental door: XP and the Golden Key, once
+  const xp0 = await p7.evaluate(() => state.xp_total);
+  await p7.locator(".od-fix").filter({ hasText: "Safety Buffer" }).first().click();
+  await p7.waitForTimeout(500);
+  await p7.locator(".gel-sheet-actions .gel-btn-primary").first().click();
+  await p7.waitForTimeout(800);
+  const s7 = await p7.evaluate(() => ({ xp: state.xp_total, doors: state.doors, key: state.shop.owned.includes("item_golden_key"), neck: state.shop.equipped.neck, opened: state.ledger.filter((e) => e.action === "door_opened").length }));
+  check("Safety Buffer opens the Rental door", "open", String(s7.doors.door_rental), s7.doors.door_rental === "open");
+  check("Opening a door earns 150 XP once", "1 payout", String(s7.opened), s7.opened === 1 && s7.xp === xp0 + 60 + 150);
+  check("First open door earns the Golden Key, worn", "item_golden_key", String(s7.neck), s7.key && s7.neck === "item_golden_key");
+  await p7.reload();
+  await p7.waitForTimeout(700);
+  const again = await p7.evaluate(() => state.ledger.filter((e) => e.action === "door_opened").length);
+  check("A door never pays twice", "1", String(again), again === 1);
+  await p7.locator('.gel-tab[data-tab="shop"]').click();
+  await p7.waitForTimeout(300);
+  const shop = (await p7.locator("#screen").innerText()).replace(/\s+/g, " ");
+  check("Golden Key shows as earned in the shop, not for sale", "Golden Key ... Earned", shop, /Golden Key Neck · Wearing Earned/.test(shop));
+  await p7.close();
+
+  // every persona has doors, and a door already open on day one pays nothing
+  for (const [page, n] of [["marcus.html", 3], ["elena.html", 4], ["david.html", 3]]) {
+    const pp = await browser.newPage({ viewport: { width: 480, height: 980 } });
+    await skipOnboarding(pp);
+    await pp.goto(fileUrl(page));
+    await pp.evaluate(() => localStorage.clear());
+    await pp.reload();
+    await pp.waitForTimeout(700);
+    const r = await pp.evaluate(() => ({ doors: allDoors().length, paid: state.ledger.filter((e) => e.action === "door_opened").length, band: bills.score.band }));
+    check(page + " has " + n + " doors, none paid at first look", n + " / 0", r.doors + " / " + r.paid, r.doors === n && r.paid === 0);
+    if (page === "elena.html") check("Elena's 530 is Average on Equifax's bands", "Average", r.band, r.band === "Average");
+    await pp.close();
+  }
 }
 
 // ============================ Westpac-only actions ============================

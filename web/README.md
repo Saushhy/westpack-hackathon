@@ -114,7 +114,7 @@ What is converted:
 - State is saved per persona (`credit-dragon:state:<name>`), so the four demos do not share
   XP or coins.
 
-## Demo click-path (550 → 870 XP, the egg hatches into the baby dragon)
+## Demo click-path (550 → 1020 XP, the egg hatches into the baby dragon)
 
 0. **Welcome** (first run only) → Let's start, a scan built from the real transactions,
    then Carlos's five questions with "Why we ask" and the transactions behind each one.
@@ -125,7 +125,7 @@ What is converted:
 2. **On open** → the daily check-in lands and the seven-day goal completes: 550 XP, 330 coins.
    Still an egg at that point.
 3. **Insights** → six findings, each with a **Review** button that opens a sheet with the
-   evidence and one action. Working through them takes you to 870 XP and 510 coins, and the
+   evidence and one action. Working through them takes you to 1020 XP and 570 coins (setting up the Safety Buffer also opens the Rental application door in **Open Doors** and earns the Golden Key), and the
    egg hatches into the baby dragon at 800 XP.
 4. **Goals** → three cards, no buttons. They fill from real payments.
 5. **Dragon / Shop** → spend coins on a hat and a cave and watch the dragon wear them.
