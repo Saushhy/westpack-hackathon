@@ -1933,6 +1933,16 @@ window.PERSONAS = {
             "type": "none"
           },
           "why_rewards_you": "Spending coins never earns XP. Rewards only come from money habits."
+        },
+        {
+          "id": "door_opened",
+          "label": "Opened a door",
+          "xp": 150,
+          "coins": 60,
+          "cap": {
+            "type": "none"
+          },
+          "why_rewards_you": "Open Doors: a door opens only when your own transactions show the habits behind it. Once per door, never farmable."
         }
       ],
       "levels": [
@@ -2134,6 +2144,16 @@ window.PERSONAS = {
           "image": "assets/shop/perk.png",
           "locked": true,
           "description": "Pitch concept: coins unlock real Westpac perks."
+        },
+        {
+          "id": "item_golden_key",
+          "name": "Golden Key",
+          "slot": "neck",
+          "slot_label": "Neck",
+          "cost": 0,
+          "earned": true,
+          "emoji": "🔑",
+          "description": "Not for sale. Earned the first time Open Doors shows a door opening for you."
         }
       ]
     },
@@ -3611,6 +3631,16 @@ window.PERSONAS = {
             "type": "none"
           },
           "why_rewards_you": "Spending coins never earns XP. Rewards only come from money habits."
+        },
+        {
+          "id": "door_opened",
+          "label": "Opened a door",
+          "xp": 150,
+          "coins": 60,
+          "cap": {
+            "type": "none"
+          },
+          "why_rewards_you": "Open Doors: a door opens only when your own transactions show the habits behind it. Once per door, never farmable."
         }
       ],
       "levels": [
@@ -3812,6 +3842,16 @@ window.PERSONAS = {
           "image": "assets/shop/perk.png",
           "locked": true,
           "description": "Pitch concept: coins unlock real Westpac perks."
+        },
+        {
+          "id": "item_golden_key",
+          "name": "Golden Key",
+          "slot": "neck",
+          "slot_label": "Neck",
+          "cost": 0,
+          "earned": true,
+          "emoji": "🔑",
+          "description": "Not for sale. Earned the first time Open Doors shows a door opening for you."
         }
       ]
     },
@@ -3825,7 +3865,7 @@ window.PERSONAS = {
         "scale": "equifax_au",
         "max": 1200,
         "source": "Equifax",
-        "band": "Below Average",
+        "band": "Average",
         "refreshed_at": "2026-11-03",
         "consent": true,
         "demo_sample": true,
@@ -5665,6 +5705,16 @@ window.PERSONAS = {
             "type": "none"
           },
           "why_rewards_you": "Spending coins never earns XP. Rewards only come from money habits."
+        },
+        {
+          "id": "door_opened",
+          "label": "Opened a door",
+          "xp": 150,
+          "coins": 60,
+          "cap": {
+            "type": "none"
+          },
+          "why_rewards_you": "Open Doors: a door opens only when your own transactions show the habits behind it. Once per door, never farmable."
         }
       ],
       "levels": [
@@ -5866,6 +5916,16 @@ window.PERSONAS = {
           "image": "assets/shop/perk.png",
           "locked": true,
           "description": "Pitch concept: coins unlock real Westpac perks."
+        },
+        {
+          "id": "item_golden_key",
+          "name": "Golden Key",
+          "slot": "neck",
+          "slot_label": "Neck",
+          "cost": 0,
+          "earned": true,
+          "emoji": "🔑",
+          "description": "Not for sale. Earned the first time Open Doors shows a door opening for you."
         }
       ]
     },
@@ -5879,7 +5939,7 @@ window.PERSONAS = {
         "scale": "equifax_au",
         "max": 1200,
         "source": "Equifax",
-        "band": "Very Good",
+        "band": "Very good",
         "refreshed_at": "2026-11-03",
         "consent": true,
         "demo_sample": true,

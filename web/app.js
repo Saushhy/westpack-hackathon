@@ -307,6 +307,7 @@ function buyItem(id) {
   const item = itemById(id);
   if (!item || item.locked) return;
 
+  if (item.earned && !state.shop.owned.includes(id)) return; // earned, never bought
   const lvl = levelForXp(state.xp_total).level;
   if (item.unlock_level && lvl < item.unlock_level) return;
 
@@ -513,15 +514,17 @@ function runInsight(id) {
   const res = actOnInsight(id);
   if (!res) return;
   const goalResults = syncGoals();
+  const doorResults = syncDoors();
   save();
   render();
 
-  const all = [res].concat(goalResults);
+  const all = [res].concat(goalResults, doorResults);
   const xp = all.reduce((a, r) => a + r.xp, 0);
   const coins = all.reduce((a, r) => a + r.coins, 0);
   if (xp || coins) toast("+" + xp + " XP · +" + coins + " " + coin());
   const evolved = all.find((r) => r.evolved);
   if (evolved) showEvolution(evolved.fromStage, evolved.toStage);
+  announceDoors(doorResults);
 }
 
 function dismissInsight(id) {
@@ -1298,6 +1301,8 @@ function renderScore() {
       </div>
     </article>
 
+    ${doorsSummaryCard()}
+
     ${creditAccounts(cf)}
 
     <button class="gel-row-card" type="button" onclick="openFactors()">
@@ -1314,9 +1319,11 @@ function setProtected() {
     award("protected_balance", gym.id, gym.label);
   }
   syncGoals();
+  const doorResults = syncDoors();
   save();
   render();
   toast(ico("shield") + " Savings buffer set for Thursday");
+  announceDoors(doorResults);
 }
 
 /* ---------- boot ----------
@@ -1334,6 +1341,7 @@ function boot() {
     award("checkin_week", windowStart, "Seven days in a row");
   }
   syncGoals();
+  syncDoors(); // first look is a baseline: doors already open do not pay out
   save();
   render();
   if (!state.onboarded) openOnboarding();
@@ -1640,12 +1648,14 @@ function openItem(id) {
       </span>
       <div class="gel-sheet-head-body">
         <h2 class="gel-sheet-title" id="sheet-title">${item.name}</h2>
-        <p class="gel-sheet-sub">${item.slot_label} · ${fmtWhole(item.cost)} coins</p>
+        <p class="gel-sheet-sub">${item.slot_label} · ${item.earned ? "Earned, not bought" : fmtWhole(item.cost) + " coins"}</p>
       </div>
     </div>`;
 
   const stateLine = item.locked
     ? "Pitch concept"
+    : item.earned && !owned
+    ? "Open a door in Open Doors to earn it"
     : !unlocked
     ? "Unlocks at Level " + item.unlock_level
     : wearingNow
@@ -1661,7 +1671,7 @@ function openItem(id) {
     <div class="gel-verified" style="margin-top:12px">${ico("check")}${stateLine}</div>`;
 
   let primary = "";
-  if (!item.locked && unlocked) {
+  if (!item.locked && unlocked && !(item.earned && !owned)) {
     if (item.slot === "food") {
       primary = `<button class="gel-btn-primary gel-btn-block" type="button" ${
         affordable ? "" : "disabled"
@@ -1725,7 +1735,11 @@ function renderShop() {
             <span class="gel-muted">${item.slot_label}${note}</span>
           </span>
           <span class="gel-shop-price">
-            <span class="gel-money gel-money--sm">${fmtWhole(item.cost)}</span>${coin()}
+            ${
+              item.earned
+                ? `<span class="od-pill od-pill--${owned ? "success" : "faint"}">${owned ? "Earned" : "Earn it"}</span>`
+                : `<span class="gel-money gel-money--sm">${fmtWhole(item.cost)}</span>${coin()}`
+            }
           </span>
           ${ico("arrow-right")}
         </button>`;
@@ -2211,6 +2225,286 @@ function replayOnboarding() {
   state.onboarded = false;
   save();
   openOnboarding();
+}
+
+/* ==========================================================================
+   OPEN DOORS
+   --------------------------------------------------------------------------
+   Idea from a Westpac engineer at the hackathon: the score is a cold number,
+   so show what it can open in real life, and what opens the next door.
+
+   Every door is a list of checks against the customer's own data
+   (data/doors.json): income and rent from transactions, late repayments and
+   buy now, pay later from the credit file, the score band, and whether they
+   acted on the matching insight. A door is Open when every check passes,
+   Opening when at least half do, and Not yet otherwise.
+
+   Rules: a guide, never an approval; no score promised; only Westpac's own
+   products are linked, worded "explore", with no rates; every check shows
+   the evidence behind it. The first time a door opens because of something
+   the customer did, they earn XP and the Golden Key.
+   ========================================================================== */
+const DOORS = (window.DATA && window.DATA.doors) || null;
+const DOOR_LIST = (DOORS && DOORS.personas[PERSONA || "mia"]) || [];
+
+function bandOf(value) {
+  if (!DOORS || value == null) return null;
+  return DOORS.bands.find((b) => value >= b.min && value <= b.max) || null;
+}
+
+function txCount(type, check) {
+  const re = new RegExp(check.match, "i");
+  return TX.filter(
+    (t) =>
+      t.type === type &&
+      (re.test((t.merchant || "") + " " + (t.description || "")) || (check.flag && (t.flags || []).includes(check.flag)))
+  ).length;
+}
+
+function openBnplPlans() {
+  const p = (bills.credit_file && bills.credit_file.bnpl && bills.credit_file.bnpl.providers) || [];
+  if (p.length) return p.reduce((a, x) => a + (x.plans || 0), 0);
+  return ((bills.credit_file && bills.credit_file.accounts) || []).filter((a) => a.kind === "bnpl").length;
+}
+
+/* One check against the data. Returns { pass, n } where n feeds the copy. */
+function evalCheck(c) {
+  const score = (bills.score && bills.score.value) || 0;
+  const accounts = (bills.credit_file && bills.credit_file.accounts) || [];
+  switch (c.kind) {
+    case "income": {
+      const n = txCount("credit", c);
+      return { pass: n >= c.min, n };
+    }
+    case "pays": {
+      const n = txCount("debit", c);
+      return { pass: n >= c.min, n };
+    }
+    case "score_min":
+      return { pass: score >= c.min, n: score };
+    case "no_late": {
+      const n = accounts.filter((a) => a.status === "late").length;
+      return { pass: n === 0, n };
+    }
+    case "bnpl_max": {
+      const n = openBnplPlans();
+      return { pass: n <= c.max, n };
+    }
+    case "accounts_min": {
+      const n = accounts.length;
+      return { pass: n >= c.min, n };
+    }
+    case "acted":
+      return { pass: state.bills[c.finding]?.status === "done", n: 0 };
+    default:
+      return { pass: false, n: 0 };
+  }
+}
+
+function fillCopy(text, n) {
+  const f = (bills.score && bills.score.forecast) || {};
+  return String(text || "")
+    .replace(/\{n\}/g, fmtWhole(n))
+    .replace(/\{score\}/g, fmtWhole((bills.score && bills.score.value) || 0))
+    .replace(/\{range\}/g, f.range ? fmtWhole(f.range[0]) + " to " + fmtWhole(f.range[1]) : "");
+}
+
+function doorState(door) {
+  const checks = door.checks.map((c) => {
+    const r = evalCheck(c);
+    return { ...c, pass: r.pass, text: fillCopy(r.pass ? c.pass : c.fail, r.n) };
+  });
+  const passed = checks.filter((c) => c.pass).length;
+  const status = passed === checks.length ? "open" : passed * 2 >= checks.length ? "opening" : "not_yet";
+  return { ...door, checks, passed, status };
+}
+
+const DOOR_STATUS = {
+  open: { label: "Open", tone: "success" },
+  opening: { label: "Opening", tone: "warning" },
+  not_yet: { label: "Not yet", tone: "faint" }
+};
+
+function allDoors() {
+  return DOOR_LIST.map(doorState);
+}
+
+/* Record which doors are open. The first look is a baseline: a door that was
+   already open does not pay out. After that, a door that opens because the
+   customer acted earns door_opened once, and the first one earns the key. */
+function syncDoors() {
+  if (!DOOR_LIST.length) return [];
+  const now = allDoors();
+  const first = !state.doors;
+  state.doors = state.doors || {};
+  const results = [];
+  for (const d of now) {
+    const was = state.doors[d.id];
+    state.doors[d.id] = d.status;
+    if (first || d.status !== "open" || was === "open") continue;
+    const r = award((DOORS.reward && DOORS.reward.action) || "door_opened", d.id, "Door opened: " + d.title);
+    const out = r ? { ...r, door: d } : null;
+    const key = DOORS.reward && DOORS.reward.item;
+    if (key && itemById(key) && !state.shop.owned.includes(key)) {
+      state.shop.owned.push(key);
+      state.shop.equipped[itemById(key).slot] = key; // earned = worn
+      if (out) out.key = itemById(key);
+    }
+    if (out) results.push(out);
+  }
+  save();
+  return results;
+}
+
+/* Called after anything that can open a door. Shows one toast for the door. */
+function announceDoors(results) {
+  const r = results.find((x) => x.door);
+  if (!r) return;
+  setTimeout(
+    () => toast("🚪 " + r.door.title + " is open" + (r.key ? ". Golden Key earned" : "") + " · +" + r.xp + " XP"),
+    r.evolved ? 0 : 1400
+  );
+}
+
+function doorsSummaryCard() {
+  if (!DOOR_LIST.length) return "";
+  const doors = allDoors();
+  const count = (s) => doors.filter((d) => d.status === s).length;
+  const goal = doors.find((d) => d.goal);
+  return `
+    <button class="gel-row-card od-card" type="button" data-open-doors onclick="openDoors()">
+      <span class="od-card-icon" aria-hidden="true">🚪</span>
+      <span class="od-card-body">
+        <span class="od-card-title">Open Doors</span>
+        <span class="gel-muted">What your score can open</span>
+        <span class="od-card-chips">
+          <span class="od-pill od-pill--success">${count("open")} open</span>
+          <span class="od-pill od-pill--warning">${count("opening")} opening</span>
+          <span class="od-pill od-pill--faint">${count("not_yet")} not yet</span>
+        </span>
+        ${goal ? `<span class="od-card-goal">${goal.emoji} Your goal: ${goal.title} · ${DOOR_STATUS[goal.status].label}</span>` : ""}
+      </span>
+      ${ico("arrow-right")}
+    </button>`;
+}
+
+function ladderHtml() {
+  const score = (bills.score && bills.score.value) || 0;
+  const f = (bills.score && bills.score.forecast) || {};
+  const max = (bills.score && bills.score.max) || 1200;
+  const here = bandOf(score);
+  const bands = DOORS.bands.slice().reverse();
+  const rows = bands
+    .map((b) => {
+      const isHere = here && b.name === here.name;
+      const inForecast = f.range && f.range[1] >= b.min && f.range[0] <= b.max && !isHere;
+      return `
+        <li class="od-rung ${isHere ? "is-here" : ""} ${inForecast ? "is-forecast" : ""}">
+          <span class="od-rung-name">${b.name}</span>
+          <span class="od-rung-range">${fmtWhole(b.min)} to ${fmtWhole(b.max)}</span>
+          ${isHere ? `<span class="od-rung-you">You · ${fmtWhole(score)}</span>` : ""}
+          ${inForecast ? `<span class="od-rung-next">Forecast reaches here</span>` : ""}
+        </li>`;
+    })
+    .join("");
+  const pct = Math.max(0, Math.min(100, (score / max) * 100));
+  const nextBand = DOORS.bands.find((b) => b.min > score) || null;
+  return `
+    <section class="od-ladder">
+      <div class="od-ladder-head">
+        <span class="gel-evidence-eyebrow">Where you sit</span>
+        <span class="gel-muted">${f.range ? "In " + (f.horizon_months || 3) + " months: " + fmtWhole(f.range[0]) + " to " + fmtWhole(f.range[1]) : ""}</span>
+      </div>
+      <div class="od-meter" aria-hidden="true"><i style="width:${pct}%"></i></div>
+      ${nextBand ? `<p class="od-next-band">Next: <b>${nextBand.name}</b> at ${fmtWhole(nextBand.min)}, ${fmtWhole(nextBand.min - score)} points to go.</p>` : ""}
+      <ol class="od-rungs">${rows}</ol>
+      <p class="od-source">Bands: ${DOORS.bands_source}. ${f.assumption ? "Forecast if " + f.assumption : ""}</p>
+    </section>`;
+}
+
+function doorHtml(d) {
+  const st = DOOR_STATUS[d.status];
+  const product = d.product && DOORS.products[d.product];
+  const fixes = d.checks.filter((c) => !c.pass && c.fix && c.finding && bills.bills.some((b) => b.id === c.finding));
+  return `
+    <article class="od-door od-door--${d.status}" data-door="${d.id}">
+      <div class="od-door-head">
+        <span class="od-door-emoji" aria-hidden="true">${d.emoji}</span>
+        <div class="od-door-title">
+          <span class="od-door-name">${d.title}</span>
+          ${d.goal ? `<span class="od-door-goal">Your goal</span>` : ""}
+        </div>
+        <span class="od-pill od-pill--${st.tone}">${st.label}</span>
+      </div>
+      <ul class="od-checks">
+        ${d.checks
+          .map(
+            (c) => `
+          <li class="od-check ${c.pass ? "is-pass" : ""}">
+            <span class="od-tick" aria-hidden="true">${c.pass ? "✓" : ""}</span>
+            <span><b>${c.label}.</b> ${c.text}</span>
+          </li>`
+          )
+          .join("")}
+      </ul>
+      ${
+        fixes.length
+          ? `<div class="od-next">
+               <span class="od-next-k">What opens it next</span>
+               ${fixes
+                 .map(
+                   (c) =>
+                     `<button class="od-fix" type="button" onclick="doorFix('${c.finding}')">${c.fix}${ico("arrow-right")}</button>`
+                 )
+                 .join("")}
+             </div>`
+          : ""
+      }
+      ${
+        product
+          ? `<a class="od-product" href="${product.url}" target="_blank" rel="noopener">${product.label} ↗</a>`
+          : ""
+      }
+    </article>`;
+}
+
+function openDoors() {
+  if (!DOORS) return;
+  const doors = allDoors().sort((a, b) => (b.goal ? 1 : 0) - (a.goal ? 1 : 0));
+  const key = DOORS.reward && itemById(DOORS.reward.item);
+  const hasKey = key && state.shop.owned.includes(key.id);
+  const head = `
+    <div class="gel-sheet-head">
+      <span class="gel-item-tile gel-item-tile--lg od-head-icon">🚪</span>
+      <div class="gel-sheet-head-body">
+        <h2 class="gel-sheet-title" id="sheet-title">Open Doors</h2>
+        <p class="gel-sheet-sub">What your score can open</p>
+      </div>
+    </div>`;
+  const body = `
+    ${ladderHtml()}
+    <p class="gel-evidence-eyebrow od-doors-k">Your doors</p>
+    <div class="od-doors">${doors.map(doorHtml).join("")}</div>
+    <div class="od-key ${hasKey ? "is-earned" : ""}">
+      <span class="od-key-emoji" aria-hidden="true">🔑</span>
+      <span>${
+        hasKey
+          ? "<b>Golden Key earned.</b> Your dragon is wearing it."
+          : "<b>Golden Key.</b> Open a door with your own habits and your dragon earns it."
+      }</span>
+    </div>
+    <div class="gel-callout od-disclaimer">${ico("shield")}<p class="gel-callout-text">${DOORS.disclaimer}</p></div>`;
+  openSheet({
+    title: "Open Doors",
+    head,
+    body,
+    actions: '<button class="gel-btn-ghost gel-btn-block" type="button" onclick="closeSheet()">Close</button>'
+  });
+}
+
+function doorFix(findingId) {
+  closeSheet();
+  openInsight(findingId);
 }
 
 /* ---------- shell ---------- */

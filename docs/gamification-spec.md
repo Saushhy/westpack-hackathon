@@ -54,14 +54,14 @@ the demo. That is the point: the bar does not lie.
 - **Food** is repeatable and counts `feeds`. It never awards XP.
 - The dragon is tappable and answers with a credit-health line.
 
-## 6. Demo click-path (550 → 870 XP, the egg hatches into the baby dragon)
+## 6. Demo click-path (550 → 1020 XP, the egg hatches into the baby dragon)
 
 1. **Score**: 612/1200 Equifax, forecast 635 to 650, the goal card, Afterpay and Zip with
    next payment dates, the factors sheet.
 2. **On open** the daily check-in and the seven-day goal land: **550 XP, 330 coins**. The
    dragon is still an **egg** here, and the Dragon tab says when it hatches.
 3. **Insights**: six findings, each with a **Review** button that opens a sheet with the
-   evidence and one action. Working through them takes you to **870 XP, 510 coins**, and the
+   evidence and one action. Working through them takes you to **1020 XP, 570 coins** (the Safety Buffer also opens the Rental application door in Open Doors, +150 XP, +60 coins, and the Golden Key), and the
    egg **hatches into the baby dragon** at 800 XP partway through.
 4. **Goals**: three cards that fill themselves from real signals. The daily one is done; the
    other two sit at 2 of 4 instalments and 27 of 30 days.

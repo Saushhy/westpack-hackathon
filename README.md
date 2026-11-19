@@ -63,6 +63,15 @@ different provider. It never names one. It then shows:
 Example (Mia): $89 a month against a $47 average saves $42 a month, or $504 a year.
 Put towards her card, it's paid off in 11 months instead of 14.
 
+### Open Doors
+Your score, translated into what it can open. A ladder of Equifax's five bands shows where
+you sit and how far the next band is. Below it, three or four **doors** for your life (for
+Mia: car loan, rental application, a lower card rate, a first home later on), each marked
+**Open**, **Opening** or **Not yet** from checks against your own data, with the evidence
+behind each one. Failing checks link to the insight that fixes them, and each door can link
+to the matching Westpac product page. The first door you open with your own habits earns the
+**Golden Key** for your dragon. It is a guide, never an approval: lenders decide.
+
 ### Goals
 Three goals that **complete themselves** when the transactions show it happened. There
 is no "mark as done" button, so the rewards can't be gamed.

@@ -316,6 +316,57 @@ Rules kept:
 **Re-check the averages before you present them.** They are from Canstar and TechRadar
 pages read on 17 Nov 2026.
 
+### Open Doors: what your score can open
+
+An idea from a Westpac engineer at the hackathon: the score is a cold number, so show what
+it can open in real life, and what opens the next door. A new **Open Doors** card sits on
+the Score tab under the goal, and opens a sheet with three parts:
+
+1. **Where you sit.** Equifax's five bands as a ladder (Below average 0 to 459, Average
+   460 to 660, Good 661 to 734, Very good 735 to 852, Excellent 853 to 1200), with the
+   customer's score, the band their forecast reaches, and "Next: Good at 661, 49 points to go".
+2. **Your doors.** Three or four per persona, goal first. Each is **Open**, **Opening** or
+   **Not yet**, worked out from checks against the customer's own data: income and rent from
+   transactions, late repayments and buy now, pay later from the credit file, the score band,
+   and whether they acted on the matching insight. Open when every check passes, Opening when
+   at least half do. Every check shows its evidence ("7 rent payments in three months").
+3. **What opens it next.** The failing checks link straight to the insight that fixes them,
+   and each door can link to the matching Westpac product page ("Explore Westpac car loans").
+
+| Persona | Doors (goal first) |
+|---|---|
+| Mia | Car loan (Not yet, 1 of 4), Rental application (Opening), Lower rate on your card, First home later on |
+| Marcus | Business loan, Equipment finance, Workshop lease renewal (Open) |
+| Elena | First credit card, Rental application, Phone plan on contract, First home later on |
+| David | Home loan (Opening, 3 of 4), Car loan paid out early (Open), Personal loan for the move |
+
+**Golden Key.** The first time a door opens because of something the customer did, they
+earn 150 XP and 60 coins (`door_opened`, once per door) and the **Golden Key**, which the
+dragon wears. It shows in the shop as earned, never for sale. A door that is already open on
+the first look is a baseline and pays nothing. In Mia's demo, setting up the Safety Buffer
+opens her Rental application door.
+
+Rules kept:
+
+- **A guide, never an approval.** Every sheet ends with "A guide, not an approval. Lenders
+  decide, and they also look at your income, expenses and full credit report." The audit
+  fails on approval wording.
+- **No score promised.** The ladder uses the existing forecast range and its condition.
+- **Westpac only.** Product links go to westpac.com.au pages only, worded "explore", with no
+  rates quoted. The audit fails if another lender is named.
+- Data lives in **`data/doors.json`** (bands, products, every persona's doors), built into
+  `data.js`. Bands from Equifax's "What is a credit score?" page. Westpac's car loan page
+  lists buy now, pay later plans among current debts, which is where Mia's check comes from.
+
+Also:
+
+- The score band pill is now worked out from the score on Equifax's bands, so it always
+  matches the ladder. Elena's 530 was labelled "Below Average"; on Equifax's scale it is
+  **Average** (her thin file is still explained in her insights).
+- Demo numbers: the full Insights journey now ends at **1020 XP and 570 coins** (870 and 510
+  plus the Rental door). The egg still hatches during Insights.
+- Audit is now **249 assertions**.
+
 ## 4. What changed before that (v3)
 
 ### Deleted

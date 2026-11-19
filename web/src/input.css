@@ -1549,3 +1549,97 @@
   .bc-score-v--good { color: var(--text-success); }
   .bc-arrow svg { width: 20px; height: 20px; color: var(--text-muted); }
 }
+
+@layer components {
+  /* ---------- Open Doors ----------
+     The score translated into what it can open. A summary card on the Score
+     tab, then a sheet with the band ladder, the doors and their checks. */
+  .od-card { align-items: flex-start; gap: 12px; text-align: left; }
+  .od-card-icon {
+    flex: none; width: 40px; height: 40px; border-radius: 8px; display: grid; place-items: center;
+    background: var(--surface-hero-faint); font-size: 22px;
+  }
+  .od-card-body { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .od-card-title { font-weight: 700; color: var(--text-heading); font-size: var(--typography-body-size-9); }
+  .od-card-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .od-card-goal { font-size: var(--typography-body-size-10); color: var(--text-body); margin-top: 2px; }
+  .od-pill {
+    display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 3px;
+    font-size: 12px; font-weight: 700; white-space: nowrap; border: 1px solid transparent;
+  }
+  .od-pill--success { background: var(--surface-success-faint); color: var(--text-success); border-color: #b9dcb9; }
+  .od-pill--warning { background: #fdf3e8; color: #9a4a00; border-color: #f0cfa6; }
+  .od-pill--faint { background: var(--surface-muted-faint); color: var(--text-muted); border-color: var(--border-muted-soft); }
+
+  .od-head-icon { font-size: 30px; }
+  .od-ladder {
+    border: 1px solid var(--border-muted-soft); border-radius: var(--rounded-2xl, 8px);
+    padding: 12px; background: var(--background-white); margin-bottom: 18px;
+  }
+  .od-ladder-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+  .od-ladder-head .gel-evidence-eyebrow { margin: 0; }
+  .od-meter { height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 10px;
+    background: linear-gradient(90deg, #f3c4c2 0 38%, #f6dfbd 38% 55%, #cfe5cf 55% 61%, #a9d3a9 61% 71%, #7fbf7f 71% 100%); }
+  .od-meter i { display: block; height: 100%; border-right: 3px solid var(--text-heading); background: transparent; }
+  .od-rungs { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .od-rung {
+    display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 8px;
+    padding: 6px 10px; border-radius: 4px; border: 1px solid transparent;
+    font-size: var(--typography-body-size-10); color: var(--text-muted);
+  }
+  .od-rung-name { font-weight: 600; }
+  .od-rung-range { text-align: right; }
+  .od-rung.is-here { background: var(--surface-hero-faint); border-color: var(--border-hero); color: var(--text-heading); }
+  .od-rung.is-forecast { background: var(--surface-success-faint); border-color: #b9dcb9; color: var(--text-heading); }
+  .od-rung-you, .od-rung-next { grid-column: 1 / -1; font-size: 12px; font-weight: 700; }
+  .od-rung-you { color: var(--text-hero); }
+  .od-rung-next { color: var(--text-success); }
+  .od-next-band { margin: -2px 0 10px; font-size: var(--typography-body-size-10); color: var(--text-body); }
+  .od-next-band b { color: var(--text-heading); }
+  .od-source { margin: 8px 0 0; font-size: 12px; line-height: 1.4; color: var(--text-muted); }
+
+  .od-doors-k { margin: 0 0 8px; }
+  .od-doors { display: grid; gap: 12px; margin-bottom: 18px; }
+  .od-door {
+    border: 1px solid var(--border-muted-soft); border-left: 4px solid var(--border-muted-soft);
+    border-radius: var(--rounded-2xl, 8px); padding: 12px; background: var(--background-white);
+    display: grid; gap: 10px;
+  }
+  .od-door--open { border-left-color: var(--surface-success); }
+  .od-door--opening { border-left-color: #e08a1e; }
+  .od-door-head { display: grid; grid-template-columns: 32px 1fr auto; gap: 10px; align-items: center; }
+  .od-door-emoji { font-size: 24px; line-height: 1; text-align: center; }
+  .od-door-title { display: flex; flex-direction: column; gap: 2px; }
+  .od-door-name { font-weight: 700; color: var(--text-heading); font-size: var(--typography-body-size-9); }
+  .od-door-goal { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-primary, #da1710); }
+  .od-checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .od-check {
+    display: grid; grid-template-columns: 20px 1fr; gap: 8px; align-items: start;
+    font-size: var(--typography-body-size-10); line-height: 1.4; color: var(--text-body);
+  }
+  .od-check b { color: var(--text-heading); }
+  .od-tick {
+    width: 18px; height: 18px; border-radius: 50%; margin-top: 1px; display: grid; place-items: center;
+    border: 1.5px solid var(--border-muted-soft); font-size: 11px; font-weight: 800; color: #fff;
+  }
+  .od-check.is-pass .od-tick { background: var(--surface-success); border-color: var(--surface-success); }
+  .od-next { display: grid; gap: 6px; padding-top: 8px; border-top: 1px solid var(--border-muted-soft); }
+  .od-next-k { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted); }
+  .od-fix {
+    display: flex; justify-content: space-between; align-items: center; gap: 8px; cursor: pointer;
+    min-height: 40px; padding: 8px 10px; border-radius: 4px; text-align: left;
+    border: 1px solid var(--border-hero); background: var(--surface-hero-faint); color: var(--text-heading);
+    font-size: var(--typography-body-size-10); font-weight: 600;
+  }
+  .od-fix svg { width: 16px; height: 16px; flex: none; }
+  .od-product { font-size: var(--typography-body-size-10); font-weight: 600; color: var(--text-primary, #da1710); text-decoration: underline; }
+  .od-key {
+    display: grid; grid-template-columns: 32px 1fr; gap: 10px; align-items: center; margin-bottom: 12px;
+    padding: 12px; border-radius: var(--rounded-2xl, 8px); border: 1px dashed #e6c76b; background: #fffaf0;
+    font-size: var(--typography-body-size-10); color: var(--text-body);
+  }
+  .od-key b { color: var(--text-heading); }
+  .od-key.is-earned { border-style: solid; background: var(--game-coin-soft, #fff4dc); }
+  .od-key-emoji { font-size: 24px; text-align: center; }
+  .od-disclaimer { margin: 0; }
+}

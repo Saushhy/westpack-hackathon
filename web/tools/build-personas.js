@@ -321,6 +321,14 @@ function toCreditFile(persona, tx, meta) {
   };
 }
 
+/* ---------- score band ---------- */
+const DOORS = existsSync(join(dataDir, "doors.json")) ? JSON.parse(readFileSync(join(dataDir, "doors.json"), "utf8")) : null;
+function bandFor(value) {
+  if (!DOORS || value == null) return null;
+  const b = DOORS.bands.find((x) => value >= x.min && value <= x.max);
+  return b ? b.name : null;
+}
+
 /* ---------- Bill check ----------
    Utilities the person pays (phone, home internet) compared with a brand-free
    Australian average from data/benchmarks.json. Only a bill above the average
@@ -502,9 +510,11 @@ for (const [name, meta] of Object.entries(PERSONAS)) {
         scale: "equifax_au",
         max: score.scale_max,
         source: "Equifax",
-        /* Carlos writes "Below Average / Thin File". The pill needs the short
-           form; the nuance lives in that person's insights. */
-        band: String(score.current_band || "").split("/")[0].trim(),
+        /* The band comes from the score itself, on Equifax's published bands
+           (data/doors.json), so the pill and the Open Doors ladder always agree.
+           Carlos wrote "Below Average / Thin File" for Elena's 530, which is
+           Average on Equifax's scale; "thin file" lives in her insights. */
+        band: bandFor(score.current_score) || String(score.current_band || "").split("/")[0].trim(),
         refreshed_at: "2026-11-03",
         consent: true,
         demo_sample: true,

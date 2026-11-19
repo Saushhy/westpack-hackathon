@@ -91,6 +91,18 @@ enforces the dash rule on every screen.
 
 ---
 
+### Open Doors (`data/doors.json`)
+
+- `bands[]`: Equifax bands `{ name, min, max }`. `products{}`: Westpac pages `{ label, url }`.
+- `personas.<name>[]`: doors `{ id, title, emoji, goal?, product, checks[] }`.
+- `checks[]`: `{ kind, label, pass, fail, fix?, finding? }`, where `kind` is `income` or
+  `pays` (count of credit or debit transactions whose merchant or description matches
+  `match`, or that carry `flag`, at least `min`), `score_min`, `no_late`, `bnpl_max`,
+  `accounts_min`, or `acted` (the insight `finding` is done). `{n}`, `{score}` and `{range}`
+  fill the copy.
+- Runtime state: `state.doors[door_id]` is the last status seen. `door_opened` (rewards.json)
+  pays once per door; `item_golden_key` is `earned: true` and cannot be bought.
+
 ### Bill check fields
 
 - `bills[].benchmark`: `{ key, average_monthly, lines, label, source, source_url, checked_at }`
