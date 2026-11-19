@@ -1,7 +1,7 @@
 # AR dragon: handoff for Shawn
 
-Everything here comes from the real model in `/assets/dragon_3d`, so there is one
-dragon across the web prototype, the video and the phone.
+The web prototype still uses the model in `/assets/dragon_3d`. The iOS AR view now
+uses a separate rigged dragon pair so it can play skeletal animation clips.
 
 ## What we have
 
@@ -11,11 +11,13 @@ dragon across the web prototype, the video and the phone.
 | Assembled | `web/assets/dragon/dragon.glb`, 915 kB, all three maps embedded |
 | Maps | base colour 1024, normal 1024, packed ORM 512 (roughness in G, metallic in B) |
 | Height | 1.738 units, feet on `y = 0`, centred on the origin, Y up |
-| Rig | **none**. One mesh, no skeleton, no animation clips |
+| Rig | **none** on the original web dragon; it remains a single static mesh |
 | Rebuild | `cd web && npm run build:dragon` |
 
-Because there is no rig, everything in AR is done with transforms: place, scale,
-rotate, hop, and attach wearables at fixed offsets.
+The iOS AR view bundles `dragon_walk_idle.usdz` and `dragon_dive_attack.usdz`.
+They share the same 99-bone skeleton and mesh. The Walk clip loops as idle; a tap
+on the visible dragon plays Dive_Attack once, then returns to Walk. The assets are
+included as Xcode resources in `ios/CreditDragon/Data`.
 
 ## Convert to USDZ
 
@@ -138,12 +140,12 @@ Show the same string in a SwiftUI bubble over the AR view, so the demo still wor
 with the volume off. `en-AU` and `0.48` are the two settings that make it sound
 like a bank and not a satnav.
 
-## What is not done
+## Remaining checks
 
-- No rig, so there is no walk, wing flap or level up animation. If Naomi can
-  export one clip from the `.blend`, the level up moment gets much better.
-- The USDZ conversion has not been tested here (no Mac on this machine). Open it
-  in Reality Composer first and check the material came through.
+- The animated USDZs still need a device run to confirm the skeletal clips render
+  and switch cleanly in RealityKit on the target iPhone.
+- The imported clips animate the AR dragon. The existing level-up celebration is
+  still a SwiftUI overlay; it is not a skeletal level-up animation.
 - The web prototype uses a pre-rendered PNG of the model (`baby.png`) rather than a live
   renderer, because `index.html` has to work by double-click with no server. The GLB is
   there if you want it in AR. The adult stage has no model yet, so it falls back to 🐉.

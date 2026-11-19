@@ -36,6 +36,8 @@
 		A10028 /* westpac_dragon_l1.usdz in Resources */ = {isa = PBXBuildFile; fileRef = B10028 /* westpac_dragon_l1.usdz */; };
 		A10029 /* DragonModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10029 /* DragonModel.swift */; };
 		A10030 /* westpac_dragon_l2.usdz in Resources */ = {isa = PBXBuildFile; fileRef = B10030 /* westpac_dragon_l2.usdz */; };
+		A10031 /* dragon_walk_idle.usdz in Resources */ = {isa = PBXBuildFile; fileRef = B10031 /* dragon_walk_idle.usdz */; };
+		A10032 /* dragon_dive_attack.usdz in Resources */ = {isa = PBXBuildFile; fileRef = B10032 /* dragon_dive_attack.usdz */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -68,6 +70,8 @@
 		B10028 /* westpac_dragon_l1.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = westpac_dragon_l1.usdz; sourceTree = "<group>"; };
 		B10029 /* DragonModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DragonModel.swift; sourceTree = "<group>"; };
 		B10030 /* westpac_dragon_l2.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = westpac_dragon_l2.usdz; sourceTree = "<group>"; };
+		B10031 /* dragon_walk_idle.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = dragon_walk_idle.usdz; sourceTree = "<group>"; };
+		B10032 /* dragon_dive_attack.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = dragon_dive_attack.usdz; sourceTree = "<group>"; };
 		PROD00 /* CreditDragon.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CreditDragon.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -157,6 +161,8 @@
 				B10026 /* rewards.json */,
 				B10028 /* westpac_dragon_l1.usdz */,
 				B10030 /* westpac_dragon_l2.usdz */,
+				B10031 /* dragon_walk_idle.usdz */,
+				B10032 /* dragon_dive_attack.usdz */,
 			);
 			path = Data;
 			sourceTree = "<group>";
@@ -303,6 +309,8 @@
 				A10026 /* rewards.json in Resources */,
 				A10028 /* westpac_dragon_l1.usdz in Resources */,
 				A10030 /* westpac_dragon_l2.usdz in Resources */,
+				A10031 /* dragon_walk_idle.usdz in Resources */,
+				A10032 /* dragon_dive_attack.usdz in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

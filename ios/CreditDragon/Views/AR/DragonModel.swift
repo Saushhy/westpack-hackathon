@@ -7,6 +7,12 @@ import simd
 /// The asset is a Blender export: Z-up, 1.64 m tall, ~20.7k triangles, PBR textures.
 /// Two things therefore have to be corrected at load time — see `upAxisCorrection`
 /// and `targetSize`.
+struct DragonAnimationPair {
+    let container: Entity
+    let idle: Entity
+    let action: Entity
+}
+
 enum DragonModel {
     /// Only the two grown stages have sculpted models. Hatched reuses the L1
     /// dragon at a smaller size; the egg has none and falls back to a sphere,
@@ -36,6 +42,40 @@ enum DragonModel {
     /// RealityKit's importer does not convert it — verified on the Simulator, where
     /// the dragon loaded lying on its back. This quarter turn maps +Z up to +Y up.
     static let upAxisCorrection: simd_quatf = .init(angle: -.pi / 2, axis: [1, 0, 0])
+
+    /// Loads the shared dragon mesh twice so each USDZ can keep its own baked
+    /// skeletal clip. Both files use the same skeleton: Walk idles, Dive_Attack
+    /// plays once on touch. The action model is hidden until needed.
+    static func makeAnimationPair(for stage: DragonStage) -> DragonAnimationPair? {
+        guard stage != .egg else { return nil }
+        guard let idle = try? Entity.load(named: "dragon_walk_idle"),
+              let action = try? Entity.load(named: "dragon_dive_attack") else { return nil }
+        guard !idle.availableAnimations.isEmpty,
+              !action.availableAnimations.isEmpty else { return nil }
+
+        idle.orientation = upAxisCorrection
+        action.orientation = upAxisCorrection
+
+        let bounds = idle.visualBounds(relativeTo: nil)
+        let extents = bounds.extents
+        let longest = max(extents.x, max(extents.y, extents.z))
+        guard longest > 0 else { return nil }
+
+        let scale = targetSize(for: stage) / longest
+        idle.scale = [scale, scale, scale]
+        action.scale = [scale, scale, scale]
+
+        let scaled = idle.visualBounds(relativeTo: nil)
+        let floorOffset = -scaled.min.y
+        idle.position.y += floorOffset
+        action.position.y += floorOffset
+        action.isEnabled = false
+
+        let container = Entity()
+        container.addChild(idle)
+        container.addChild(action)
+        return DragonAnimationPair(container: container, idle: idle, action: action)
+    }
 
     /// Returns the dragon wrapped in a container that has been scaled to
     /// `targetSize` and shifted so its feet sit on y = 0.

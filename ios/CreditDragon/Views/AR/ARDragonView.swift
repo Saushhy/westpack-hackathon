@@ -26,7 +26,7 @@ struct ARDragonView: View {
                     placementPrompt
                 }
                 if dragonPlaced && arAvailable {
-                    Text("Tap your dragon to make it hop")
+                    Text("Tap your dragon to see its move")
                         .font(WestpacFont.body(WestpacType.s10))
                         .foregroundColor(.white.opacity(0.9))
                         .shadow(color: .black.opacity(0.5), radius: 4)
@@ -218,10 +218,13 @@ struct ARViewContainer: UIViewRepresentable {
         let stage: DragonStage
         var dragonAnchor: AnchorEntity?
 
-        /// The model has no skeleton, so every bit of life comes from moving the
-        /// whole entity. Idle pauses while a hop plays so the two don't fight.
+        /// The two imported USDZs share a skeleton and mesh. The Walk clip loops
+        /// on the idle model; taps temporarily switch to the Dive_Attack model.
         private var dragon: Entity?
+        private var idleDragon: Entity?
+        private var actionDragon: Entity?
         private var idling = false
+        private var playingTapAnimation = false
 
         init(dragonPlaced: Binding<Bool>, stage: DragonStage) {
             self.dragonPlaced = dragonPlaced
@@ -231,13 +234,15 @@ struct ARViewContainer: UIViewRepresentable {
         @objc func handleTap(_ sender: UITapGestureRecognizer) {
             guard let arView = arView else { return }
 
-            // Once it's down, a tap makes it hop rather than placing a second one.
+            let location = sender.location(in: arView)
+
+            // After placement, only a hit on the dragon triggers its animation.
             if dragonPlaced.wrappedValue {
-                hop()
+                guard let hitEntity = arView.entity(at: location),
+                      hitBelongsToDragon(hitEntity) else { return }
+                playTapAnimation()
                 return
             }
-
-            let location = sender.location(in: arView)
 
             // Prefer a real horizontal surface, then an estimated one at any
             // alignment. Without the fallback a tap on a poorly-lit or low-texture
@@ -253,7 +258,12 @@ struct ARViewContainer: UIViewRepresentable {
 
         func placeDragon(at transform: simd_float4x4, in arView: ARView) {
             let anchor = AnchorEntity(world: transform)
-            let entity = DragonModel.makeEntity(for: stage) ?? Self.primitiveDragon(for: stage)
+            let animationPair = DragonModel.makeAnimationPair(for: stage)
+            let entity = animationPair?.container
+                ?? DragonModel.makeEntity(for: stage)
+                ?? Self.primitiveDragon(for: stage)
+            idleDragon = animationPair?.idle
+            actionDragon = animationPair?.action
 
             // Parent and add to the scene BEFORE animating. Moving an unparented
             // entity relativeTo the anchor sets a world-space transform, which
@@ -287,7 +297,44 @@ struct ARViewContainer: UIViewRepresentable {
             }
         }
 
-        // MARK: - Transform animation
+        // MARK: - Imported animation
+
+        private func hitBelongsToDragon(_ hit: Entity) -> Bool {
+            var current: Entity? = hit
+            while let entity = current {
+                if entity === dragon { return true }
+                current = entity.parent
+            }
+            return false
+        }
+
+        private func playTapAnimation() {
+            guard !playingTapAnimation,
+                  let idleDragon,
+                  let actionDragon,
+                  let animation = actionDragon.availableAnimations.first else {
+                hop()
+                return
+            }
+
+            idling = false
+            playingTapAnimation = true
+            idleDragon.stopAllAnimations(recursive: true)
+            idleDragon.isEnabled = false
+            actionDragon.isEnabled = true
+
+            let playback = actionDragon.playAnimation(animation)
+            DispatchQueue.main.asyncAfter(deadline: .now() + playback.duration) { [weak self] in
+                guard let self else { return }
+                actionDragon.stopAllAnimations(recursive: true)
+                actionDragon.isEnabled = false
+                idleDragon.isEnabled = true
+                self.playingTapAnimation = false
+                self.startIdle()
+            }
+        }
+
+        // MARK: - Idle animation
 
         private static let bobHeight: Float = 0.018
         private static let bobDuration: TimeInterval = 1.5
@@ -295,6 +342,18 @@ struct ARViewContainer: UIViewRepresentable {
         func startIdle() {
             guard !idling else { return }
             idling = true
+
+            if let idleDragon,
+               let animation = idleDragon.availableAnimations.first {
+                actionDragon?.stopAllAnimations(recursive: true)
+                actionDragon?.isEnabled = false
+                idleDragon.isEnabled = true
+                idleDragon.playAnimation(animation.repeat())
+                return
+            }
+
+            // Keep the previous procedural float as a graceful fallback if an
+            // animation asset cannot be loaded on a device.
             bob(up: true)
         }
 
@@ -315,8 +374,8 @@ struct ARViewContainer: UIViewRepresentable {
             }
         }
 
-        /// Tap the placed dragon: a quick jump with a quarter turn, then idle again.
-        func hop() {
+        /// Fallback tap response used when the animated assets are unavailable.
+        private func hop() {
             guard let dragon, dragon.scene != nil else { return }
             idling = false
 
